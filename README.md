@@ -1,6 +1,3 @@
-# PlanOpticon
-goes through a video and captures notes and diagrams from the conversation
-
 PlanOpticon
 Comprehensive Video Analysis & Knowledge Extraction CLI
 PlanOpticon is an advanced AI-powered CLI tool that conducts thorough analysis of video content, extracting structured knowledge, diagrams, and actionable insights. Using state-of-the-art computer vision and natural language processing techniques, PlanOpticon transforms video assets into valuable, structured information.
@@ -15,21 +12,23 @@ Plan Generation: Synthesis of extracted elements into cohesive action plans and 
 
 
 Technical Implementation
-PlanOpticon leverages multiple AI models and processing pipelines to achieve comprehensive video analysis:
+PlanOpticon leverages cloud APIs and efficient processing pipelines to achieve comprehensive video analysis:
 Architecture Overview
-Video Input → Frame Extraction → Parallel Processing → Knowledge Integration → Structured Output
-                                 ↓                  ↓
-                         Visual Processing    Audio Processing
-                         • Diagram Detection  • Speech Recognition
-                         • OCR Extraction     • Speaker Diarization
-                         • Content Tracking   • Semantic Analysis
+```
+Video Input → Frame Extraction → Cloud API Integration → Knowledge Integration → Structured Output
+                ↓                        ↓                          ↓
+           Frame Selection      API Request Management       Result Processing
+           • Key Frame          • Vision API Calls           • Content Organization
+           • Scene Detection    • Speech-to-Text API         • Relationship Mapping
+           • Content Changes    • LLM Analysis API           • Mermaid Generation
+```
 Key Components
 
-Multi-modal neural networks for frame analysis
-Advanced speech recognition with contextual awareness
-Computer vision pipeline for visual element extraction
-Knowledge graph construction for relationship mapping
-Temporal pattern recognition across video segments
+Cloud API integration for speech-to-text transcription
+Vision API utilization for diagram and visual content detection
+LLM-powered content analysis and summarization
+Efficient prompt engineering for specialized content extraction
+Knowledge integration system for relationship mapping and organization
 
 
 Installation
