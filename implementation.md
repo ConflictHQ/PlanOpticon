@@ -7,17 +7,21 @@ video_processor/
 │   ├── frame_extractor.py
 │   ├── audio_extractor.py
 │   └── text_extractor.py
+├── api/
+│   ├── transcription_api.py
+│   ├── vision_api.py 
+│   ├── llm_api.py
+│   └── api_manager.py
 ├── analyzers/
-│   ├── visual_analyzer.py
-│   ├── speech_analyzer.py 
-│   ├── text_analyzer.py
+│   ├── content_analyzer.py
+│   ├── diagram_analyzer.py
 │   └── action_detector.py
 ├── integrators/
 │   ├── knowledge_graph.py
 │   └── plan_generator.py
 ├── utils/
-│   ├── gpu_utils.py
-│   ├── vector_store.py
+│   ├── api_cache.py
+│   ├── prompt_templates.py
 │   └── visualization.py
 └── cli/
     ├── commands.py
@@ -200,28 +204,28 @@ Implement performance benchmarks for critical paths
 
 
 
-Model Development Considerations
-When implementing AI components, consider:
+API Integration Considerations
+When implementing cloud API components, consider:
 
-Model Selection
+API Selection
 
-Balance accuracy and performance requirements
-Consider model quantization for ARM deployment
-Design with graceful degradation for resource-constrained environments
-
-
-Ensemble Approaches
-
-Use specialized models for different visual element types
-Combine multiple techniques for robust action item detection
-Implement voting mechanisms for increased accuracy
+Balance capabilities, cost, and performance requirements
+Implement appropriate rate limiting and quota management
+Design with graceful fallbacks between different API providers
 
 
-Domain Adaptation
+Efficient API Usage
 
-Design transfer learning approach for specialized vocabularies
-Implement fine-tuning pipeline for domain-specific content
-Consider few-shot learning techniques for flexibility
+Create optimized prompts for different content types
+Batch requests where possible to minimize API calls
+Implement caching to avoid redundant API calls
+
+
+Prompt Engineering
+
+Design effective prompt templates for consistent results
+Implement few-shot examples for specialized content understanding
+Create chain-of-thought prompting for complex analysis tasks
 
 
 
