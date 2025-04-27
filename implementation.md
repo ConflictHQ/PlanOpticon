@@ -1,7 +1,8 @@
-PlanOpticon Implementation Guide
+# PlanOpticon Implementation Guide
 This document provides detailed technical guidance for implementing the PlanOpticon system architecture. The suggested approach balances code quality, performance optimization, and architecture best practices.
-System Architecture
+## System Architecture
 PlanOpticon follows a modular pipeline architecture with these core components:
+```
 video_processor/
 ├── extractors/
 │   ├── frame_extractor.py
@@ -26,10 +27,12 @@ video_processor/
 └── cli/
     ├── commands.py
     └── output_formatter.py
-Implementation Approach
+```
+## Implementation Approach
 When building complex systems like PlanOpticon, it's critical to develop each component with clear boundaries and interfaces. The following approach provides a framework for high-quality implementation:
-Video and Audio Processing
+### Video and Audio Processing
 Video frame extraction should be implemented with performance in mind:
+```
 pythondef extract_frames(video_path, sampling_rate=1.0, change_threshold=0.15):
     """
     Extract frames from video based on sampling rate and visual change detection.
@@ -50,7 +53,9 @@ pythondef extract_frames(video_path, sampling_rate=1.0, change_threshold=0.15):
     """
     # Implementation details here
     pass
+```
 Consider using a decorator pattern for GPU acceleration when available:
+```
 pythondef gpu_accelerated(func):
     """Decorator to use GPU implementation when available."""
     @functools.wraps(func)
@@ -59,8 +64,10 @@ pythondef gpu_accelerated(func):
             return func_gpu(*args, **kwargs)
         return func(*args, **kwargs)
     return wrapper
-Computer Vision Components
+```
+### Computer Vision Components
 When implementing diagram detection, consider using a progressive refinement approach:
+```
 pythonclass DiagramDetector:
     """Detects and extracts diagrams from video frames."""
     
@@ -92,7 +99,8 @@ pythonclass DiagramDetector:
         """Extract and normalize detected diagrams."""
         # Implementation details
         pass
-Speech Processing Pipeline
+```
+### Speech Processing Pipeline
 The speech recognition and diarization system should be implemented with careful attention to context:
 pythonclass SpeechProcessor:
     """Process speech from audio extraction."""
@@ -127,7 +135,7 @@ pythonclass SpeechProcessor:
         # The key to effective speech processing is maintaining temporal context
         # throughout the pipeline and handling speaker transitions gracefully
         pass
-Action Item Detection
+### Action Item Detection
 Action item detection requires sophisticated NLP techniques:
 pythonclass ActionItemDetector:
     """Detect action items from transcript."""
@@ -153,7 +161,7 @@ pythonclass ActionItemDetector:
         # 4. Deadline extraction
         # 5. Priority estimation
         pass
-Performance Optimization
+## Performance Optimization
 For optimal performance across different hardware targets:
 
 ARM Optimization
@@ -163,14 +171,14 @@ Implement conditional paths for ARM-specific optimizations
 Consider using PyTorch's mobile optimized models
 
 
-Memory Management
+## Memory Management
 
 Implement progressive loading for large videos
 Use memory-mapped file access for large datasets
 Release resources explicitly when no longer needed
 
 
-GPU Acceleration
+## GPU Acceleration
 
 Design compute-intensive operations to work in batches
 Minimize CPU-GPU memory transfers
@@ -178,10 +186,10 @@ Implement fallback paths for CPU-only environments
 
 
 
-Code Quality Guidelines
+## Code Quality Guidelines
 Maintain high code quality through these practices:
 
-PEP 8 Compliance
+### PEP 8 Compliance
 
 Consistent 4-space indentation
 Maximum line length of 88 characters (Black formatter standard)
@@ -189,14 +197,14 @@ Descriptive variable names with snake_case convention
 Comprehensive docstrings for all public functions and classes
 
 
-Type Annotations
+### Type Annotations
 
 Use Python's type hints consistently throughout codebase
 Define custom types for complex data structures
 Validate with mypy during development
 
 
-Testing Strategy
+### Testing Strategy
 
 Write unit tests for each module with minimum 80% coverage
 Create integration tests for component interactions
@@ -204,24 +212,24 @@ Implement performance benchmarks for critical paths
 
 
 
-API Integration Considerations
+# API Integration Considerations
 When implementing cloud API components, consider:
 
-API Selection
+## API Selection
 
 Balance capabilities, cost, and performance requirements
 Implement appropriate rate limiting and quota management
 Design with graceful fallbacks between different API providers
 
 
-Efficient API Usage
+### Efficient API Usage
 
 Create optimized prompts for different content types
 Batch requests where possible to minimize API calls
 Implement caching to avoid redundant API calls
 
 
-Prompt Engineering
+### Prompt Engineering
 
 Design effective prompt templates for consistent results
 Implement few-shot examples for specialized content understanding
@@ -229,38 +237,36 @@ Create chain-of-thought prompting for complex analysis tasks
 
 
 
-Prompting Guidelines
+## Prompting Guidelines
 When developing complex AI systems, clear guidance helps ensure effective implementation. Consider these approaches:
 
-Component Breakdown
+### Component Breakdown
 
 Begin by dividing the system into well-defined modules
 Define clear interfaces between components
 Specify expected inputs and outputs for each function
 
 
-Progressive Development
+### Progressive Development
 
 Start with skeleton implementation of core functionality
 Add refinements iteratively
 Implement error handling after core functionality works
 
 
-Example-Driven Design
+### Example-Driven Design
 
 Provide clear examples of expected behaviors
 Include sample inputs and outputs
 Demonstrate error cases and handling
 
 
-Architecture Patterns
+### Architecture Patterns
 
 Use factory patterns for flexible component creation
 Implement strategy patterns for algorithm selection
 Apply decorator patterns for cross-cutting concerns
 
-
-
 Remember that the best implementations come from clear understanding of the problem domain and careful consideration of edge cases.
-Conclusion
+
 PlanOpticon's implementation requires attention to both high-level architecture and low-level optimization. By following these guidelines, developers can create a robust, performant system that effectively extracts valuable information from video content.
