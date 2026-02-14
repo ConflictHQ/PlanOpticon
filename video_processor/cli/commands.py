@@ -120,7 +120,7 @@ def analyze(
 
 
 @cli.command()
-@click.option("--input-dir", "-i", required=True, type=click.Path(exists=True), help="Directory of videos")
+@click.option("--input-dir", "-i", type=click.Path(), default=None, help="Local directory of videos")
 @click.option("--output", "-o", required=True, type=click.Path(), help="Output directory")
 @click.option(
     "--depth",
@@ -144,8 +144,16 @@ def analyze(
 )
 @click.option("--vision-model", type=str, default=None, help="Override model for vision tasks")
 @click.option("--chat-model", type=str, default=None, help="Override model for LLM/chat tasks")
+@click.option(
+    "--source",
+    type=click.Choice(["local", "gdrive", "dropbox"]),
+    default="local",
+    help="Video source (local directory, Google Drive, or Dropbox)",
+)
+@click.option("--folder-id", type=str, default=None, help="Google Drive folder ID")
+@click.option("--folder-path", type=str, default=None, help="Cloud folder path")
 @click.pass_context
-def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model, chat_model):
+def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model, chat_model, source, folder_id, folder_path):
     """Process a folder of videos in batch."""
     from video_processor.integrators.knowledge_graph import KnowledgeGraph
     from video_processor.integrators.plan_generator import PlanGenerator
@@ -158,12 +166,45 @@ def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model,
     from video_processor.pipeline import process_single_video
     from video_processor.providers.manager import ProviderManager
 
-    input_dir = Path(input_dir)
     prov = None if provider == "auto" else provider
     pm = ProviderManager(vision_model=vision_model, chat_model=chat_model, provider=prov)
+    patterns = [p.strip() for p in pattern.split(",")]
+
+    # Handle cloud sources
+    if source != "local":
+        download_dir = Path(output) / "_downloads"
+        download_dir.mkdir(parents=True, exist_ok=True)
+
+        if source == "gdrive":
+            from video_processor.sources.google_drive import GoogleDriveSource
+
+            cloud = GoogleDriveSource()
+            if not cloud.authenticate():
+                logging.error("Google Drive authentication failed")
+                sys.exit(1)
+            cloud_files = cloud.list_videos(folder_id=folder_id, folder_path=folder_path, patterns=patterns)
+            local_paths = cloud.download_all(cloud_files, download_dir)
+        elif source == "dropbox":
+            from video_processor.sources.dropbox_source import DropboxSource
+
+            cloud = DropboxSource()
+            if not cloud.authenticate():
+                logging.error("Dropbox authentication failed")
+                sys.exit(1)
+            cloud_files = cloud.list_videos(folder_path=folder_path, patterns=patterns)
+            local_paths = cloud.download_all(cloud_files, download_dir)
+        else:
+            logging.error(f"Unknown source: {source}")
+            sys.exit(1)
+
+        input_dir = download_dir
+    else:
+        if not input_dir:
+            logging.error("--input-dir is required for local source")
+            sys.exit(1)
+        input_dir = Path(input_dir)
 
     # Find videos
-    patterns = [p.strip() for p in pattern.split(",")]
     videos = []
     for pat in patterns:
         videos.extend(sorted(input_dir.glob(pat)))
@@ -319,6 +360,32 @@ def clear_cache(ctx, cache_dir, older_than, clear_all):
 
             traceback.print_exc()
         sys.exit(1)
+
+
+@cli.command()
+@click.argument("service", type=click.Choice(["google", "dropbox"]))
+@click.pass_context
+def auth(ctx, service):
+    """Authenticate with a cloud service (google or dropbox)."""
+    if service == "google":
+        from video_processor.sources.google_drive import GoogleDriveSource
+
+        source = GoogleDriveSource(use_service_account=False)
+        if source.authenticate():
+            click.echo("Google Drive authentication successful.")
+        else:
+            click.echo("Google Drive authentication failed.", err=True)
+            sys.exit(1)
+
+    elif service == "dropbox":
+        from video_processor.sources.dropbox_source import DropboxSource
+
+        source = DropboxSource()
+        if source.authenticate():
+            click.echo("Dropbox authentication successful.")
+        else:
+            click.echo("Dropbox authentication failed.", err=True)
+            sys.exit(1)
 
 
 def main():
