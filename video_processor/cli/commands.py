@@ -362,6 +362,61 @@ def clear_cache(ctx, cache_dir, older_than, clear_all):
         sys.exit(1)
 
 
+@cli.command("agent-analyze")
+@click.option("--input", "-i", required=True, type=click.Path(exists=True), help="Input video file path")
+@click.option("--output", "-o", required=True, type=click.Path(), help="Output directory")
+@click.option(
+    "--depth",
+    type=click.Choice(["basic", "standard", "comprehensive"]),
+    default="standard",
+    help="Initial processing depth (agent may adapt)",
+)
+@click.option("--title", type=str, help="Title for the analysis report")
+@click.option(
+    "--provider",
+    "-p",
+    type=click.Choice(["auto", "openai", "anthropic", "gemini"]),
+    default="auto",
+    help="API provider",
+)
+@click.option("--vision-model", type=str, default=None, help="Override model for vision tasks")
+@click.option("--chat-model", type=str, default=None, help="Override model for LLM/chat tasks")
+@click.pass_context
+def agent_analyze(ctx, input, output, depth, title, provider, vision_model, chat_model):
+    """Agentic video analysis — adaptive, intelligent processing."""
+    from video_processor.agent.orchestrator import AgentOrchestrator
+    from video_processor.output_structure import write_video_manifest
+    from video_processor.providers.manager import ProviderManager
+
+    prov = None if provider == "auto" else provider
+    pm = ProviderManager(vision_model=vision_model, chat_model=chat_model, provider=prov)
+
+    agent = AgentOrchestrator(provider_manager=pm)
+
+    try:
+        manifest = agent.process(
+            input_path=input,
+            output_dir=output,
+            initial_depth=depth,
+            title=title,
+        )
+        write_video_manifest(manifest, output)
+
+        if agent.insights:
+            logging.info("Agent insights:")
+            for insight in agent.insights:
+                logging.info(f"  - {insight}")
+
+        logging.info(f"Results at {output}/manifest.json")
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        if ctx.obj["verbose"]:
+            import traceback
+
+            traceback.print_exc()
+        sys.exit(1)
+
+
 @cli.command()
 @click.argument("service", type=click.Choice(["google", "dropbox"]))
 @click.pass_context
