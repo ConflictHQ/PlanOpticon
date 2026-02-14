@@ -1,0 +1,113 @@
+[build-system]
+requires = ["setuptools>=69.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "planopticon"
+version = "0.2.0"
+description = "AI-powered video analysis and knowledge extraction tool"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "CONFLICT LLC" },
+]
+keywords = ["video", "analysis", "ai", "knowledge-extraction", "transcription", "diagrams"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+dependencies = [
+    "numpy>=1.24.0",
+    "opencv-python>=4.8.0",
+    "scipy>=1.10.0",
+    "pillow>=10.0.0",
+    "matplotlib>=3.7.0",
+    "pydantic>=2.0.0",
+    "tqdm>=4.66.0",
+    "colorlog>=6.7.0",
+    "click>=8.1.0",
+    "librosa>=0.10.0",
+    "soundfile>=0.12.0",
+    "openai>=1.0.0",
+    "anthropic>=0.5.0",
+    "google-genai>=1.0.0",
+    "markdown>=3.4.0",
+    "mermaid-py>=0.5.0",
+    "plotly>=5.18.0",
+    "kaleido>=0.2.1",
+    "python-dotenv>=1.0.0",
+    "requests>=2.31.0",
+    "tenacity>=8.2.0",
+]
+
+[project.optional-dependencies]
+pdf = ["weasyprint>=60.0"]
+gpu = ["torch>=2.0.0", "torchvision>=0.15.0"]
+gdrive = ["google-auth>=2.0.0", "google-auth-oauthlib>=1.0.0", "google-api-python-client>=2.0.0"]
+dropbox = ["dropbox>=12.0.0"]
+cloud = [
+    "planopticon[gdrive]",
+    "planopticon[dropbox]",
+]
+dev = [
+    "pytest>=7.3.0",
+    "pytest-cov>=4.1.0",
+    "black>=23.3.0",
+    "isort>=5.12.0",
+    "mypy>=1.3.0",
+    "ruff>=0.1.0",
+]
+all = [
+    "planopticon[pdf]",
+    "planopticon[cloud]",
+    "planopticon[dev]",
+]
+
+[project.urls]
+Homepage = "https://planopticon.dev"
+Documentation = "https://planopticon.dev"
+Repository = "https://github.com/conflict-llc/PlanOpticon"
+Issues = "https://github.com/conflict-llc/PlanOpticon/issues"
+
+[project.scripts]
+planopticon = "video_processor.cli.commands:main"
+
+[tool.setuptools.packages.find]
+include = ["video_processor*"]
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+addopts = "--cov=video_processor"

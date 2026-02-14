@@ -1,0 +1,69 @@
+name: Build Release Binaries
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: linux-x86_64
+            ext: ""
+          - os: macos-latest
+            target: macos-arm64
+            ext: ""
+          - os: macos-13
+            target: macos-x86_64
+            ext: ""
+          - os: windows-latest
+            target: windows-x86_64
+            ext: ".exe"
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg libsndfile
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[all]"
+          pip install pyinstaller
+
+      - name: Build binary
+        run: |
+          pyinstaller \
+            --name planopticon-${{ matrix.target }} \
+            --onefile \
+            --console \
+            --hidden-import=video_processor \
+            --hidden-import=video_processor.cli.commands \
+            --hidden-import=video_processor.providers \
+            --hidden-import=video_processor.providers.openai_provider \
+            --hidden-import=video_processor.providers.anthropic_provider \
+            --hidden-import=video_processor.providers.gemini_provider \
+            --collect-all video_processor \
+            video_processor/cli/commands.py
+
+      - name: Upload binary to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/planopticon-${{ matrix.target }}${{ matrix.ext }}

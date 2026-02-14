@@ -1,0 +1,93 @@
+site_name: PlanOpticon
+site_url: https://planopticon.dev
+site_description: AI-powered video analysis and knowledge extraction
+site_author: CONFLICT LLC
+repo_url: https://github.com/conflict-llc/PlanOpticon
+repo_name: conflict-llc/PlanOpticon
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            show_source: true
+            show_root_heading: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quick Start: getting-started/quickstart.md
+      - Configuration: getting-started/configuration.md
+  - User Guide:
+      - Single Video Analysis: guide/single-video.md
+      - Batch Processing: guide/batch.md
+      - Cloud Sources: guide/cloud-sources.md
+      - Output Formats: guide/output-formats.md
+  - CLI Reference: cli-reference.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Provider System: architecture/providers.md
+      - Processing Pipeline: architecture/pipeline.md
+  - API Reference:
+      - Models: api/models.md
+      - Providers: api/providers.md
+      - Analyzers: api/analyzers.md
+  - Contributing: contributing.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/conflict-llc/PlanOpticon
+
+copyright: Copyright &copy; 2025 CONFLICT LLC
