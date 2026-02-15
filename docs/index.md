@@ -9,12 +9,15 @@ PlanOpticon processes video recordings into structured knowledge — transcripts
 ## Features
 
 - **Multi-provider AI** — Automatically discovers and routes to the best available model across OpenAI, Anthropic, and Google Gemini
+- **Smart frame extraction** — Change detection for transitions + periodic capture (every 30s) for slow-evolving content like document scrolling
+- **People frame filtering** — OpenCV face detection removes webcam/video conference frames, keeping only shared content (slides, documents, screen shares)
 - **Diagram extraction** — Vision model-based classification detects flowcharts, architecture diagrams, charts, and whiteboards
 - **Knowledge graphs** — Extracts entities and relationships, builds and merges knowledge graphs across videos
 - **Action item detection** — Finds commitments, tasks, and follow-ups with assignees and deadlines
 - **Batch processing** — Process entire folders of videos with merged knowledge graphs and cross-referencing
 - **Rich output** — Markdown, HTML, PDF, Mermaid diagrams, SVG/PNG renderings, JSON manifests
 - **Cloud sources** — Fetch videos from Google Drive and Dropbox shared folders
+- **Checkpoint/resume** — Pipeline resumes from where it left off if interrupted — no wasted work
 - **Screengrab fallback** — When extraction isn't perfect, captures frames with captions — something is always better than nothing
 
 ## Quick Start
@@ -56,7 +59,7 @@ planopticon list-models
 === "Binary (no Python needed)"
 
     Download the latest binary for your platform from
-    [GitHub Releases](https://github.com/conflict-llc/PlanOpticon/releases).
+    [GitHub Releases](https://github.com/ConflictHQ/PlanOpticon/releases).
 
 ## Requirements
 
@@ -66,4 +69,4 @@ planopticon list-models
 
 ## License
 
-MIT License — Copyright (c) 2025 CONFLICT LLC. All rights reserved.
+MIT License — Copyright (c) 2026 CONFLICT LLC. All rights reserved.

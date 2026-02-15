@@ -36,7 +36,7 @@ def setup_logging(verbose: bool = False) -> None:
     root_logger.addHandler(console_handler)
 
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.version_option("0.2.0", prog_name="PlanOpticon")
 @click.pass_context
@@ -45,6 +45,9 @@ def cli(ctx, verbose):
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     setup_logging(verbose)
+
+    if ctx.invoked_subcommand is None:
+        _interactive_menu(ctx)
 
 
 @cli.command()
@@ -451,6 +454,105 @@ def auth(ctx, service):
         else:
             click.echo("Dropbox authentication failed.", err=True)
             sys.exit(1)
+
+
+def _interactive_menu(ctx):
+    """Show an interactive menu when planopticon is run with no arguments."""
+    click.echo()
+    click.echo("  PlanOpticon v0.2.0")
+    click.echo("  Comprehensive Video Analysis & Knowledge Extraction")
+    click.echo()
+    click.echo("  1. Analyze a video")
+    click.echo("  2. Batch process a folder")
+    click.echo("  3. List available models")
+    click.echo("  4. Authenticate cloud service")
+    click.echo("  5. Clear cache")
+    click.echo("  6. Show help")
+    click.echo()
+
+    choice = click.prompt("  Select an option", type=click.IntRange(1, 6))
+
+    if choice == 1:
+        input_path = click.prompt("  Video file path", type=click.Path(exists=True))
+        output_dir = click.prompt("  Output directory", type=click.Path())
+        depth = click.prompt(
+            "  Processing depth",
+            type=click.Choice(["basic", "standard", "comprehensive"]),
+            default="standard",
+        )
+        provider = click.prompt(
+            "  Provider",
+            type=click.Choice(["auto", "openai", "anthropic", "gemini"]),
+            default="auto",
+        )
+        ctx.invoke(
+            analyze,
+            input=input_path,
+            output=output_dir,
+            depth=depth,
+            focus=None,
+            use_gpu=False,
+            sampling_rate=0.5,
+            change_threshold=0.15,
+            periodic_capture=30.0,
+            title=None,
+            provider=provider,
+            vision_model=None,
+            chat_model=None,
+        )
+
+    elif choice == 2:
+        input_dir = click.prompt("  Video directory", type=click.Path(exists=True))
+        output_dir = click.prompt("  Output directory", type=click.Path())
+        depth = click.prompt(
+            "  Processing depth",
+            type=click.Choice(["basic", "standard", "comprehensive"]),
+            default="standard",
+        )
+        provider = click.prompt(
+            "  Provider",
+            type=click.Choice(["auto", "openai", "anthropic", "gemini"]),
+            default="auto",
+        )
+        ctx.invoke(
+            batch,
+            input_dir=input_dir,
+            output=output_dir,
+            depth=depth,
+            pattern="*.mp4,*.mkv,*.avi,*.mov,*.webm",
+            title="Batch Processing Results",
+            provider=provider,
+            vision_model=None,
+            chat_model=None,
+            source="local",
+            folder_id=None,
+            folder_path=None,
+            recursive=True,
+        )
+
+    elif choice == 3:
+        ctx.invoke(list_models)
+
+    elif choice == 4:
+        service = click.prompt(
+            "  Cloud service",
+            type=click.Choice(["google", "dropbox"]),
+        )
+        ctx.invoke(auth, service=service)
+
+    elif choice == 5:
+        cache_dir = click.prompt("  Cache directory path", type=click.Path())
+        clear_all = click.confirm("  Clear all entries?", default=True)
+        ctx.invoke(
+            clear_cache,
+            cache_dir=cache_dir,
+            older_than=None,
+            clear_all=clear_all,
+        )
+
+    elif choice == 6:
+        click.echo()
+        click.echo(ctx.get_help())
 
 
 def main():

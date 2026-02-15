@@ -43,6 +43,10 @@ planopticon batch [OPTIONS]
 | `-p`, `--provider` | `auto\|openai\|anthropic\|gemini` | `auto` | API provider |
 | `--vision-model` | TEXT | auto | Override vision model |
 | `--chat-model` | TEXT | auto | Override chat model |
+| `--source` | `local\|gdrive\|dropbox` | `local` | Video source |
+| `--folder-id` | TEXT | none | Google Drive folder ID |
+| `--folder-path` | TEXT | none | Cloud folder path |
+| `--recursive/--no-recursive` | FLAG | recursive | Recurse into subfolders |
 
 ---
 
@@ -71,6 +75,52 @@ planopticon clear-cache [OPTIONS]
 | `--cache-dir` | PATH | `$CACHE_DIR` | Path to cache directory |
 | `--older-than` | INT | all | Clear entries older than N seconds |
 | `--all` | FLAG | off | Clear all cache entries |
+
+---
+
+## `planopticon agent-analyze`
+
+Agentic video analysis — adaptive, intelligent processing that adjusts depth and focus based on content.
+
+```bash
+planopticon agent-analyze [OPTIONS]
+```
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `-i`, `--input` | PATH | *required* | Input video file path |
+| `-o`, `--output` | PATH | *required* | Output directory |
+| `--depth` | `basic\|standard\|comprehensive` | `standard` | Initial processing depth (agent may adapt) |
+| `--title` | TEXT | auto | Report title |
+| `-p`, `--provider` | `auto\|openai\|anthropic\|gemini` | `auto` | API provider |
+| `--vision-model` | TEXT | auto | Override vision model |
+| `--chat-model` | TEXT | auto | Override chat model |
+
+---
+
+## `planopticon auth`
+
+Authenticate with a cloud storage service for batch processing.
+
+```bash
+planopticon auth SERVICE
+```
+
+| Argument | Values | Description |
+|----------|--------|-------------|
+| `SERVICE` | `google\|dropbox` | Cloud service to authenticate with |
+
+**Examples:**
+
+```bash
+# Authenticate with Google Drive (interactive OAuth2)
+planopticon auth google
+
+# Authenticate with Dropbox
+planopticon auth dropbox
+```
+
+After authentication, use `planopticon batch --source gdrive` or `--source dropbox` to process cloud videos.
 
 ---
 

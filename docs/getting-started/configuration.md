@@ -32,9 +32,18 @@ planopticon analyze -i video.mp4 -o ./out --sampling-rate 1.0
 
 # Change threshold: visual difference needed to keep a frame (default: 0.15)
 planopticon analyze -i video.mp4 -o ./out --change-threshold 0.1
+
+# Periodic capture: capture a frame every N seconds regardless of change (default: 30)
+# Useful for slow-evolving content like document scrolling
+planopticon analyze -i video.mp4 -o ./out --periodic-capture 15
+
+# Disable periodic capture (rely only on change detection)
+planopticon analyze -i video.mp4 -o ./out --periodic-capture 0
 ```
 
-Lower `change-threshold` = more frames kept. Higher `sampling-rate` = more candidates.
+Lower `change-threshold` = more frames kept. Higher `sampling-rate` = more candidates. Periodic capture catches content that changes too slowly for change detection (e.g., scrolling through a document during a screen share).
+
+People/webcam frames are automatically filtered out using face detection — no configuration needed.
 
 ## Focus areas
 

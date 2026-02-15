@@ -1,8 +1,5 @@
 # Cloud Sources
 
-!!! note "Coming soon"
-    Cloud source integration is under active development.
-
 PlanOpticon can fetch videos directly from cloud storage services.
 
 ## Google Drive
