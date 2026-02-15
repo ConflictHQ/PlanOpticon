@@ -1,5 +1,11 @@
 # PlanOpticon
 
+[![CI](https://github.com/ConflictHQ/PlanOpticon/actions/workflows/ci.yml/badge.svg)](https://github.com/ConflictHQ/PlanOpticon/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/planopticon)](https://pypi.org/project/planopticon/)
+[![Python](https://img.shields.io/pypi/pyversions/planopticon)](https://pypi.org/project/planopticon/)
+[![License](https://img.shields.io/github/license/ConflictHQ/PlanOpticon)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-planopticon.dev-blue)](https://planopticon.dev)
+
 **AI-powered video analysis and knowledge extraction.**
 
 PlanOpticon processes video recordings into structured knowledge — transcripts, diagrams, action items, key points, and knowledge graphs. It auto-discovers available models across OpenAI, Anthropic, and Gemini, and produces rich multi-format output.
