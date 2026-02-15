@@ -2,20 +2,9 @@
 __pycache__/
 *.py[cod]
 *$py.class
-*.env*
-
-# Google Cloud service account keys
-panopticon-*.json
-planopticon-*.json
-*-*-*ced24f.json
-*service_account*.json
-*credentials*.json
 
 # C extensions
 *.so
-
-# Test data
-test_data/
 
 # Distribution / packaging
 dist/
@@ -28,25 +17,50 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
+.pytest_cache/
+.mypy_cache/
 nosetests.xml
 coverage.xml
 *.cover
 
 # Virtual environments
+.venv/
 venv/
 env/
 ENV/
 
-# IDE-specific files
+# IDE and editor files
 .idea/
 .vscode/
+.cursor/
 *.swp
 *.swo
+
+# AI tools
+.claude/
+.gemini/
+.codex/
+.aider/
+.continue/
+.copilot/
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+
+# Cloud CLI config (project-level)
+.google/
+.aws/
 
 # API keys and secrets
 .env
 .env.*
 !.env.example
+*service_account*.json
+*credentials*.json
+
+# Google Cloud service account keys
+panopticon-*.json
+planopticon-*.json
 
 # Log files
 *.log
@@ -54,6 +68,12 @@ ENV/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# MkDocs build output
+site/
+
+# Test data
+test_data/
 
 # Project specific
 output/
