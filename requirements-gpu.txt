@@ -1,7 +1,7 @@
 # NVIDIA GPU acceleration dependencies
 torch==2.0.0+cu118
 torchvision==0.25.0
-torchaudio==2.0.0+cu118
+torchaudio==2.10.0
 
 # Additional CUDA dependencies
 opencv-contrib-python-headless>=4.7.0.72
