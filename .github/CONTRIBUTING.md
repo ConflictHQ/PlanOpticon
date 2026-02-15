@@ -125,6 +125,10 @@ Keep the subject line under 72 characters. Use the body to explain *what* and *w
 - **Features:** Open an issue using the [Feature Request](https://github.com/ConflictHQ/PlanOpticon/issues/new?template=feature_request.yml) template.
 - **Questions:** Start a thread in [Discussions](https://github.com/ConflictHQ/PlanOpticon/discussions).
 
+## Code of Conduct
+
+This project follows a [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold it.
+
 ## Security
 
 If you discover a security vulnerability, please do **not** open a public issue. Instead, follow the process described in our [Security Policy](SECURITY.md).
