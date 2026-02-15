@@ -58,16 +58,21 @@ def discover_available_models(
         except Exception as e:
             logger.info(f"Anthropic discovery skipped: {e}")
 
-    # Gemini
-    if keys.get("gemini"):
+    # Gemini (API key or service account)
+    gemini_key = keys.get("gemini")
+    gemini_creds = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "")
+    if gemini_key or gemini_creds:
         try:
             from video_processor.providers.gemini_provider import GeminiProvider
-            provider = GeminiProvider(api_key=keys["gemini"])
+            provider = GeminiProvider(
+                api_key=gemini_key or None,
+                credentials_path=gemini_creds or None,
+            )
             models = provider.list_models()
             logger.info(f"Discovered {len(models)} Gemini models")
             all_models.extend(models)
         except Exception as e:
-            logger.info(f"Gemini discovery skipped: {e}")
+            logger.warning(f"Gemini discovery failed: {e}")
 
     # Sort by provider then id
     all_models.sort(key=lambda m: (m.provider, m.id))

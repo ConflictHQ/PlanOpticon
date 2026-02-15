@@ -189,18 +189,70 @@ class GoogleDriveSource(BaseSource):
         folder_id: Optional[str] = None,
         folder_path: Optional[str] = None,
         patterns: Optional[List[str]] = None,
+        recursive: bool = True,
     ) -> List[SourceFile]:
-        """List video files in a Google Drive folder."""
+        """
+        List video files in a Google Drive folder.
+
+        Parameters
+        ----------
+        folder_id : str, optional
+            Google Drive folder ID.
+        folder_path : str, optional
+            Not used for Google Drive (folder_id is canonical).
+        patterns : list[str], optional
+            File extension patterns like ['*.mp4', '*.mkv'].
+        recursive : bool
+            If True, recurse into subfolders (default: True).
+        """
         if not self.service:
             raise RuntimeError("Not authenticated. Call authenticate() first.")
 
-        # Build query
+        files: List[SourceFile] = []
+        self._list_folder(
+            folder_id=folder_id,
+            prefix="",
+            patterns=patterns,
+            recursive=recursive,
+            out=files,
+        )
+
+        logger.info(f"Found {len(files)} videos in Google Drive")
+        return files
+
+    def _list_folder(
+        self,
+        folder_id: Optional[str],
+        prefix: str,
+        patterns: Optional[List[str]],
+        recursive: bool,
+        out: List[SourceFile],
+    ) -> None:
+        """List videos in a single folder, optionally recursing into subfolders."""
+        # List video files
+        self._list_files_in_folder(folder_id, prefix, patterns, out)
+
+        # Recurse into subfolders
+        if recursive:
+            subfolders = self._list_subfolders(folder_id)
+            for sf_id, sf_name in subfolders:
+                sub_prefix = f"{prefix}{sf_name}/" if prefix else f"{sf_name}/"
+                logger.debug(f"Recursing into subfolder: {sub_prefix}")
+                self._list_folder(sf_id, sub_prefix, patterns, recursive, out)
+
+    def _list_files_in_folder(
+        self,
+        folder_id: Optional[str],
+        prefix: str,
+        patterns: Optional[List[str]],
+        out: List[SourceFile],
+    ) -> None:
+        """List video files in a single folder (non-recursive)."""
         query_parts = []
 
         if folder_id:
             query_parts.append(f"'{folder_id}' in parents")
 
-        # Filter for video MIME types
         mime_conditions = " or ".join(
             f"mimeType='{mt}'" for mt in VIDEO_MIME_TYPES
         )
@@ -208,8 +260,6 @@ class GoogleDriveSource(BaseSource):
         query_parts.append("trashed=false")
 
         query = " and ".join(query_parts)
-
-        files = []
         page_token = None
 
         while True:
@@ -226,21 +276,20 @@ class GoogleDriveSource(BaseSource):
             )
 
             for f in response.get("files", []):
-                # Apply pattern filtering if specified
-                if patterns:
-                    name = f.get("name", "")
-                    if not any(
-                        name.endswith(p.replace("*", "")) for p in patterns
-                    ):
-                        continue
+                name = f.get("name", "")
+                if patterns and not any(
+                    name.endswith(p.replace("*", "")) for p in patterns
+                ):
+                    continue
 
-                files.append(
+                out.append(
                     SourceFile(
-                        name=f["name"],
+                        name=name,
                         id=f["id"],
                         size_bytes=int(f.get("size", 0)) if f.get("size") else None,
                         mime_type=f.get("mimeType"),
                         modified_at=f.get("modifiedTime"),
+                        path=f"{prefix}{name}" if prefix else name,
                     )
                 )
 
@@ -248,8 +297,40 @@ class GoogleDriveSource(BaseSource):
             if not page_token:
                 break
 
-        logger.info(f"Found {len(files)} videos in Google Drive")
-        return files
+    def _list_subfolders(self, parent_id: Optional[str]) -> List[tuple]:
+        """List immediate subfolders of a folder. Returns list of (id, name)."""
+        query_parts = [
+            "mimeType='application/vnd.google-apps.folder'",
+            "trashed=false",
+        ]
+        if parent_id:
+            query_parts.append(f"'{parent_id}' in parents")
+
+        query = " and ".join(query_parts)
+        subfolders = []
+        page_token = None
+
+        while True:
+            response = (
+                self.service.files()
+                .list(
+                    q=query,
+                    spaces="drive",
+                    fields="nextPageToken, files(id, name)",
+                    pageToken=page_token,
+                    pageSize=100,
+                )
+                .execute()
+            )
+
+            for f in response.get("files", []):
+                subfolders.append((f["id"], f["name"]))
+
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+
+        return sorted(subfolders, key=lambda x: x[1])
 
     def download(self, file: SourceFile, destination: Path) -> Path:
         """Download a file from Google Drive."""

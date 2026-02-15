@@ -22,14 +22,39 @@ class GeminiProvider(BaseProvider):
 
     provider_name = "gemini"
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        credentials_path: Optional[str] = None,
+    ):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
-        if not self.api_key:
-            raise ValueError("GEMINI_API_KEY not set")
+        self.credentials_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+
+        if not self.api_key and not self.credentials_path:
+            raise ValueError(
+                "Neither GEMINI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS is set"
+            )
+
         try:
             from google import genai
             self._genai = genai
-            self.client = genai.Client(api_key=self.api_key)
+
+            if self.api_key:
+                self.client = genai.Client(api_key=self.api_key)
+            else:
+                # Service account → use Vertex AI mode
+                import json
+
+                with open(self.credentials_path) as f:
+                    sa_info = json.load(f)
+                project = sa_info.get("project_id", "")
+                location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
+
+                self.client = genai.Client(
+                    vertexai=True,
+                    project=project,
+                    location=location,
+                )
         except ImportError:
             raise ImportError(
                 "google-genai package not installed. "
@@ -63,6 +88,11 @@ class GeminiProvider(BaseProvider):
                 temperature=temperature,
             ),
         )
+        um = getattr(response, "usage_metadata", None)
+        self._last_usage = {
+            "input_tokens": getattr(um, "prompt_token_count", 0) if um else 0,
+            "output_tokens": getattr(um, "candidates_token_count", 0) if um else 0,
+        }
         return response.text or ""
 
     def analyze_image(
@@ -85,6 +115,11 @@ class GeminiProvider(BaseProvider):
                 max_output_tokens=max_tokens,
             ),
         )
+        um = getattr(response, "usage_metadata", None)
+        self._last_usage = {
+            "input_tokens": getattr(um, "prompt_token_count", 0) if um else 0,
+            "output_tokens": getattr(um, "candidates_token_count", 0) if um else 0,
+        }
         return response.text or ""
 
     def transcribe_audio(
@@ -154,9 +189,11 @@ class GeminiProvider(BaseProvider):
         try:
             for m in self.client.models.list():
                 mid = m.name or ""
-                # Strip "models/" prefix if present
-                if mid.startswith("models/"):
-                    mid = mid[7:]
+                # Strip prefix variants from different API modes
+                for prefix in ("models/", "publishers/google/models/"):
+                    if mid.startswith(prefix):
+                        mid = mid[len(prefix):]
+                        break
                 display = getattr(m, "display_name", mid) or mid
 
                 caps = []

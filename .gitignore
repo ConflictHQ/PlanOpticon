@@ -2,8 +2,14 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.env*
 
-panopticon-435716-271902ced24f.json
+# Google Cloud service account keys
+panopticon-*.json
+planopticon-*.json
+*-*-*ced24f.json
+*service_account*.json
+*credentials*.json
 
 # C extensions
 *.so

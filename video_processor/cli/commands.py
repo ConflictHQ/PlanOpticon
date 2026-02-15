@@ -10,6 +10,7 @@ from typing import List, Optional
 
 import click
 import colorlog
+from tqdm import tqdm
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -59,6 +60,7 @@ def cli(ctx, verbose):
 @click.option("--use-gpu", is_flag=True, help="Enable GPU acceleration if available")
 @click.option("--sampling-rate", type=float, default=0.5, help="Frame sampling rate")
 @click.option("--change-threshold", type=float, default=0.15, help="Visual change threshold")
+@click.option("--periodic-capture", type=float, default=30.0, help="Capture a frame every N seconds regardless of change (0 to disable)")
 @click.option("--title", type=str, help="Title for the analysis report")
 @click.option(
     "--provider",
@@ -79,6 +81,7 @@ def analyze(
     use_gpu,
     sampling_rate,
     change_threshold,
+    periodic_capture,
     title,
     provider,
     vision_model,
@@ -106,12 +109,15 @@ def analyze(
             focus_areas=focus_areas,
             sampling_rate=sampling_rate,
             change_threshold=change_threshold,
+            periodic_capture_seconds=periodic_capture,
             use_gpu=use_gpu,
             title=title,
         )
-        logging.info(f"Results at {output}/manifest.json")
+        click.echo(pm.usage.format_summary())
+        click.echo(f"\n  Results: {output}/manifest.json")
     except Exception as e:
         logging.error(f"Error: {e}")
+        click.echo(pm.usage.format_summary())
         if ctx.obj["verbose"]:
             import traceback
 
@@ -152,8 +158,9 @@ def analyze(
 )
 @click.option("--folder-id", type=str, default=None, help="Google Drive folder ID")
 @click.option("--folder-path", type=str, default=None, help="Cloud folder path")
+@click.option("--recursive/--no-recursive", default=True, help="Recurse into subfolders (default: recursive)")
 @click.pass_context
-def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model, chat_model, source, folder_id, folder_path):
+def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model, chat_model, source, folder_id, folder_path, recursive):
     """Process a folder of videos in batch."""
     from video_processor.integrators.knowledge_graph import KnowledgeGraph
     from video_processor.integrators.plan_generator import PlanGenerator
@@ -182,7 +189,7 @@ def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model,
             if not cloud.authenticate():
                 logging.error("Google Drive authentication failed")
                 sys.exit(1)
-            cloud_files = cloud.list_videos(folder_id=folder_id, folder_path=folder_path, patterns=patterns)
+            cloud_files = cloud.list_videos(folder_id=folder_id, folder_path=folder_path, patterns=patterns, recursive=recursive)
             local_paths = cloud.download_all(cloud_files, download_dir)
         elif source == "dropbox":
             from video_processor.sources.dropbox_source import DropboxSource
@@ -204,10 +211,11 @@ def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model,
             sys.exit(1)
         input_dir = Path(input_dir)
 
-    # Find videos
+    # Find videos (rglob for recursive, glob for flat)
     videos = []
+    glob_fn = input_dir.rglob if recursive else input_dir.glob
     for pat in patterns:
-        videos.extend(sorted(input_dir.glob(pat)))
+        videos.extend(sorted(glob_fn(pat)))
     videos = sorted(set(videos))
 
     if not videos:
@@ -221,7 +229,7 @@ def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model,
     entries = []
     merged_kg = KnowledgeGraph()
 
-    for idx, video_path in enumerate(videos):
+    for idx, video_path in enumerate(tqdm(videos, desc="Batch processing", unit="video")):
         video_name = video_path.stem
         video_output = dirs["videos"] / video_name
         logging.info(f"Processing video {idx + 1}/{len(videos)}: {video_path.name}")
@@ -292,7 +300,9 @@ def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model,
         merged_knowledge_graph_json="knowledge_graph.json",
     )
     write_batch_manifest(batch_manifest, output)
-    logging.info(f"Batch complete: {batch_manifest.completed_videos}/{batch_manifest.total_videos} succeeded")
+    click.echo(pm.usage.format_summary())
+    click.echo(f"\n  Batch complete: {batch_manifest.completed_videos}/{batch_manifest.total_videos} succeeded")
+    click.echo(f"  Results: {output}/batch_manifest.json")
 
 
 @cli.command("list-models")

@@ -40,6 +40,10 @@ class AnthropicProvider(BaseProvider):
             max_tokens=max_tokens,
             temperature=temperature,
         )
+        self._last_usage = {
+            "input_tokens": getattr(response.usage, "input_tokens", 0),
+            "output_tokens": getattr(response.usage, "output_tokens", 0),
+        }
         return response.content[0].text
 
     def analyze_image(
@@ -71,6 +75,10 @@ class AnthropicProvider(BaseProvider):
             ],
             max_tokens=max_tokens,
         )
+        self._last_usage = {
+            "input_tokens": getattr(response.usage, "input_tokens", 0),
+            "output_tokens": getattr(response.usage, "output_tokens", 0),
+        }
         return response.content[0].text
 
     def transcribe_audio(

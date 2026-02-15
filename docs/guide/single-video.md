@@ -10,17 +10,18 @@ planopticon analyze -i recording.mp4 -o ./output
 
 The pipeline runs these steps in order:
 
-1. **Frame extraction** — Samples frames from the video using change detection to avoid duplicates
-2. **Audio extraction** — Extracts audio track to WAV
-3. **Transcription** — Sends audio to speech-to-text (Whisper or Gemini)
-4. **Diagram detection** — Vision model classifies each frame as diagram/chart/whiteboard/screenshot/none
-5. **Diagram analysis** — High-confidence diagrams get full extraction (description, text, mermaid, chart data)
-6. **Screengrab fallback** — Medium-confidence frames are saved as captioned screenshots
-7. **Knowledge graph** — Extracts entities and relationships from transcript + diagrams
-8. **Key points** — LLM extracts main points and topics
-9. **Action items** — LLM finds tasks, commitments, and follow-ups
-10. **Reports** — Generates markdown, HTML, and PDF
-11. **Export** — Renders mermaid diagrams to SVG/PNG, reproduces charts
+1. **Frame extraction** — Samples frames using change detection for transitions plus periodic capture (every 30s) for slow-evolving content like document scrolling
+2. **People frame filtering** — OpenCV face detection automatically removes webcam/video conference frames, keeping only shared content (slides, documents, screen shares)
+3. **Audio extraction** — Extracts audio track to WAV
+4. **Transcription** — Sends audio to speech-to-text (Whisper or Gemini)
+5. **Diagram detection** — Vision model classifies each frame as diagram/chart/whiteboard/screenshot/none
+6. **Diagram analysis** — High-confidence diagrams get full extraction (description, text, mermaid, chart data)
+7. **Screengrab fallback** — Medium-confidence frames are saved as captioned screenshots
+8. **Knowledge graph** — Extracts entities and relationships from transcript + diagrams
+9. **Key points** — LLM extracts main points and topics
+10. **Action items** — LLM finds tasks, commitments, and follow-ups
+11. **Reports** — Generates markdown, HTML, and PDF
+12. **Export** — Renders mermaid diagrams to SVG/PNG, reproduces charts
 
 ## Processing depth
 
@@ -55,6 +56,7 @@ Every run produces a `manifest.json` that is the single source of truth:
   "stats": {
     "duration_seconds": 45.2,
     "frames_extracted": 42,
+    "people_frames_filtered": 11,
     "diagrams_detected": 3,
     "screen_captures": 5
   },

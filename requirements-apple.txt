@@ -1,0 +1,8 @@
+# ARM-specific optimizations for macOS
+torch==2.0.0
+torchvision==0.15.0
+torchaudio==2.0.0
+
+# Apple ML specific packages
+coremltools>=6.2
+onnx>=1.13.0 

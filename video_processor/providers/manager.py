@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from video_processor.providers.base import BaseProvider, ModelInfo
 from video_processor.providers.discovery import discover_available_models
+from video_processor.utils.usage_tracker import UsageTracker
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -62,6 +63,7 @@ class ProviderManager:
         self.auto = auto
         self._providers: dict[str, BaseProvider] = {}
         self._available_models: Optional[list[ModelInfo]] = None
+        self.usage = UsageTracker()
 
         # If a single provider is forced, apply it
         if provider:
@@ -145,6 +147,18 @@ class ProviderManager:
             "Set an API key for at least one provider."
         )
 
+    def _track(self, provider: BaseProvider, prov_name: str, model: str) -> None:
+        """Record usage from the last API call on a provider."""
+        last = getattr(provider, "_last_usage", None)
+        if last:
+            self.usage.record(
+                provider=prov_name,
+                model=model,
+                input_tokens=last.get("input_tokens", 0),
+                output_tokens=last.get("output_tokens", 0),
+            )
+            provider._last_usage = None
+
     # --- Public API ---
 
     def chat(
@@ -157,7 +171,9 @@ class ProviderManager:
         prov_name, model = self._resolve_model(self.chat_model, "chat", _CHAT_PREFERENCES)
         logger.info(f"Chat: using {prov_name}/{model}")
         provider = self._get_provider(prov_name)
-        return provider.chat(messages, max_tokens=max_tokens, temperature=temperature, model=model)
+        result = provider.chat(messages, max_tokens=max_tokens, temperature=temperature, model=model)
+        self._track(provider, prov_name, model)
+        return result
 
     def analyze_image(
         self,
@@ -169,20 +185,54 @@ class ProviderManager:
         prov_name, model = self._resolve_model(self.vision_model, "vision", _VISION_PREFERENCES)
         logger.info(f"Vision: using {prov_name}/{model}")
         provider = self._get_provider(prov_name)
-        return provider.analyze_image(image_bytes, prompt, max_tokens=max_tokens, model=model)
+        result = provider.analyze_image(image_bytes, prompt, max_tokens=max_tokens, model=model)
+        self._track(provider, prov_name, model)
+        return result
 
     def transcribe_audio(
         self,
         audio_path: str | Path,
         language: Optional[str] = None,
     ) -> dict:
-        """Transcribe audio using the best available provider."""
+        """Transcribe audio using local Whisper if available, otherwise API."""
+        # Prefer local Whisper — no file size limits, no API costs
+        if not self.transcription_model or self.transcription_model.startswith("whisper-local"):
+            try:
+                from video_processor.providers.whisper_local import WhisperLocal
+
+                if WhisperLocal.is_available():
+                    # Parse model size from "whisper-local:large" or default to "large"
+                    size = "large"
+                    if self.transcription_model and ":" in self.transcription_model:
+                        size = self.transcription_model.split(":", 1)[1]
+                    if not hasattr(self, "_whisper_local"):
+                        self._whisper_local = WhisperLocal(model_size=size)
+                    logger.info(f"Transcription: using local whisper-{size}")
+                    result = self._whisper_local.transcribe(audio_path, language=language)
+                    duration = result.get("duration") or 0
+                    self.usage.record(
+                        provider="local",
+                        model=f"whisper-{size}",
+                        audio_minutes=duration / 60 if duration else 0,
+                    )
+                    return result
+            except ImportError:
+                pass
+
+        # Fall back to API-based transcription
         prov_name, model = self._resolve_model(
             self.transcription_model, "audio", _TRANSCRIPTION_PREFERENCES
         )
         logger.info(f"Transcription: using {prov_name}/{model}")
         provider = self._get_provider(prov_name)
-        return provider.transcribe_audio(audio_path, language=language, model=model)
+        result = provider.transcribe_audio(audio_path, language=language, model=model)
+        duration = result.get("duration") or 0
+        self.usage.record(
+            provider=prov_name,
+            model=model,
+            audio_minutes=duration / 60 if duration else 0,
+        )
+        return result
 
     def get_models_used(self) -> dict[str, str]:
         """Return a dict mapping capability to 'provider/model' for tracking."""

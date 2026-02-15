@@ -52,15 +52,17 @@ class BaseSource(ABC):
         files: List[SourceFile],
         destination_dir: Path,
     ) -> List[Path]:
-        """Download multiple files to a directory."""
+        """Download multiple files to a directory, preserving subfolder structure."""
         destination_dir.mkdir(parents=True, exist_ok=True)
         paths = []
         for f in files:
-            dest = destination_dir / f.name
+            # Use path (with subfolder) if available, otherwise just name
+            relative = f.path if f.path else f.name
+            dest = destination_dir / relative
             try:
                 local_path = self.download(f, dest)
                 paths.append(local_path)
-                logger.info(f"Downloaded: {f.name}")
+                logger.info(f"Downloaded: {relative}")
             except Exception as e:
-                logger.error(f"Failed to download {f.name}: {e}")
+                logger.error(f"Failed to download {relative}: {e}")
         return paths

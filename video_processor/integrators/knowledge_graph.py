@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+from tqdm import tqdm
+
 from video_processor.models import Entity, KnowledgeGraphData, Relationship
 from video_processor.providers.manager import ProviderManager
 from video_processor.utils.json_parsing import parse_json_from_response
@@ -33,22 +35,40 @@ class KnowledgeGraph:
             temperature=temperature,
         )
 
-    def extract_entities(self, text: str) -> List[Entity]:
-        """Extract entities from text using LLM, returning pydantic models."""
+    def extract_entities_and_relationships(self, text: str) -> tuple[List[Entity], List[Relationship]]:
+        """Extract entities and relationships in a single LLM call."""
         prompt = (
-            "Extract all notable entities (people, concepts, technologies, "
-            "organizations, time references) from the following content.\n\n"
+            "Extract all notable entities and relationships from the following content.\n\n"
             f"CONTENT:\n{text}\n\n"
-            'Return a JSON array of objects: '
-            '[{"name": "...", "type": "person|concept|technology|organization|time", '
-            '"description": "brief description"}]\n\n'
-            "Return ONLY the JSON array."
+            "Return a JSON object with two keys:\n"
+            '- "entities": array of {"name": "...", "type": "person|concept|technology|organization|time", "description": "brief description"}\n'
+            '- "relationships": array of {"source": "entity name", "target": "entity name", "type": "relationship description"}\n\n'
+            "Return ONLY the JSON object."
         )
         raw = self._chat(prompt)
         parsed = parse_json_from_response(raw)
 
         entities = []
-        if isinstance(parsed, list):
+        rels = []
+
+        if isinstance(parsed, dict):
+            for item in parsed.get("entities", []):
+                if isinstance(item, dict) and "name" in item:
+                    entities.append(Entity(
+                        name=item["name"],
+                        type=item.get("type", "concept"),
+                        descriptions=[item["description"]] if item.get("description") else [],
+                    ))
+            entity_names = {e.name for e in entities}
+            for item in parsed.get("relationships", []):
+                if isinstance(item, dict) and "source" in item and "target" in item:
+                    rels.append(Relationship(
+                        source=item["source"],
+                        target=item["target"],
+                        type=item.get("type", "related_to"),
+                    ))
+        elif isinstance(parsed, list):
+            # Fallback: if model returns a flat entity list
             for item in parsed:
                 if isinstance(item, dict) and "name" in item:
                     entities.append(Entity(
@@ -56,38 +76,12 @@ class KnowledgeGraph:
                         type=item.get("type", "concept"),
                         descriptions=[item["description"]] if item.get("description") else [],
                     ))
-        return entities
 
-    def extract_relationships(self, text: str, entities: List[Entity]) -> List[Relationship]:
-        """Extract relationships between entities using LLM."""
-        entity_names = ", ".join(e.name for e in entities)
-        prompt = (
-            "Given the following content and entities, identify relationships.\n\n"
-            f"CONTENT:\n{text}\n\n"
-            f"ENTITIES: {entity_names}\n\n"
-            'Return a JSON array: '
-            '[{"source": "entity A", "target": "entity B", '
-            '"type": "relationship description"}]\n\n'
-            "Return ONLY the JSON array."
-        )
-        raw = self._chat(prompt)
-        parsed = parse_json_from_response(raw)
-
-        rels = []
-        if isinstance(parsed, list):
-            for item in parsed:
-                if isinstance(item, dict) and "source" in item and "target" in item:
-                    rels.append(Relationship(
-                        source=item["source"],
-                        target=item["target"],
-                        type=item.get("type", "related_to"),
-                    ))
-        return rels
+        return entities, rels
 
     def add_content(self, text: str, source: str, timestamp: Optional[float] = None) -> None:
         """Add content to knowledge graph by extracting entities and relationships."""
-        entities = self.extract_entities(text)
-        relationships = self.extract_relationships(text, entities)
+        entities, relationships = self.extract_entities_and_relationships(text)
 
         for entity in entities:
             eid = entity.name
@@ -122,34 +116,49 @@ class KnowledgeGraph:
                     "timestamp": timestamp,
                 })
 
-    def process_transcript(self, transcript: Dict) -> None:
-        """Process transcript segments into knowledge graph."""
+    def process_transcript(self, transcript: Dict, batch_size: int = 10) -> None:
+        """Process transcript segments into knowledge graph, batching for efficiency."""
         if "segments" not in transcript:
             logger.warning("Transcript missing segments")
             return
 
-        for i, segment in enumerate(transcript["segments"]):
-            if "text" in segment:
-                source = f"transcript_segment_{i}"
-                timestamp = segment.get("start", None)
-                speaker = segment.get("speaker", None)
+        segments = transcript["segments"]
 
-                if speaker and speaker not in self.nodes:
-                    self.nodes[speaker] = {
-                        "id": speaker,
-                        "name": speaker,
-                        "type": "person",
-                        "descriptions": {"Speaker in transcript"},
-                        "occurrences": [],
-                    }
-                    if speaker:
-                        source = f"{speaker}_segment_{i}"
+        # Register speakers first
+        for i, segment in enumerate(segments):
+            speaker = segment.get("speaker", None)
+            if speaker and speaker not in self.nodes:
+                self.nodes[speaker] = {
+                    "id": speaker,
+                    "name": speaker,
+                    "type": "person",
+                    "descriptions": {"Speaker in transcript"},
+                    "occurrences": [],
+                }
 
-                self.add_content(segment["text"], source, timestamp)
+        # Batch segments together for fewer API calls
+        batches = []
+        for start in range(0, len(segments), batch_size):
+            batches.append(segments[start:start + batch_size])
+
+        for batch in tqdm(batches, desc="Building knowledge graph", unit="batch"):
+            # Combine batch text
+            combined_text = " ".join(
+                seg["text"] for seg in batch if "text" in seg
+            )
+            if not combined_text.strip():
+                continue
+
+            # Use first segment's timestamp as batch timestamp
+            batch_start_idx = segments.index(batch[0])
+            timestamp = batch[0].get("start", None)
+            source = f"transcript_batch_{batch_start_idx}"
+
+            self.add_content(combined_text, source, timestamp)
 
     def process_diagrams(self, diagrams: List[Dict]) -> None:
         """Process diagram results into knowledge graph."""
-        for i, diagram in enumerate(diagrams):
+        for i, diagram in enumerate(tqdm(diagrams, desc="Processing diagrams for KG", unit="diag")):
             text_content = diagram.get("text_content", "")
             if text_content:
                 source = f"diagram_{i}"

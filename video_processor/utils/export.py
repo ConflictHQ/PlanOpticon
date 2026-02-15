@@ -5,6 +5,8 @@ import logging
 from pathlib import Path
 from typing import Optional
 
+from tqdm import tqdm
+
 from video_processor.models import DiagramResult, VideoManifest
 from video_processor.utils.rendering import render_mermaid, reproduce_chart
 
@@ -155,7 +157,7 @@ def export_all_formats(
     output_dir = Path(output_dir)
 
     # Render mermaid diagrams to SVG/PNG
-    for i, diagram in enumerate(manifest.diagrams):
+    for i, diagram in enumerate(tqdm(manifest.diagrams, desc="Rendering diagrams", unit="diag") if manifest.diagrams else []):
         if diagram.mermaid:
             diagrams_dir = output_dir / "diagrams"
             prefix = f"diagram_{i}"

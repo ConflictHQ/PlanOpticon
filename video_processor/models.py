@@ -123,6 +123,7 @@ class ProcessingStats(BaseModel):
     end_time: Optional[str] = Field(default=None, description="ISO format end time")
     duration_seconds: Optional[float] = Field(default=None, description="Total processing time")
     frames_extracted: int = Field(default=0)
+    people_frames_filtered: int = Field(default=0)
     diagrams_detected: int = Field(default=0)
     screen_captures: int = Field(default=0)
     transcript_duration_seconds: Optional[float] = Field(default=None)

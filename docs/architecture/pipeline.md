@@ -14,6 +14,9 @@ sequenceDiagram
 
     CLI->>Pipeline: process_single_video()
     Pipeline->>FrameExtractor: extract_frames()
+    Note over FrameExtractor: Change detection + periodic capture (every 30s)
+    Pipeline->>Pipeline: filter_people_frames()
+    Note over Pipeline: OpenCV face detection removes webcam/people frames
     Pipeline->>AudioExtractor: extract_audio()
     Pipeline->>Provider: transcribe_audio()
     Pipeline->>DiagramAnalyzer: process_frames()

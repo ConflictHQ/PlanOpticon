@@ -17,6 +17,7 @@ planopticon analyze [OPTIONS]
 | `--use-gpu` | FLAG | off | Enable GPU acceleration |
 | `--sampling-rate` | FLOAT | 0.5 | Frame sampling rate (fps) |
 | `--change-threshold` | FLOAT | 0.15 | Visual change threshold |
+| `--periodic-capture` | FLOAT | 30.0 | Capture a frame every N seconds regardless of change (0 to disable) |
 | `--title` | TEXT | auto | Report title |
 | `-p`, `--provider` | `auto\|openai\|anthropic\|gemini` | `auto` | API provider |
 | `--vision-model` | TEXT | auto | Override vision model |

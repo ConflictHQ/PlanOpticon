@@ -6,6 +6,8 @@ import shutil
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
+from tqdm import tqdm
+
 from video_processor.models import DiagramResult, DiagramType, ScreenCapture
 from video_processor.providers.manager import ProviderManager
 
@@ -13,14 +15,20 @@ logger = logging.getLogger(__name__)
 
 # Classification prompt — returns JSON
 _CLASSIFY_PROMPT = """\
-Examine this image from a video recording. Classify whether it contains a diagram, \
-chart, slide, whiteboard content, architecture drawing, or other structured visual information.
+Examine this image from a video recording. Your job is to identify ONLY shared content \
+— slides, presentations, charts, diagrams, documents, screen shares, whiteboard content, \
+architecture drawings, tables, or other structured visual information worth capturing.
+
+IMPORTANT: If the image primarily shows a person, people, webcam feeds, faces, or a \
+video conference participant view, return confidence 0.0. We are ONLY interested in \
+shared/presented content, NOT people or camera views.
 
 Return ONLY a JSON object (no markdown fences):
 {
   "is_diagram": true/false,
   "diagram_type": "flowchart"|"sequence"|"architecture"|"whiteboard"|"chart"|"table"|"slide"|"screenshot"|"unknown",
   "confidence": 0.0 to 1.0,
+  "content_type": "slide"|"diagram"|"document"|"screen_share"|"whiteboard"|"chart"|"person"|"other",
   "brief_description": "one-sentence description of what you see"
 }
 """
@@ -139,7 +147,7 @@ class DiagramAnalyzer:
         diagram_idx = 0
         capture_idx = 0
 
-        for i, fp in enumerate(frame_paths):
+        for i, fp in enumerate(tqdm(frame_paths, desc="Analyzing frames", unit="frame")):
             fp = Path(fp)
             logger.info(f"Classifying frame {i}/{len(frame_paths)}: {fp.name}")
 

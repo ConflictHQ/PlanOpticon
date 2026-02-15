@@ -106,12 +106,14 @@ class TestProviderManager:
 
 class TestDiscovery:
     @patch("video_processor.providers.discovery._cached_models", None)
+    @patch.dict("os.environ", {}, clear=True)
     def test_discover_skips_missing_keys(self):
         from video_processor.providers.discovery import discover_available_models
         # No API keys -> empty list, no errors
         models = discover_available_models(api_keys={"openai": "", "anthropic": "", "gemini": ""})
         assert models == []
 
+    @patch.dict("os.environ", {}, clear=True)
     @patch("video_processor.providers.discovery._cached_models", None)
     def test_discover_caches_results(self):
         from video_processor.providers import discovery
