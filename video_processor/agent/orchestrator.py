@@ -7,13 +7,9 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from video_processor.models import (
-    ActionItem,
-    DiagramResult,
-    KeyPoint,
-    ScreenCapture,
+    ProcessingStats,
     VideoManifest,
     VideoMetadata,
-    ProcessingStats,
 )
 from video_processor.providers.manager import ProviderManager
 
@@ -109,9 +105,7 @@ class AgentOrchestrator:
         self._plan = plan
         return plan
 
-    def _execute_step(
-        self, step: Dict[str, Any], input_path: Path, output_dir: Path
-    ) -> None:
+    def _execute_step(self, step: Dict[str, Any], input_path: Path, output_dir: Path) -> None:
         """Execute a single step with retry logic."""
         step_name = step["step"]
         logger.info(f"Agent step: {step_name}")
@@ -143,9 +137,7 @@ class AgentOrchestrator:
                         except Exception as fe:
                             logger.error(f"Fallback {fallback} also failed: {fe}")
 
-    def _run_step(
-        self, step_name: str, input_path: Path, output_dir: Path
-    ) -> Any:
+    def _run_step(self, step_name: str, input_path: Path, output_dir: Path) -> Any:
         """Run a specific processing step."""
         from video_processor.output_structure import create_video_output_dirs
 
@@ -179,9 +171,7 @@ class AgentOrchestrator:
 
             # Save transcript
             dirs["transcript"].mkdir(parents=True, exist_ok=True)
-            (dirs["transcript"] / "transcript.json").write_text(
-                json.dumps(transcription, indent=2)
-            )
+            (dirs["transcript"] / "transcript.json").write_text(json.dumps(transcription, indent=2))
             (dirs["transcript"] / "transcript.txt").write_text(text)
             return transcription
 
@@ -258,9 +248,7 @@ class AgentOrchestrator:
         if completed_step == "transcribe":
             text = result.get("text", "") if isinstance(result, dict) else ""
             # If transcript is very long, add deep analysis
-            if len(text) > 10000 and not any(
-                s["step"] == "deep_analysis" for s in self._plan
-            ):
+            if len(text) > 10000 and not any(s["step"] == "deep_analysis" for s in self._plan):
                 self._plan.append({"step": "deep_analysis", "priority": "adaptive"})
                 logger.info("Agent adapted: adding deep analysis for long transcript")
 
@@ -268,9 +256,7 @@ class AgentOrchestrator:
             diagrams = result.get("diagrams", []) if isinstance(result, dict) else []
             captures = result.get("captures", []) if isinstance(result, dict) else []
             # If many diagrams found, ensure cross-referencing
-            if len(diagrams) >= 3 and not any(
-                s["step"] == "cross_reference" for s in self._plan
-            ):
+            if len(diagrams) >= 3 and not any(s["step"] == "cross_reference" for s in self._plan):
                 self._plan.append({"step": "cross_reference", "priority": "adaptive"})
                 logger.info("Agent adapted: adding cross-reference for diagram-heavy video")
 
@@ -360,7 +346,7 @@ class AgentOrchestrator:
         kp_result = self._results.get("extract_key_points", {})
         key_points = kp_result.get("key_points", [])
         ai_result = self._results.get("extract_action_items", {})
-        action_items = ai_result.get("action_items", [])
+        ai_result.get("action_items", [])
         diagram_result = self._results.get("detect_diagrams", {})
         diagrams = diagram_result.get("diagrams", [])
         kg_result = self._results.get("build_knowledge_graph", {})

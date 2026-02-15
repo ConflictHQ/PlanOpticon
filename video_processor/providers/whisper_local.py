@@ -71,9 +71,7 @@ class WhisperLocal:
         try:
             import whisper
         except ImportError:
-            raise ImportError(
-                "openai-whisper not installed. Run: pip install openai-whisper torch"
-            )
+            raise ImportError("openai-whisper not installed. Run: pip install openai-whisper torch")
 
         logger.info(f"Loading Whisper {self.model_size} model on {self.device}...")
         self._model = whisper.load_model(self.model_size, device=self.device)
@@ -127,8 +125,9 @@ class WhisperLocal:
     def is_available() -> bool:
         """Check if local Whisper is installed and usable."""
         try:
-            import whisper
-            import torch
+            import torch  # noqa: F401
+            import whisper  # noqa: F401
+
             return True
         except ImportError:
             return False

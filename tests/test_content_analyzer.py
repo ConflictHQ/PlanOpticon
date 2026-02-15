@@ -1,9 +1,7 @@
 """Tests for content cross-referencing between transcript and diagram entities."""
 
 import json
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from video_processor.analyzers.content_analyzer import ContentAnalyzer
 from video_processor.models import Entity, KeyPoint
@@ -76,9 +74,11 @@ class TestCrossReference:
 class TestFuzzyMatch:
     def test_fuzzy_match_with_llm(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"transcript": "K8s", "diagram": "Kubernetes"},
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {"transcript": "K8s", "diagram": "Kubernetes"},
+            ]
+        )
         analyzer = ContentAnalyzer(provider_manager=pm)
 
         t_entities = [
@@ -191,7 +191,9 @@ class TestEnrichKeyPoints:
     def test_details_used_for_matching(self):
         analyzer = ContentAnalyzer()
         kps = [
-            KeyPoint(point="Architecture overview", details="Uses Docker and Kubernetes for deployment"),
+            KeyPoint(
+                point="Architecture overview", details="Uses Docker and Kubernetes for deployment"
+            ),
         ]
         diagrams = [
             {"elements": ["Docker", "Kubernetes"], "text_content": "deployment infrastructure"},

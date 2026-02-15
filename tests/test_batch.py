@@ -1,9 +1,6 @@
 """Tests for batch processing and knowledge graph merging."""
 
 import json
-from pathlib import Path
-
-import pytest
 
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
 from video_processor.integrators.plan_generator import PlanGenerator

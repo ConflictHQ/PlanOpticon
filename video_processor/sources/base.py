@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class SourceFile(BaseModel):
     """A file available in a cloud source."""
+
     name: str = Field(description="File name")
     id: str = Field(description="Provider-specific file identifier")
     size_bytes: Optional[int] = Field(default=None, description="File size in bytes")

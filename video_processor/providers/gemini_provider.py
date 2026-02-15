@@ -31,12 +31,11 @@ class GeminiProvider(BaseProvider):
         self.credentials_path = credentials_path or os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 
         if not self.api_key and not self.credentials_path:
-            raise ValueError(
-                "Neither GEMINI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS is set"
-            )
+            raise ValueError("Neither GEMINI_API_KEY nor GOOGLE_APPLICATION_CREDENTIALS is set")
 
         try:
             from google import genai
+
             self._genai = genai
 
             if self.api_key:
@@ -57,8 +56,7 @@ class GeminiProvider(BaseProvider):
                 )
         except ImportError:
             raise ImportError(
-                "google-genai package not installed. "
-                "Install with: pip install google-genai"
+                "google-genai package not installed. Install with: pip install google-genai"
             )
 
     def chat(
@@ -75,10 +73,12 @@ class GeminiProvider(BaseProvider):
         contents = []
         for msg in messages:
             role = "user" if msg["role"] == "user" else "model"
-            contents.append(types.Content(
-                role=role,
-                parts=[types.Part.from_text(text=msg["content"])],
-            ))
+            contents.append(
+                types.Content(
+                    role=role,
+                    parts=[types.Part.from_text(text=msg["content"])],
+                )
+            )
 
         response = self.client.models.generate_content(
             model=model,
@@ -170,6 +170,7 @@ class GeminiProvider(BaseProvider):
 
         # Parse JSON response
         import json
+
         try:
             data = json.loads(response.text)
         except (json.JSONDecodeError, TypeError):
@@ -192,7 +193,7 @@ class GeminiProvider(BaseProvider):
                 # Strip prefix variants from different API modes
                 for prefix in ("models/", "publishers/google/models/"):
                     if mid.startswith(prefix):
-                        mid = mid[len(prefix):]
+                        mid = mid[len(prefix) :]
                         break
                 display = getattr(m, "display_name", mid) or mid
 
@@ -208,12 +209,14 @@ class GeminiProvider(BaseProvider):
                     caps.append("embedding")
 
                 if caps:
-                    models.append(ModelInfo(
-                        id=mid,
-                        provider="gemini",
-                        display_name=display,
-                        capabilities=caps,
-                    ))
+                    models.append(
+                        ModelInfo(
+                            id=mid,
+                            provider="gemini",
+                            display_name=display,
+                            capabilities=caps,
+                        )
+                    )
         except Exception as e:
             logger.warning(f"Failed to list Gemini models: {e}")
         return sorted(models, key=lambda m: m.id)

@@ -136,7 +136,9 @@ class TestGoogleDriveSource:
         from video_processor.sources.google_drive import GoogleDriveSource
 
         source = GoogleDriveSource()
-        with patch.dict("sys.modules", {"google.oauth2": None, "google.oauth2.service_account": None}):
+        with patch.dict(
+            "sys.modules", {"google.oauth2": None, "google.oauth2.service_account": None}
+        ):
             # The import will fail inside authenticate
             result = source.authenticate()
             assert result is False
@@ -190,17 +192,22 @@ class TestDropboxSource:
         from video_processor.sources.dropbox_source import DropboxSource
 
         token_file = tmp_path / "token.json"
-        token_file.write_text(json.dumps({
-            "refresh_token": "rt_test",
-            "app_key": "key",
-            "app_secret": "secret",
-        }))
+        token_file.write_text(
+            json.dumps(
+                {
+                    "refresh_token": "rt_test",
+                    "app_key": "key",
+                    "app_secret": "secret",
+                }
+            )
+        )
 
         source = DropboxSource(token_path=token_file, app_key="key", app_secret="secret")
 
         mock_dbx = MagicMock()
         with patch("dropbox.Dropbox", return_value=mock_dbx):
             import dropbox
+
             result = source._auth_saved_token(dropbox)
             assert result is True
             assert source.dbx is mock_dbx

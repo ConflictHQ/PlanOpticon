@@ -1,7 +1,6 @@
 """Output formatting for PlanOpticon analysis results."""
 
 import html
-import json
 import logging
 import shutil
 from pathlib import Path
@@ -9,13 +8,14 @@ from typing import Dict, List, Optional, Union
 
 logger = logging.getLogger(__name__)
 
+
 class OutputFormatter:
     """Formats and organizes output from video analysis."""
-    
+
     def __init__(self, output_dir: Union[str, Path]):
         """
         Initialize output formatter.
-        
+
         Parameters
         ----------
         output_dir : str or Path
@@ -23,18 +23,18 @@ class OutputFormatter:
         """
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     def organize_outputs(
         self,
         markdown_path: Union[str, Path],
         knowledge_graph_path: Union[str, Path],
         diagrams: List[Dict],
         frames_dir: Optional[Union[str, Path]] = None,
-        transcript_path: Optional[Union[str, Path]] = None
+        transcript_path: Optional[Union[str, Path]] = None,
     ) -> Dict:
         """
         Organize outputs into a consistent structure.
-        
+
         Parameters
         ----------
         markdown_path : str or Path
@@ -47,7 +47,7 @@ class OutputFormatter:
             Directory with extracted frames
         transcript_path : str or Path, optional
             Path to transcript file
-            
+
         Returns
         -------
         dict
@@ -57,21 +57,21 @@ class OutputFormatter:
         md_dir = self.output_dir / "markdown"
         diagrams_dir = self.output_dir / "diagrams"
         data_dir = self.output_dir / "data"
-        
+
         md_dir.mkdir(exist_ok=True)
         diagrams_dir.mkdir(exist_ok=True)
         data_dir.mkdir(exist_ok=True)
-        
+
         # Copy markdown file
         markdown_path = Path(markdown_path)
         md_output = md_dir / markdown_path.name
         shutil.copy2(markdown_path, md_output)
-        
+
         # Copy knowledge graph
         kg_path = Path(knowledge_graph_path)
         kg_output = data_dir / kg_path.name
         shutil.copy2(kg_path, kg_output)
-        
+
         # Copy diagram images if available
         diagram_images = []
         for diagram in diagrams:
@@ -81,7 +81,7 @@ class OutputFormatter:
                     img_output = diagrams_dir / img_path.name
                     shutil.copy2(img_path, img_output)
                     diagram_images.append(str(img_output))
-        
+
         # Copy transcript if provided
         transcript_output = None
         if transcript_path:
@@ -89,7 +89,7 @@ class OutputFormatter:
             if transcript_path.exists():
                 transcript_output = data_dir / transcript_path.name
                 shutil.copy2(transcript_path, transcript_output)
-        
+
         # Copy selected frames if provided
         frame_outputs = []
         if frames_dir:
@@ -97,30 +97,30 @@ class OutputFormatter:
             if frames_dir.exists():
                 frames_output_dir = self.output_dir / "frames"
                 frames_output_dir.mkdir(exist_ok=True)
-                
+
                 # Copy a limited number of representative frames
                 frame_files = sorted(list(frames_dir.glob("*.jpg")))
                 max_frames = min(10, len(frame_files))
                 step = max(1, len(frame_files) // max_frames)
-                
+
                 for i in range(0, len(frame_files), step):
                     if len(frame_outputs) >= max_frames:
                         break
-                    
+
                     frame = frame_files[i]
                     frame_output = frames_output_dir / frame.name
                     shutil.copy2(frame, frame_output)
                     frame_outputs.append(str(frame_output))
-        
+
         # Return organized paths
         return {
             "markdown": str(md_output),
             "knowledge_graph": str(kg_output),
             "diagram_images": diagram_images,
             "frames": frame_outputs,
-            "transcript": str(transcript_output) if transcript_output else None
+            "transcript": str(transcript_output) if transcript_output else None,
         }
-    
+
     def create_html_index(self, outputs: Dict) -> Path:
         """
         Create HTML index page for outputs.
@@ -144,7 +144,8 @@ class OutputFormatter:
             "<head>",
             "    <title>PlanOpticon Analysis Results</title>",
             "    <style>",
-            "        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; line-height: 1.6; }",
+            "        body { font-family: Arial, sans-serif;"
+            "              margin: 0; padding: 20px; line-height: 1.6; }",
             "        .container { max-width: 1200px; margin: 0 auto; }",
             "        h1 { color: #333; }",
             "        h2 { color: #555; margin-top: 30px; }",
@@ -160,7 +161,7 @@ class OutputFormatter:
             "<body>",
             "<div class='container'>",
             "    <h1>PlanOpticon Analysis Results</h1>",
-            ""
+            "",
         ]
 
         # Add markdown section
@@ -230,7 +231,9 @@ class OutputFormatter:
             for data_path in data_files:
                 data_rel = esc(str(data_path.relative_to(self.output_dir)))
                 data_name = esc(data_path.name)
-                lines.append(f"            <li><a href='{data_rel}' target='_blank'>{data_name}</a></li>")
+                lines.append(
+                    f"            <li><a href='{data_rel}' target='_blank'>{data_name}</a></li>"
+                )
 
             lines.append("        </ul>")
             lines.append("    </div>")

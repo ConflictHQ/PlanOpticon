@@ -60,14 +60,14 @@ class ContentAnalyzer:
         # LLM fuzzy matching for unmatched entities
         if self.pm:
             unmatched_t = [
-                e for e in transcript_entities if e.name.lower() not in {
-                    d.name.lower() for d in diagram_entities
-                }
+                e
+                for e in transcript_entities
+                if e.name.lower() not in {d.name.lower() for d in diagram_entities}
             ]
             unmatched_d = [
-                e for e in diagram_entities if e.name.lower() not in {
-                    t.name.lower() for t in transcript_entities
-                }
+                e
+                for e in diagram_entities
+                if e.name.lower() not in {t.name.lower() for t in transcript_entities}
             ]
 
             if unmatched_t and unmatched_d:
@@ -138,7 +138,9 @@ class ContentAnalyzer:
         diagram_entities: dict[int, set[str]] = {}
         for i, d in enumerate(diagrams):
             elements = d.get("elements", []) if isinstance(d, dict) else getattr(d, "elements", [])
-            text = d.get("text_content", "") if isinstance(d, dict) else getattr(d, "text_content", "")
+            text = (
+                d.get("text_content", "") if isinstance(d, dict) else getattr(d, "text_content", "")
+            )
             entities = set(str(e).lower() for e in elements)
             if text:
                 entities.update(word.lower() for word in text.split() if len(word) > 3)

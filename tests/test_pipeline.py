@@ -1,12 +1,9 @@
 """Tests for the core video processing pipeline."""
 
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-import pytest
-
-from video_processor.pipeline import _extract_key_points, _extract_action_items, _format_srt_time
+from video_processor.pipeline import _extract_action_items, _extract_key_points, _format_srt_time
 
 
 class TestFormatSrtTime:
@@ -30,10 +27,12 @@ class TestFormatSrtTime:
 class TestExtractKeyPoints:
     def test_parses_valid_response(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"point": "Main point", "topic": "Architecture", "details": "Some details"},
-            {"point": "Second point", "topic": None, "details": None},
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {"point": "Main point", "topic": "Architecture", "details": "Some details"},
+                {"point": "Second point", "topic": None, "details": None},
+            ]
+        )
         result = _extract_key_points(pm, "Some transcript text here")
         assert len(result) == 2
         assert result[0].point == "Main point"
@@ -42,11 +41,13 @@ class TestExtractKeyPoints:
 
     def test_skips_invalid_items(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"point": "Valid", "topic": None},
-            {"topic": "No point field"},
-            {"point": "", "topic": "Empty point"},
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {"point": "Valid", "topic": None},
+                {"topic": "No point field"},
+                {"point": "", "topic": "Empty point"},
+            ]
+        )
         result = _extract_key_points(pm, "text")
         assert len(result) == 1
         assert result[0].point == "Valid"
@@ -67,10 +68,17 @@ class TestExtractKeyPoints:
 class TestExtractActionItems:
     def test_parses_valid_response(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"action": "Deploy fix", "assignee": "Bob", "deadline": "Friday",
-             "priority": "high", "context": "Production"},
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {
+                    "action": "Deploy fix",
+                    "assignee": "Bob",
+                    "deadline": "Friday",
+                    "priority": "high",
+                    "context": "Production",
+                },
+            ]
+        )
         result = _extract_action_items(pm, "Some transcript text")
         assert len(result) == 1
         assert result[0].action == "Deploy fix"
@@ -78,11 +86,13 @@ class TestExtractActionItems:
 
     def test_skips_invalid_items(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"action": "Valid action"},
-            {"assignee": "No action field"},
-            {"action": ""},
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {"action": "Valid action"},
+                {"assignee": "No action field"},
+                {"action": ""},
+            ]
+        )
         result = _extract_action_items(pm, "text")
         assert len(result) == 1
 

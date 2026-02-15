@@ -1,10 +1,6 @@
 """Tests for output structure and manifest I/O."""
 
 import json
-import tempfile
-from pathlib import Path
-
-import pytest
 
 from video_processor.models import (
     ActionItem,

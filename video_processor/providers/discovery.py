@@ -40,6 +40,7 @@ def discover_available_models(
     if keys.get("openai"):
         try:
             from video_processor.providers.openai_provider import OpenAIProvider
+
             provider = OpenAIProvider(api_key=keys["openai"])
             models = provider.list_models()
             logger.info(f"Discovered {len(models)} OpenAI models")
@@ -51,6 +52,7 @@ def discover_available_models(
     if keys.get("anthropic"):
         try:
             from video_processor.providers.anthropic_provider import AnthropicProvider
+
             provider = AnthropicProvider(api_key=keys["anthropic"])
             models = provider.list_models()
             logger.info(f"Discovered {len(models)} Anthropic models")
@@ -64,6 +66,7 @@ def discover_available_models(
     if gemini_key or gemini_creds:
         try:
             from video_processor.providers.gemini_provider import GeminiProvider
+
             provider = GeminiProvider(
                 api_key=gemini_key or None,
                 credentials_path=gemini_creds or None,

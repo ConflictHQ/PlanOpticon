@@ -1,9 +1,5 @@
 """Tests for pydantic data models."""
 
-import json
-
-import pytest
-
 from video_processor.models import (
     ActionItem,
     BatchManifest,
@@ -68,7 +64,9 @@ class TestActionItem:
 
 class TestKeyPoint:
     def test_with_related_diagrams(self):
-        kp = KeyPoint(point="System uses microservices", topic="Architecture", related_diagrams=[0, 2])
+        kp = KeyPoint(
+            point="System uses microservices", topic="Architecture", related_diagrams=[0, 2]
+        )
         assert kp.related_diagrams == [0, 2]
 
     def test_round_trip(self):
@@ -122,7 +120,11 @@ class TestScreenCapture:
 
     def test_round_trip(self):
         sc = ScreenCapture(
-            frame_index=7, timestamp=30.0, caption="Timeline", image_path="captures/capture_0.jpg", confidence=0.45
+            frame_index=7,
+            timestamp=30.0,
+            caption="Timeline",
+            image_path="captures/capture_0.jpg",
+            confidence=0.45,
         )
         restored = ScreenCapture.model_validate_json(sc.model_dump_json())
         assert restored == sc
@@ -173,7 +175,9 @@ class TestVideoManifest:
 
     def test_full_round_trip(self):
         m = VideoManifest(
-            video=VideoMetadata(title="Meeting", source_path="/tmp/video.mp4", duration_seconds=3600.0),
+            video=VideoMetadata(
+                title="Meeting", source_path="/tmp/video.mp4", duration_seconds=3600.0
+            ),
             stats=ProcessingStats(
                 frames_extracted=50,
                 diagrams_detected=3,

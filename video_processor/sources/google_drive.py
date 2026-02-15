@@ -67,9 +67,7 @@ class GoogleDriveSource(BaseSource):
         token_path : Path, optional
             Where to store/load OAuth tokens. Defaults to ~/.planopticon/google_drive_token.json
         """
-        self.credentials_path = credentials_path or os.environ.get(
-            "GOOGLE_APPLICATION_CREDENTIALS"
-        )
+        self.credentials_path = credentials_path or os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
         self.use_service_account = use_service_account
         self.token_path = token_path or _TOKEN_PATH
         self.service = None
@@ -78,12 +76,10 @@ class GoogleDriveSource(BaseSource):
     def authenticate(self) -> bool:
         """Authenticate with Google Drive API."""
         try:
-            from google.oauth2 import service_account as sa_module
+            from google.oauth2 import service_account as sa_module  # noqa: F401
             from googleapiclient.discovery import build
         except ImportError:
-            logger.error(
-                "Google API client not installed. Run: pip install planopticon[gdrive]"
-            )
+            logger.error("Google API client not installed. Run: pip install planopticon[gdrive]")
             return False
 
         # Determine auth method
@@ -132,9 +128,7 @@ class GoogleDriveSource(BaseSource):
             from google.oauth2.credentials import Credentials
             from google_auth_oauthlib.flow import InstalledAppFlow
         except ImportError:
-            logger.error(
-                "OAuth libraries not installed. Run: pip install planopticon[gdrive]"
-            )
+            logger.error("OAuth libraries not installed. Run: pip install planopticon[gdrive]")
             return False
 
         creds = None
@@ -142,9 +136,7 @@ class GoogleDriveSource(BaseSource):
         # Load existing token
         if self.token_path.exists():
             try:
-                creds = Credentials.from_authorized_user_file(
-                    str(self.token_path), SCOPES
-                )
+                creds = Credentials.from_authorized_user_file(str(self.token_path), SCOPES)
             except Exception:
                 pass
 
@@ -253,9 +245,7 @@ class GoogleDriveSource(BaseSource):
         if folder_id:
             query_parts.append(f"'{folder_id}' in parents")
 
-        mime_conditions = " or ".join(
-            f"mimeType='{mt}'" for mt in VIDEO_MIME_TYPES
-        )
+        mime_conditions = " or ".join(f"mimeType='{mt}'" for mt in VIDEO_MIME_TYPES)
         query_parts.append(f"({mime_conditions})")
         query_parts.append("trashed=false")
 
@@ -277,9 +267,7 @@ class GoogleDriveSource(BaseSource):
 
             for f in response.get("files", []):
                 name = f.get("name", "")
-                if patterns and not any(
-                    name.endswith(p.replace("*", "")) for p in patterns
-                ):
+                if patterns and not any(name.endswith(p.replace("*", "")) for p in patterns):
                     continue
 
                 out.append(
@@ -338,7 +326,6 @@ class GoogleDriveSource(BaseSource):
             raise RuntimeError("Not authenticated. Call authenticate() first.")
 
         from googleapiclient.http import MediaIoBaseDownload
-        import io
 
         destination = Path(destination)
         destination.parent.mkdir(parents=True, exist_ok=True)

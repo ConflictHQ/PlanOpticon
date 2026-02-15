@@ -58,9 +58,7 @@ class DropboxSource(BaseSource):
         try:
             import dropbox
         except ImportError:
-            logger.error(
-                "Dropbox SDK not installed. Run: pip install planopticon[dropbox]"
-            )
+            logger.error("Dropbox SDK not installed. Run: pip install planopticon[dropbox]")
             return False
 
         # Try direct access token first
@@ -111,9 +109,7 @@ class DropboxSource(BaseSource):
     def _auth_oauth(self, dropbox) -> bool:
         """Run OAuth2 PKCE flow."""
         if not self.app_key:
-            logger.error(
-                "Dropbox app key not configured. Set DROPBOX_APP_KEY env var."
-            )
+            logger.error("Dropbox app key not configured. Set DROPBOX_APP_KEY env var.")
             return False
 
         try:
@@ -189,9 +185,7 @@ class DropboxSource(BaseSource):
                         continue
 
                     if patterns:
-                        if not any(
-                            entry.name.endswith(p.replace("*", "")) for p in patterns
-                        ):
+                        if not any(entry.name.endswith(p.replace("*", "")) for p in patterns):
                             continue
 
                     files.append(

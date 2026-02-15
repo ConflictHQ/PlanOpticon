@@ -1,9 +1,7 @@
 """Tests for the agentic processing orchestrator."""
 
 import json
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from video_processor.agent.orchestrator import AgentOrchestrator
 
@@ -101,12 +99,14 @@ class TestInsights:
 
     def test_deep_analysis_populates_insights(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps({
-            "decisions": ["Decided to use microservices"],
-            "risks": ["Timeline is tight"],
-            "follow_ups": [],
-            "tensions": [],
-        })
+        pm.chat.return_value = json.dumps(
+            {
+                "decisions": ["Decided to use microservices"],
+                "risks": ["Timeline is tight"],
+                "follow_ups": [],
+                "tensions": [],
+            }
+        )
         agent = AgentOrchestrator(provider_manager=pm)
         agent._results["transcribe"] = {"text": "Some long transcript text here"}
         result = agent._deep_analysis("/tmp")

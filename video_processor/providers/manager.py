@@ -1,7 +1,6 @@
 """ProviderManager - unified interface for routing API calls to the best available provider."""
 
 import logging
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -69,7 +68,9 @@ class ProviderManager:
         if provider:
             self.vision_model = vision_model or self._default_for_provider(provider, "vision")
             self.chat_model = chat_model or self._default_for_provider(provider, "chat")
-            self.transcription_model = transcription_model or self._default_for_provider(provider, "audio")
+            self.transcription_model = transcription_model or self._default_for_provider(
+                provider, "audio"
+            )
         else:
             self.vision_model = vision_model
             self.chat_model = chat_model
@@ -82,8 +83,16 @@ class ProviderManager:
         """Return the default model for a provider/capability combo."""
         defaults = {
             "openai": {"chat": "gpt-4o", "vision": "gpt-4o", "audio": "whisper-1"},
-            "anthropic": {"chat": "claude-sonnet-4-5-20250929", "vision": "claude-sonnet-4-5-20250929", "audio": ""},
-            "gemini": {"chat": "gemini-2.5-flash", "vision": "gemini-2.5-flash", "audio": "gemini-2.5-flash"},
+            "anthropic": {
+                "chat": "claude-sonnet-4-5-20250929",
+                "vision": "claude-sonnet-4-5-20250929",
+                "audio": "",
+            },
+            "gemini": {
+                "chat": "gemini-2.5-flash",
+                "vision": "gemini-2.5-flash",
+                "audio": "gemini-2.5-flash",
+            },
         }
         return defaults.get(provider, {}).get(capability, "")
 
@@ -92,12 +101,15 @@ class ProviderManager:
         if provider_name not in self._providers:
             if provider_name == "openai":
                 from video_processor.providers.openai_provider import OpenAIProvider
+
                 self._providers[provider_name] = OpenAIProvider()
             elif provider_name == "anthropic":
                 from video_processor.providers.anthropic_provider import AnthropicProvider
+
                 self._providers[provider_name] = AnthropicProvider()
             elif provider_name == "gemini":
                 from video_processor.providers.gemini_provider import GeminiProvider
+
                 self._providers[provider_name] = GeminiProvider()
             else:
                 raise ValueError(f"Unknown provider: {provider_name}")
@@ -105,7 +117,13 @@ class ProviderManager:
 
     def _provider_for_model(self, model_id: str) -> str:
         """Infer the provider from a model id."""
-        if model_id.startswith("gpt-") or model_id.startswith("o1") or model_id.startswith("o3") or model_id.startswith("o4") or model_id.startswith("whisper"):
+        if (
+            model_id.startswith("gpt-")
+            or model_id.startswith("o1")
+            or model_id.startswith("o3")
+            or model_id.startswith("o4")
+            or model_id.startswith("whisper")
+        ):
             return "openai"
         if model_id.startswith("claude-"):
             return "anthropic"
@@ -123,7 +141,9 @@ class ProviderManager:
             self._available_models = discover_available_models()
         return self._available_models
 
-    def _resolve_model(self, explicit: Optional[str], capability: str, preferences: list[tuple[str, str]]) -> tuple[str, str]:
+    def _resolve_model(
+        self, explicit: Optional[str], capability: str, preferences: list[tuple[str, str]]
+    ) -> tuple[str, str]:
         """
         Resolve which (provider, model) to use for a capability.
 
@@ -171,7 +191,9 @@ class ProviderManager:
         prov_name, model = self._resolve_model(self.chat_model, "chat", _CHAT_PREFERENCES)
         logger.info(f"Chat: using {prov_name}/{model}")
         provider = self._get_provider(prov_name)
-        result = provider.chat(messages, max_tokens=max_tokens, temperature=temperature, model=model)
+        result = provider.chat(
+            messages, max_tokens=max_tokens, temperature=temperature, model=model
+        )
         self._track(provider, prov_name, model)
         return result
 

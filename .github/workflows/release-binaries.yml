@@ -49,6 +49,7 @@ jobs:
           pip install pyinstaller
 
       - name: Build binary
+        shell: bash
         run: |
           pyinstaller \
             --name planopticon-${{ matrix.target }} \

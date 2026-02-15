@@ -1,13 +1,12 @@
 """Multi-format output orchestration."""
 
-import json
 import logging
 from pathlib import Path
 from typing import Optional
 
 from tqdm import tqdm
 
-from video_processor.models import DiagramResult, VideoManifest
+from video_processor.models import VideoManifest
 from video_processor.utils.rendering import render_mermaid, reproduce_chart
 
 logger = logging.getLogger(__name__)
@@ -81,7 +80,9 @@ def generate_html_report(
                 svg_content = svg_path.read_text()
                 diag_html += f'<div class="diagram">{svg_content}</div>'
             elif d.image_path:
-                diag_html += f'<img src="{d.image_path}" alt="Diagram {i + 1}" style="max-width:100%">'
+                diag_html += (
+                    f'<img src="{d.image_path}" alt="Diagram {i + 1}" style="max-width:100%">'
+                )
             if d.mermaid:
                 diag_html += f'<pre class="mermaid">{d.mermaid}</pre>'
         sections.append(diag_html)
@@ -157,7 +158,9 @@ def export_all_formats(
     output_dir = Path(output_dir)
 
     # Render mermaid diagrams to SVG/PNG
-    for i, diagram in enumerate(tqdm(manifest.diagrams, desc="Rendering diagrams", unit="diag") if manifest.diagrams else []):
+    for i, diagram in enumerate(
+        tqdm(manifest.diagrams, desc="Rendering diagrams", unit="diag") if manifest.diagrams else []
+    ):
         if diagram.mermaid:
             diagrams_dir = output_dir / "diagrams"
             prefix = f"diagram_{i}"

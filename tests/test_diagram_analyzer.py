@@ -1,8 +1,7 @@
 """Tests for the rewritten diagram analyzer."""
 
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -10,7 +9,7 @@ from video_processor.analyzers.diagram_analyzer import (
     DiagramAnalyzer,
     _parse_json_response,
 )
-from video_processor.models import DiagramResult, DiagramType, ScreenCapture
+from video_processor.models import DiagramType
 
 
 class TestParseJsonResponse:
@@ -52,23 +51,27 @@ class TestDiagramAnalyzer:
         return fp
 
     def test_classify_frame_diagram(self, analyzer, mock_pm, fake_frame):
-        mock_pm.analyze_image.return_value = json.dumps({
-            "is_diagram": True,
-            "diagram_type": "flowchart",
-            "confidence": 0.85,
-            "brief_description": "A flowchart showing login process"
-        })
+        mock_pm.analyze_image.return_value = json.dumps(
+            {
+                "is_diagram": True,
+                "diagram_type": "flowchart",
+                "confidence": 0.85,
+                "brief_description": "A flowchart showing login process",
+            }
+        )
         result = analyzer.classify_frame(fake_frame)
         assert result["is_diagram"] is True
         assert result["confidence"] == 0.85
 
     def test_classify_frame_not_diagram(self, analyzer, mock_pm, fake_frame):
-        mock_pm.analyze_image.return_value = json.dumps({
-            "is_diagram": False,
-            "diagram_type": "unknown",
-            "confidence": 0.1,
-            "brief_description": "A person speaking"
-        })
+        mock_pm.analyze_image.return_value = json.dumps(
+            {
+                "is_diagram": False,
+                "diagram_type": "unknown",
+                "confidence": 0.1,
+                "brief_description": "A person speaking",
+            }
+        )
         result = analyzer.classify_frame(fake_frame)
         assert result["is_diagram"] is False
 
@@ -79,15 +82,17 @@ class TestDiagramAnalyzer:
         assert result["confidence"] == 0.0
 
     def test_analyze_single_pass(self, analyzer, mock_pm, fake_frame):
-        mock_pm.analyze_image.return_value = json.dumps({
-            "diagram_type": "architecture",
-            "description": "Microservices architecture",
-            "text_content": "Service A, Service B",
-            "elements": ["Service A", "Service B"],
-            "relationships": ["A -> B: calls"],
-            "mermaid": "graph LR\n    A-->B",
-            "chart_data": None
-        })
+        mock_pm.analyze_image.return_value = json.dumps(
+            {
+                "diagram_type": "architecture",
+                "description": "Microservices architecture",
+                "text_content": "Service A, Service B",
+                "elements": ["Service A", "Service B"],
+                "relationships": ["A -> B: calls"],
+                "mermaid": "graph LR\n    A-->B",
+                "chart_data": None,
+            }
+        )
         result = analyzer.analyze_diagram_single_pass(fake_frame)
         assert result["diagram_type"] == "architecture"
         assert result["mermaid"] == "graph LR\n    A-->B"
@@ -107,19 +112,42 @@ class TestDiagramAnalyzer:
         # Frame 1: low confidence (skip)
         # Frame 2: medium confidence (screengrab)
         classify_responses = [
-            json.dumps({"is_diagram": True, "diagram_type": "flowchart", "confidence": 0.9, "brief_description": "flow"}),
-            json.dumps({"is_diagram": False, "diagram_type": "unknown", "confidence": 0.1, "brief_description": "nothing"}),
-            json.dumps({"is_diagram": True, "diagram_type": "slide", "confidence": 0.5, "brief_description": "a slide"}),
+            json.dumps(
+                {
+                    "is_diagram": True,
+                    "diagram_type": "flowchart",
+                    "confidence": 0.9,
+                    "brief_description": "flow",
+                }
+            ),
+            json.dumps(
+                {
+                    "is_diagram": False,
+                    "diagram_type": "unknown",
+                    "confidence": 0.1,
+                    "brief_description": "nothing",
+                }
+            ),
+            json.dumps(
+                {
+                    "is_diagram": True,
+                    "diagram_type": "slide",
+                    "confidence": 0.5,
+                    "brief_description": "a slide",
+                }
+            ),
         ]
-        analysis_response = json.dumps({
-            "diagram_type": "flowchart",
-            "description": "Login flow",
-            "text_content": "Start -> End",
-            "elements": ["Start", "End"],
-            "relationships": ["Start -> End"],
-            "mermaid": "graph LR\n    Start-->End",
-            "chart_data": None
-        })
+        analysis_response = json.dumps(
+            {
+                "diagram_type": "flowchart",
+                "description": "Login flow",
+                "text_content": "Start -> End",
+                "elements": ["Start", "End"],
+                "relationships": ["Start -> End"],
+                "mermaid": "graph LR\n    Start-->End",
+                "chart_data": None,
+            }
+        )
 
         # Calls are interleaved per-frame:
         # call 0: classify frame 0 (high conf)
@@ -128,13 +156,14 @@ class TestDiagramAnalyzer:
         # call 3: classify frame 2 (medium conf)
         # call 4: caption frame 2 (screengrab)
         call_sequence = [
-            classify_responses[0],   # classify frame 0
-            analysis_response,       # analyze frame 0
-            classify_responses[1],   # classify frame 1
-            classify_responses[2],   # classify frame 2
+            classify_responses[0],  # classify frame 0
+            analysis_response,  # analyze frame 0
+            classify_responses[1],  # classify frame 1
+            classify_responses[2],  # classify frame 2
             "A slide about something",  # caption frame 2
         ]
         call_count = [0]
+
         def side_effect(image_bytes, prompt, max_tokens=4096):
             idx = call_count[0]
             call_count[0] += 1
@@ -166,11 +195,19 @@ class TestDiagramAnalyzer:
 
         # High confidence classification but analysis fails
         call_count = [0]
+
         def side_effect(image_bytes, prompt, max_tokens=4096):
             idx = call_count[0]
             call_count[0] += 1
             if idx == 0:
-                return json.dumps({"is_diagram": True, "diagram_type": "chart", "confidence": 0.8, "brief_description": "chart"})
+                return json.dumps(
+                    {
+                        "is_diagram": True,
+                        "diagram_type": "chart",
+                        "confidence": 0.8,
+                        "brief_description": "chart",
+                    }
+                )
             if idx == 1:
                 return "This is not valid JSON"  # Analysis fails
             return "A chart showing data"  # Caption

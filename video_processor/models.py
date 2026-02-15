@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from enum import Enum
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
@@ -10,6 +9,7 @@ from pydantic import BaseModel, Field
 
 class DiagramType(str, Enum):
     """Types of visual content detected in video frames."""
+
     flowchart = "flowchart"
     sequence = "sequence"
     architecture = "architecture"
@@ -23,6 +23,7 @@ class DiagramType(str, Enum):
 
 class OutputFormat(str, Enum):
     """Available output formats."""
+
     markdown = "markdown"
     json = "json"
     html = "html"
@@ -33,6 +34,7 @@ class OutputFormat(str, Enum):
 
 class TranscriptSegment(BaseModel):
     """A single segment of transcribed audio."""
+
     start: float = Field(description="Start time in seconds")
     end: float = Field(description="End time in seconds")
     text: str = Field(description="Transcribed text")
@@ -42,26 +44,33 @@ class TranscriptSegment(BaseModel):
 
 class ActionItem(BaseModel):
     """An action item extracted from content."""
+
     action: str = Field(description="The action to be taken")
     assignee: Optional[str] = Field(default=None, description="Person responsible")
     deadline: Optional[str] = Field(default=None, description="Deadline or timeframe")
     priority: Optional[str] = Field(default=None, description="Priority level")
     context: Optional[str] = Field(default=None, description="Additional context")
-    source: Optional[str] = Field(default=None, description="Where this was found (transcript/diagram)")
+    source: Optional[str] = Field(
+        default=None, description="Where this was found (transcript/diagram)"
+    )
 
 
 class KeyPoint(BaseModel):
     """A key point extracted from content."""
+
     point: str = Field(description="The key point")
     topic: Optional[str] = Field(default=None, description="Topic or category")
     details: Optional[str] = Field(default=None, description="Supporting details")
     timestamp: Optional[float] = Field(default=None, description="Timestamp in video (seconds)")
     source: Optional[str] = Field(default=None, description="Where this was found")
-    related_diagrams: List[int] = Field(default_factory=list, description="Indices of related diagrams")
+    related_diagrams: List[int] = Field(
+        default_factory=list, description="Indices of related diagrams"
+    )
 
 
 class DiagramResult(BaseModel):
     """Result from diagram extraction and analysis."""
+
     frame_index: int = Field(description="Index of the source frame")
     timestamp: Optional[float] = Field(default=None, description="Timestamp in video (seconds)")
     diagram_type: DiagramType = Field(default=DiagramType.unknown, description="Type of diagram")
@@ -72,8 +81,7 @@ class DiagramResult(BaseModel):
     relationships: List[str] = Field(default_factory=list, description="Identified relationships")
     mermaid: Optional[str] = Field(default=None, description="Mermaid syntax representation")
     chart_data: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="Chart data for reproduction (labels, values, chart_type)"
+        default=None, description="Chart data for reproduction (labels, values, chart_type)"
     )
     image_path: Optional[str] = Field(default=None, description="Relative path to original frame")
     svg_path: Optional[str] = Field(default=None, description="Relative path to rendered SVG")
@@ -83,27 +91,33 @@ class DiagramResult(BaseModel):
 
 class ScreenCapture(BaseModel):
     """A screengrab fallback when diagram extraction fails or is uncertain."""
+
     frame_index: int = Field(description="Index of the source frame")
     timestamp: Optional[float] = Field(default=None, description="Timestamp in video (seconds)")
     caption: Optional[str] = Field(default=None, description="Brief description of the content")
     image_path: Optional[str] = Field(default=None, description="Relative path to screenshot")
-    confidence: float = Field(default=0.0, description="Detection confidence that triggered fallback")
+    confidence: float = Field(
+        default=0.0, description="Detection confidence that triggered fallback"
+    )
 
 
 class Entity(BaseModel):
     """An entity in the knowledge graph."""
+
     name: str = Field(description="Entity name")
     type: str = Field(default="concept", description="Entity type (person, concept, time, diagram)")
     descriptions: List[str] = Field(default_factory=list, description="Descriptions of this entity")
-    source: Optional[str] = Field(default=None, description="Source attribution (transcript/diagram/both)")
+    source: Optional[str] = Field(
+        default=None, description="Source attribution (transcript/diagram/both)"
+    )
     occurrences: List[Dict[str, Any]] = Field(
-        default_factory=list,
-        description="List of occurrences with source, timestamp, text"
+        default_factory=list, description="List of occurrences with source, timestamp, text"
     )
 
 
 class Relationship(BaseModel):
     """A relationship between entities in the knowledge graph."""
+
     source: str = Field(description="Source entity name")
     target: str = Field(description="Target entity name")
     type: str = Field(default="related_to", description="Relationship type")
@@ -113,12 +127,16 @@ class Relationship(BaseModel):
 
 class KnowledgeGraphData(BaseModel):
     """Serializable knowledge graph data."""
+
     nodes: List[Entity] = Field(default_factory=list, description="Graph nodes/entities")
-    relationships: List[Relationship] = Field(default_factory=list, description="Graph relationships")
+    relationships: List[Relationship] = Field(
+        default_factory=list, description="Graph relationships"
+    )
 
 
 class ProcessingStats(BaseModel):
     """Statistics about a processing run."""
+
     start_time: Optional[str] = Field(default=None, description="ISO format start time")
     end_time: Optional[str] = Field(default=None, description="ISO format end time")
     duration_seconds: Optional[float] = Field(default=None, description="Total processing time")
@@ -128,25 +146,26 @@ class ProcessingStats(BaseModel):
     screen_captures: int = Field(default=0)
     transcript_duration_seconds: Optional[float] = Field(default=None)
     models_used: Dict[str, str] = Field(
-        default_factory=dict,
-        description="Map of task to model used (e.g. vision: gpt-4o)"
+        default_factory=dict, description="Map of task to model used (e.g. vision: gpt-4o)"
     )
 
 
 class VideoMetadata(BaseModel):
     """Metadata about the source video."""
+
     title: str = Field(description="Video title")
     source_path: Optional[str] = Field(default=None, description="Original video file path")
     duration_seconds: Optional[float] = Field(default=None, description="Video duration")
     resolution: Optional[str] = Field(default=None, description="Video resolution (e.g. 1920x1080)")
     processed_at: str = Field(
         default_factory=lambda: datetime.now().isoformat(),
-        description="ISO format processing timestamp"
+        description="ISO format processing timestamp",
     )
 
 
 class VideoManifest(BaseModel):
     """Manifest for a single video processing run - the single source of truth."""
+
     version: str = Field(default="1.0", description="Manifest schema version")
     video: VideoMetadata = Field(description="Source video metadata")
     stats: ProcessingStats = Field(default_factory=ProcessingStats)
@@ -169,11 +188,14 @@ class VideoManifest(BaseModel):
     screen_captures: List[ScreenCapture] = Field(default_factory=list)
 
     # Frame paths
-    frame_paths: List[str] = Field(default_factory=list, description="Relative paths to extracted frames")
+    frame_paths: List[str] = Field(
+        default_factory=list, description="Relative paths to extracted frames"
+    )
 
 
 class BatchVideoEntry(BaseModel):
     """Summary of a single video within a batch."""
+
     video_name: str
     manifest_path: str = Field(description="Relative path to video manifest")
     status: str = Field(default="pending", description="pending/completed/failed")
@@ -186,11 +208,10 @@ class BatchVideoEntry(BaseModel):
 
 class BatchManifest(BaseModel):
     """Manifest for a batch processing run."""
+
     version: str = Field(default="1.0")
     title: str = Field(default="Batch Processing Results")
-    processed_at: str = Field(
-        default_factory=lambda: datetime.now().isoformat()
-    )
+    processed_at: str = Field(default_factory=lambda: datetime.now().isoformat())
     stats: ProcessingStats = Field(default_factory=ProcessingStats)
 
     videos: List[BatchVideoEntry] = Field(default_factory=list)

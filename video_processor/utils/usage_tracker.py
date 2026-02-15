@@ -4,7 +4,6 @@ import time
 from dataclasses import dataclass, field
 from typing import Optional
 
-
 # Cost per million tokens (USD) — updated Feb 2025
 _MODEL_PRICING = {
     # Anthropic
@@ -28,6 +27,7 @@ _MODEL_PRICING = {
 @dataclass
 class ModelUsage:
     """Accumulated usage for a single model."""
+
     provider: str = ""
     model: str = ""
     calls: int = 0
@@ -61,6 +61,7 @@ class ModelUsage:
 @dataclass
 class StepTiming:
     """Timing for a single pipeline step."""
+
     name: str
     start_time: float = 0.0
     end_time: float = 0.0
@@ -75,6 +76,7 @@ class StepTiming:
 @dataclass
 class UsageTracker:
     """Tracks API usage, costs, and timing across a pipeline run."""
+
     _models: dict = field(default_factory=dict)
     _steps: list = field(default_factory=list)
     _current_step: Optional[StepTiming] = field(default=None)
@@ -162,11 +164,13 @@ class UsageTracker:
         # API usage
         if self._models:
             lines.append(f"\n  API Calls: {self.total_api_calls}")
-            lines.append(f"  Tokens:    {self.total_tokens:,} "
-                         f"({self.total_input_tokens:,} in / {self.total_output_tokens:,} out)")
+            lines.append(
+                f"  Tokens:    {self.total_tokens:,} "
+                f"({self.total_input_tokens:,} in / {self.total_output_tokens:,} out)"
+            )
             lines.append("")
             lines.append(f"  {'Model':<35} {'Calls':>6} {'In Tok':>8} {'Out Tok':>8} {'Cost':>8}")
-            lines.append(f"  {'-'*35} {'-'*6} {'-'*8} {'-'*8} {'-'*8}")
+            lines.append(f"  {'-' * 35} {'-' * 6} {'-' * 8} {'-' * 8} {'-' * 8}")
             for key in sorted(self._models.keys()):
                 u = self._models[key]
                 cost_str = f"${u.estimated_cost:.4f}" if u.estimated_cost > 0 else "free"
@@ -176,7 +180,8 @@ class UsageTracker:
                     )
                 else:
                     lines.append(
-                        f"  {key:<35} {u.calls:>6} {u.input_tokens:>8,} {u.output_tokens:>8,} {cost_str:>8}"
+                        f"  {key:<35} {u.calls:>6} "
+                        f"{u.input_tokens:>8,} {u.output_tokens:>8,} {cost_str:>8}"
                     )
 
             lines.append(f"\n  Estimated total cost: ${self.total_cost:.4f}")

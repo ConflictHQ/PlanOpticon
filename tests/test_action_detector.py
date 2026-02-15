@@ -3,8 +3,6 @@
 import json
 from unittest.mock import MagicMock
 
-import pytest
-
 from video_processor.analyzers.action_detector import ActionDetector
 from video_processor.models import ActionItem, TranscriptSegment
 
@@ -12,7 +10,9 @@ from video_processor.models import ActionItem, TranscriptSegment
 class TestPatternExtract:
     def test_detects_need_to(self):
         detector = ActionDetector()
-        items = detector.detect_from_transcript("We need to update the database schema before release.")
+        items = detector.detect_from_transcript(
+            "We need to update the database schema before release."
+        )
         assert len(items) >= 1
         assert any("database" in i.action.lower() for i in items)
 
@@ -23,7 +23,9 @@ class TestPatternExtract:
 
     def test_detects_action_item_keyword(self):
         detector = ActionDetector()
-        items = detector.detect_from_transcript("Action item: set up monitoring for the new service.")
+        items = detector.detect_from_transcript(
+            "Action item: set up monitoring for the new service."
+        )
         assert len(items) >= 1
 
     def test_detects_follow_up(self):
@@ -43,18 +45,12 @@ class TestPatternExtract:
 
     def test_no_action_patterns(self):
         detector = ActionDetector()
-        items = detector.detect_from_transcript(
-            "The weather was nice today. We had lunch at noon."
-        )
+        items = detector.detect_from_transcript("The weather was nice today. We had lunch at noon.")
         assert len(items) == 0
 
     def test_multiple_sentences(self):
         detector = ActionDetector()
-        text = (
-            "We need to deploy the fix. "
-            "Alice should test it first. "
-            "The sky is blue."
-        )
+        text = "We need to deploy the fix. Alice should test it first. The sky is blue."
         items = detector.detect_from_transcript(text)
         assert len(items) == 2
 
@@ -68,10 +64,17 @@ class TestPatternExtract:
 class TestLLMExtract:
     def test_llm_extraction(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"action": "Deploy new version", "assignee": "Bob", "deadline": "Friday",
-             "priority": "high", "context": "Production release"}
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {
+                    "action": "Deploy new version",
+                    "assignee": "Bob",
+                    "deadline": "Friday",
+                    "priority": "high",
+                    "context": "Production release",
+                }
+            ]
+        )
         detector = ActionDetector(provider_manager=pm)
         items = detector.detect_from_transcript("Deploy new version by Friday.")
         assert len(items) == 1
@@ -104,11 +107,13 @@ class TestLLMExtract:
 
     def test_llm_skips_items_without_action(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"action": "Valid action", "assignee": None},
-            {"assignee": "Alice"},  # No action field
-            {"action": "", "assignee": "Bob"},  # Empty action
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {"action": "Valid action", "assignee": None},
+                {"assignee": "Alice"},  # No action field
+                {"action": "", "assignee": "Bob"},  # Empty action
+            ]
+        )
         detector = ActionDetector(provider_manager=pm)
         items = detector.detect_from_transcript("Some text.")
         assert len(items) == 1
@@ -118,10 +123,17 @@ class TestLLMExtract:
 class TestDetectFromDiagrams:
     def test_dict_diagrams(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"action": "Migrate database", "assignee": None, "deadline": None,
-             "priority": None, "context": None},
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {
+                    "action": "Migrate database",
+                    "assignee": None,
+                    "deadline": None,
+                    "priority": None,
+                    "context": None,
+                },
+            ]
+        )
         detector = ActionDetector(provider_manager=pm)
         diagrams = [
             {"text_content": "Step 1: Migrate database", "elements": ["DB", "Migration"]},
@@ -132,10 +144,17 @@ class TestDetectFromDiagrams:
 
     def test_object_diagrams(self):
         pm = MagicMock()
-        pm.chat.return_value = json.dumps([
-            {"action": "Update API", "assignee": None, "deadline": None,
-             "priority": None, "context": None},
-        ])
+        pm.chat.return_value = json.dumps(
+            [
+                {
+                    "action": "Update API",
+                    "assignee": None,
+                    "deadline": None,
+                    "priority": None,
+                    "context": None,
+                },
+            ]
+        )
         detector = ActionDetector(provider_manager=pm)
 
         class FakeDiagram:
@@ -155,7 +174,10 @@ class TestDetectFromDiagrams:
     def test_pattern_fallback_for_diagrams(self):
         detector = ActionDetector()  # No provider
         diagrams = [
-            {"text_content": "We need to update the configuration before deployment.", "elements": []},
+            {
+                "text_content": "We need to update the configuration before deployment.",
+                "elements": [],
+            },
         ]
         items = detector.detect_from_diagrams(diagrams)
         assert len(items) >= 1
@@ -193,12 +215,14 @@ class TestMergeActionItems:
 class TestAttachTimestamps:
     def test_attaches_matching_segment(self):
         detector = ActionDetector()
-        items = [
+        [
             ActionItem(action="We need to update the database schema before release"),
         ]
         segments = [
             TranscriptSegment(start=0.0, end=5.0, text="Welcome to the meeting."),
-            TranscriptSegment(start=5.0, end=15.0, text="We need to update the database schema before release."),
+            TranscriptSegment(
+                start=5.0, end=15.0, text="We need to update the database schema before release."
+            ),
             TranscriptSegment(start=15.0, end=20.0, text="Any questions?"),
         ]
         detector.detect_from_transcript(

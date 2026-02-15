@@ -1,12 +1,11 @@
 """Plan generation for creating structured markdown output."""
 
-import json
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
-from video_processor.models import BatchManifest, VideoManifest
+from video_processor.models import VideoManifest
 from video_processor.providers.manager import ProviderManager
 
 logger = logging.getLogger(__name__)
@@ -38,7 +37,9 @@ class PlanGenerator:
         if "segments" in transcript:
             for segment in transcript["segments"]:
                 if "text" in segment:
-                    speaker = f"{segment.get('speaker', 'Speaker')}: " if "speaker" in segment else ""
+                    speaker = (
+                        f"{segment.get('speaker', 'Speaker')}: " if "speaker" in segment else ""
+                    )
                     full_text += f"{speaker}{segment['text']}\n\n"
 
         if not full_text.strip():

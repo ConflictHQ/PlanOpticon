@@ -9,12 +9,12 @@ from pydantic import BaseModel, Field
 
 class ModelInfo(BaseModel):
     """Information about an available model."""
+
     id: str = Field(description="Model identifier (e.g. gpt-4o)")
     provider: str = Field(description="Provider name (openai, anthropic, gemini)")
     display_name: str = Field(default="", description="Human-readable name")
     capabilities: List[str] = Field(
-        default_factory=list,
-        description="Model capabilities: chat, vision, audio, embedding"
+        default_factory=list, description="Model capabilities: chat, vision, audio, embedding"
     )
 
 

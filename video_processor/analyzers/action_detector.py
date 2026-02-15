@@ -152,7 +152,7 @@ class ActionDetector:
     def _pattern_extract(self, text: str) -> List[ActionItem]:
         """Extract action items using regex pattern matching."""
         items: List[ActionItem] = []
-        sentences = re.split(r'[.!?]\s+', text)
+        sentences = re.split(r"[.!?]\s+", text)
 
         for sentence in sentences:
             sentence = sentence.strip()
@@ -161,10 +161,12 @@ class ActionDetector:
 
             for pattern in _ACTION_PATTERNS:
                 if pattern.search(sentence):
-                    items.append(ActionItem(
-                        action=sentence,
-                        source="transcript",
-                    ))
+                    items.append(
+                        ActionItem(
+                            action=sentence,
+                            source="transcript",
+                        )
+                    )
                     break  # One match per sentence is enough
 
         return items

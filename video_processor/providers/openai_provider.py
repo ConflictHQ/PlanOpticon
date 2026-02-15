@@ -15,7 +15,18 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 # Models known to have vision capability
-_VISION_MODELS = {"gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-4.1", "gpt-4.1-mini", "gpt-4.1-nano", "o1", "o3", "o3-mini", "o4-mini"}
+_VISION_MODELS = {
+    "gpt-4o",
+    "gpt-4o-mini",
+    "gpt-4-turbo",
+    "gpt-4.1",
+    "gpt-4.1-mini",
+    "gpt-4.1-nano",
+    "o1",
+    "o3",
+    "o3-mini",
+    "o4-mini",
+}
 _AUDIO_MODELS = {"whisper-1"}
 
 
@@ -46,7 +57,9 @@ class OpenAIProvider(BaseProvider):
         )
         self._last_usage = {
             "input_tokens": getattr(response.usage, "prompt_tokens", 0) if response.usage else 0,
-            "output_tokens": getattr(response.usage, "completion_tokens", 0) if response.usage else 0,
+            "output_tokens": getattr(response.usage, "completion_tokens", 0)
+            if response.usage
+            else 0,
         }
         return response.choices[0].message.content or ""
 
@@ -77,7 +90,9 @@ class OpenAIProvider(BaseProvider):
         )
         self._last_usage = {
             "input_tokens": getattr(response.usage, "prompt_tokens", 0) if response.usage else 0,
-            "output_tokens": getattr(response.usage, "completion_tokens", 0) if response.usage else 0,
+            "output_tokens": getattr(response.usage, "completion_tokens", 0)
+            if response.usage
+            else 0,
         }
         return response.choices[0].message.content or ""
 
@@ -103,9 +118,7 @@ class OpenAIProvider(BaseProvider):
         )
         return self._transcribe_chunked(audio_path, language, model)
 
-    def _transcribe_single(
-        self, audio_path: Path, language: Optional[str], model: str
-    ) -> dict:
+    def _transcribe_single(self, audio_path: Path, language: Optional[str], model: str) -> dict:
         """Transcribe a single audio file."""
         with open(audio_path, "rb") as f:
             kwargs = {"model": model, "file": f}
@@ -130,11 +143,10 @@ class OpenAIProvider(BaseProvider):
             "model": model,
         }
 
-    def _transcribe_chunked(
-        self, audio_path: Path, language: Optional[str], model: str
-    ) -> dict:
+    def _transcribe_chunked(self, audio_path: Path, language: Optional[str], model: str) -> dict:
         """Split audio into chunks under 25MB and transcribe each."""
         import tempfile
+
         from video_processor.extractors.audio_extractor import AudioExtractor
 
         extractor = AudioExtractor()
@@ -166,11 +178,13 @@ class OpenAIProvider(BaseProvider):
 
                 all_text.append(result["text"])
                 for seg in result.get("segments", []):
-                    all_segments.append({
-                        "start": seg["start"] + time_offset,
-                        "end": seg["end"] + time_offset,
-                        "text": seg["text"],
-                    })
+                    all_segments.append(
+                        {
+                            "start": seg["start"] + time_offset,
+                            "end": seg["end"] + time_offset,
+                            "text": seg["text"],
+                        }
+                    )
 
                 if not detected_language and result.get("language"):
                     detected_language = result["language"]
@@ -202,12 +216,14 @@ class OpenAIProvider(BaseProvider):
                 if "embedding" in mid:
                     caps.append("embedding")
                 if caps:
-                    models.append(ModelInfo(
-                        id=mid,
-                        provider="openai",
-                        display_name=mid,
-                        capabilities=caps,
-                    ))
+                    models.append(
+                        ModelInfo(
+                            id=mid,
+                            provider="openai",
+                            display_name=mid,
+                            capabilities=caps,
+                        )
+                    )
         except Exception as e:
             logger.warning(f"Failed to list OpenAI models: {e}")
         return sorted(models, key=lambda m: m.id)

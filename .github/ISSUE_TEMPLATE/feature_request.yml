@@ -1,0 +1,37 @@
+name: Feature Request
+description: Suggest a new feature or improvement for PlanOpticon
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        We appreciate your ideas for improving PlanOpticon. Please describe your feature request in detail so we can evaluate and prioritize it.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the feature you would like to see.
+      placeholder: Describe the feature...
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Explain the problem this feature would solve or the workflow it would improve. Why is this feature important to you?
+      placeholder: |
+        As a user who processes large batches of meeting recordings, I need...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: If you have ideas on how this could be implemented, describe them here. This is optional -- we welcome feature requests even without a proposed solution.
+      placeholder: Describe a possible implementation approach...
+    validations:
+      required: false

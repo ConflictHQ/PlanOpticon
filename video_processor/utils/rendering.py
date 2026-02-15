@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict
 
 logger = logging.getLogger(__name__)
 
@@ -49,11 +49,16 @@ def render_mermaid(mermaid_code: str, output_dir: str | Path, name: str) -> Dict
             if isinstance(png_content, bytes):
                 png_path.write_bytes(png_content)
             else:
-                png_path.write_bytes(png_content.encode() if isinstance(png_content, str) else png_content)
+                png_path.write_bytes(
+                    png_content.encode() if isinstance(png_content, str) else png_content
+                )
             result["png"] = png_path
 
     except ImportError:
-        logger.warning("mermaid-py not installed, skipping SVG/PNG rendering. Install with: pip install mermaid-py")
+        logger.warning(
+            "mermaid-py not installed, skipping SVG/PNG rendering. "
+            "Install with: pip install mermaid-py"
+        )
     except Exception as e:
         logger.warning(f"Mermaid rendering failed for '{name}': {e}")
 

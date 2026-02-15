@@ -11,7 +11,11 @@ from tqdm import tqdm
 
 from video_processor.analyzers.diagram_analyzer import DiagramAnalyzer
 from video_processor.extractors.audio_extractor import AudioExtractor
-from video_processor.extractors.frame_extractor import extract_frames, filter_people_frames, save_frames
+from video_processor.extractors.frame_extractor import (
+    extract_frames,
+    filter_people_frames,
+    save_frames,
+)
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
 from video_processor.integrators.plan_generator import PlanGenerator
 from video_processor.models import (
@@ -147,9 +151,7 @@ def process_single_video(
             start = seg.get("start", 0)
             end = seg.get("end", 0)
             srt_lines.append(str(i + 1))
-            srt_lines.append(
-                f"{_format_srt_time(start)} --> {_format_srt_time(end)}"
-            )
+            srt_lines.append(f"{_format_srt_time(start)} --> {_format_srt_time(end)}")
             srt_lines.append(seg.get("text", "").strip())
             srt_lines.append("")
         transcript_srt.write_text("\n".join(srt_lines))
@@ -160,10 +162,13 @@ def process_single_video(
     pipeline_bar.set_description("Pipeline: analyzing visuals")
     diagrams = []
     screen_captures = []
-    existing_diagrams = sorted(dirs["diagrams"].glob("diagram_*.json")) if dirs["diagrams"].exists() else []
+    existing_diagrams = (
+        sorted(dirs["diagrams"].glob("diagram_*.json")) if dirs["diagrams"].exists() else []
+    )
     if existing_diagrams:
         logger.info(f"Resuming: found {len(existing_diagrams)} diagrams on disk, skipping analysis")
         from video_processor.models import DiagramResult
+
         for dj in existing_diagrams:
             try:
                 diagrams.append(DiagramResult.model_validate_json(dj.read_text()))
@@ -210,12 +215,8 @@ def process_single_video(
     ai_path = dirs["results"] / "action_items.json"
     if kp_path.exists() and ai_path.exists():
         logger.info("Resuming: found key points and action items on disk")
-        key_points = [
-            KeyPoint(**item) for item in json.loads(kp_path.read_text())
-        ]
-        action_items = [
-            ActionItem(**item) for item in json.loads(ai_path.read_text())
-        ]
+        key_points = [KeyPoint(**item) for item in json.loads(kp_path.read_text())]
+        action_items = [ActionItem(**item) for item in json.loads(ai_path.read_text())]
     else:
         key_points = _extract_key_points(pm, transcript_text)
         action_items = _extract_action_items(pm, transcript_text)
@@ -288,9 +289,11 @@ def process_single_video(
     # Write manifest
     write_video_manifest(manifest, output_dir)
 
-    logger.info(f"Processing complete in {elapsed:.1f}s: {len(diagrams)} diagrams, "
-                f"{len(screen_captures)} captures, {len(key_points)} key points, "
-                f"{len(action_items)} action items")
+    logger.info(
+        f"Processing complete in {elapsed:.1f}s: {len(diagrams)} diagrams, "
+        f"{len(screen_captures)} captures, {len(key_points)} key points, "
+        f"{len(action_items)} action items"
+    )
 
     return manifest
 

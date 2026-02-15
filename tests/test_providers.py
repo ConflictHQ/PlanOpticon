@@ -2,8 +2,6 @@
 
 from unittest.mock import MagicMock, patch
 
-import pytest
-
 from video_processor.providers.base import BaseProvider, ModelInfo
 from video_processor.providers.manager import ProviderManager
 
@@ -15,7 +13,12 @@ class TestModelInfo:
         assert "vision" in m.capabilities
 
     def test_round_trip(self):
-        m = ModelInfo(id="claude-sonnet-4-5-20250929", provider="anthropic", display_name="Claude Sonnet", capabilities=["chat", "vision"])
+        m = ModelInfo(
+            id="claude-sonnet-4-5-20250929",
+            provider="anthropic",
+            display_name="Claude Sonnet",
+            capabilities=["chat", "vision"],
+        )
         restored = ModelInfo.model_validate_json(m.model_dump_json())
         assert restored == m
 
@@ -109,6 +112,7 @@ class TestDiscovery:
     @patch.dict("os.environ", {}, clear=True)
     def test_discover_skips_missing_keys(self):
         from video_processor.providers.discovery import discover_available_models
+
         # No API keys -> empty list, no errors
         models = discover_available_models(api_keys={"openai": "", "anthropic": "", "gemini": ""})
         assert models == []
@@ -118,7 +122,9 @@ class TestDiscovery:
     def test_discover_caches_results(self):
         from video_processor.providers import discovery
 
-        models = discovery.discover_available_models(api_keys={"openai": "", "anthropic": "", "gemini": ""})
+        models = discovery.discover_available_models(
+            api_keys={"openai": "", "anthropic": "", "gemini": ""}
+        )
         assert models == []
         # Second call should use cache
         models2 = discovery.discover_available_models(api_keys={"openai": "key"})

@@ -26,7 +26,8 @@ shared/presented content, NOT people or camera views.
 Return ONLY a JSON object (no markdown fences):
 {
   "is_diagram": true/false,
-  "diagram_type": "flowchart"|"sequence"|"architecture"|"whiteboard"|"chart"|"table"|"slide"|"screenshot"|"unknown",
+  "diagram_type": "flowchart"|"sequence"|"architecture"
+    |"whiteboard"|"chart"|"table"|"slide"|"screenshot"|"unknown",
   "confidence": 0.0 to 1.0,
   "content_type": "slide"|"diagram"|"document"|"screen_share"|"whiteboard"|"chart"|"person"|"other",
   "brief_description": "one-sentence description of what you see"
@@ -35,10 +36,11 @@ Return ONLY a JSON object (no markdown fences):
 
 # Single-pass analysis prompt — extracts everything in one call
 _ANALYSIS_PROMPT = """\
-Analyze this diagram/visual content comprehensively. Extract ALL of the following in a single JSON response (no markdown fences):
-
+Analyze this diagram/visual content comprehensively. Extract ALL of the
+following in a single JSON response (no markdown fences):
 {
-  "diagram_type": "flowchart"|"sequence"|"architecture"|"whiteboard"|"chart"|"table"|"slide"|"screenshot"|"unknown",
+  "diagram_type": "flowchart"|"sequence"|"architecture"
+    |"whiteboard"|"chart"|"table"|"slide"|"screenshot"|"unknown",
   "description": "detailed description of the visual content",
   "text_content": "all visible text, preserving structure",
   "elements": ["list", "of", "identified", "elements/components"],
@@ -70,8 +72,7 @@ def _parse_json_response(text: str) -> Optional[dict]:
     if cleaned.startswith("```"):
         lines = cleaned.split("\n")
         # Remove first and last fence lines
-        lines = [l for l in lines if not l.strip().startswith("```")]
-        cleaned = "\n".join(lines)
+        lines = [line for line in lines if not line.strip().startswith("```")]
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
@@ -107,7 +108,12 @@ class DiagramAnalyzer:
         raw = self.pm.analyze_image(image_bytes, _CLASSIFY_PROMPT, max_tokens=512)
         result = _parse_json_response(raw)
         if result is None:
-            return {"is_diagram": False, "diagram_type": "unknown", "confidence": 0.0, "brief_description": ""}
+            return {
+                "is_diagram": False,
+                "diagram_type": "unknown",
+                "confidence": 0.0,
+                "brief_description": "",
+            }
         return result
 
     def analyze_diagram_single_pass(self, image_path: Union[str, Path]) -> dict:
@@ -165,11 +171,15 @@ class DiagramAnalyzer:
 
             if confidence >= 0.7:
                 # Full diagram analysis
-                logger.info(f"Frame {i}: diagram detected (confidence {confidence:.2f}), analyzing...")
+                logger.info(
+                    f"Frame {i}: diagram detected (confidence {confidence:.2f}), analyzing..."
+                )
                 try:
                     analysis = self.analyze_diagram_single_pass(fp)
                 except Exception as e:
-                    logger.warning(f"Diagram analysis failed for frame {i}: {e}, falling back to screengrab")
+                    logger.warning(
+                        f"Diagram analysis failed for frame {i}: {e}, falling back to screengrab"
+                    )
                     analysis = {}
 
                 if not analysis:
@@ -223,12 +233,16 @@ class DiagramAnalyzer:
 
             else:
                 # Screengrab fallback (0.3 <= confidence < 0.7)
-                logger.info(f"Frame {i}: uncertain (confidence {confidence:.2f}), saving as screengrab")
+                logger.info(
+                    f"Frame {i}: uncertain (confidence {confidence:.2f}), saving as screengrab"
+                )
                 capture = self._save_screengrab(fp, i, capture_idx, captures_dir, confidence)
                 captures.append(capture)
                 capture_idx += 1
 
-        logger.info(f"Diagram processing complete: {len(diagrams)} diagrams, {len(captures)} screengrabs")
+        logger.info(
+            f"Diagram processing complete: {len(diagrams)} diagrams, {len(captures)} screengrabs"
+        )
         return diagrams, captures
 
     def _save_screengrab(

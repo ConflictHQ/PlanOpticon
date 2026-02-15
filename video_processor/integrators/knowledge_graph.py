@@ -1,6 +1,5 @@
 """Knowledge graph integration for organizing extracted content."""
 
-import json
 import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -35,14 +34,20 @@ class KnowledgeGraph:
             temperature=temperature,
         )
 
-    def extract_entities_and_relationships(self, text: str) -> tuple[List[Entity], List[Relationship]]:
+    def extract_entities_and_relationships(
+        self, text: str
+    ) -> tuple[List[Entity], List[Relationship]]:
         """Extract entities and relationships in a single LLM call."""
         prompt = (
             "Extract all notable entities and relationships from the following content.\n\n"
             f"CONTENT:\n{text}\n\n"
             "Return a JSON object with two keys:\n"
-            '- "entities": array of {"name": "...", "type": "person|concept|technology|organization|time", "description": "brief description"}\n'
-            '- "relationships": array of {"source": "entity name", "target": "entity name", "type": "relationship description"}\n\n'
+            '- "entities": array of {"name": "...", '
+            '"type": "person|concept|technology|organization|time", '
+            '"description": "brief description"}\n'
+            '- "relationships": array of {"source": "entity name", '
+            '"target": "entity name", '
+            '"type": "relationship description"}\n\n'
             "Return ONLY the JSON object."
         )
         raw = self._chat(prompt)
@@ -54,28 +59,34 @@ class KnowledgeGraph:
         if isinstance(parsed, dict):
             for item in parsed.get("entities", []):
                 if isinstance(item, dict) and "name" in item:
-                    entities.append(Entity(
-                        name=item["name"],
-                        type=item.get("type", "concept"),
-                        descriptions=[item["description"]] if item.get("description") else [],
-                    ))
-            entity_names = {e.name for e in entities}
+                    entities.append(
+                        Entity(
+                            name=item["name"],
+                            type=item.get("type", "concept"),
+                            descriptions=[item["description"]] if item.get("description") else [],
+                        )
+                    )
+            {e.name for e in entities}
             for item in parsed.get("relationships", []):
                 if isinstance(item, dict) and "source" in item and "target" in item:
-                    rels.append(Relationship(
-                        source=item["source"],
-                        target=item["target"],
-                        type=item.get("type", "related_to"),
-                    ))
+                    rels.append(
+                        Relationship(
+                            source=item["source"],
+                            target=item["target"],
+                            type=item.get("type", "related_to"),
+                        )
+                    )
         elif isinstance(parsed, list):
             # Fallback: if model returns a flat entity list
             for item in parsed:
                 if isinstance(item, dict) and "name" in item:
-                    entities.append(Entity(
-                        name=item["name"],
-                        type=item.get("type", "concept"),
-                        descriptions=[item["description"]] if item.get("description") else [],
-                    ))
+                    entities.append(
+                        Entity(
+                            name=item["name"],
+                            type=item.get("type", "concept"),
+                            descriptions=[item["description"]] if item.get("description") else [],
+                        )
+                    )
 
         return entities, rels
 
@@ -86,11 +97,13 @@ class KnowledgeGraph:
         for entity in entities:
             eid = entity.name
             if eid in self.nodes:
-                self.nodes[eid]["occurrences"].append({
-                    "source": source,
-                    "timestamp": timestamp,
-                    "text": text[:100] + "..." if len(text) > 100 else text,
-                })
+                self.nodes[eid]["occurrences"].append(
+                    {
+                        "source": source,
+                        "timestamp": timestamp,
+                        "text": text[:100] + "..." if len(text) > 100 else text,
+                    }
+                )
                 if entity.descriptions:
                     self.nodes[eid]["descriptions"].update(entity.descriptions)
             else:
@@ -99,22 +112,26 @@ class KnowledgeGraph:
                     "name": entity.name,
                     "type": entity.type,
                     "descriptions": set(entity.descriptions),
-                    "occurrences": [{
-                        "source": source,
-                        "timestamp": timestamp,
-                        "text": text[:100] + "..." if len(text) > 100 else text,
-                    }],
+                    "occurrences": [
+                        {
+                            "source": source,
+                            "timestamp": timestamp,
+                            "text": text[:100] + "..." if len(text) > 100 else text,
+                        }
+                    ],
                 }
 
         for rel in relationships:
             if rel.source in self.nodes and rel.target in self.nodes:
-                self.relationships.append({
-                    "source": rel.source,
-                    "target": rel.target,
-                    "type": rel.type,
-                    "content_source": source,
-                    "timestamp": timestamp,
-                })
+                self.relationships.append(
+                    {
+                        "source": rel.source,
+                        "target": rel.target,
+                        "type": rel.type,
+                        "content_source": source,
+                        "timestamp": timestamp,
+                    }
+                )
 
     def process_transcript(self, transcript: Dict, batch_size: int = 10) -> None:
         """Process transcript segments into knowledge graph, batching for efficiency."""
@@ -139,13 +156,11 @@ class KnowledgeGraph:
         # Batch segments together for fewer API calls
         batches = []
         for start in range(0, len(segments), batch_size):
-            batches.append(segments[start:start + batch_size])
+            batches.append(segments[start : start + batch_size])
 
         for batch in tqdm(batches, desc="Building knowledge graph", unit="batch"):
             # Combine batch text
-            combined_text = " ".join(
-                seg["text"] for seg in batch if "text" in seg
-            )
+            combined_text = " ".join(seg["text"] for seg in batch if "text" in seg)
             if not combined_text.strip():
                 continue
 
@@ -171,10 +186,12 @@ class KnowledgeGraph:
                     "name": f"Diagram {i}",
                     "type": "diagram",
                     "descriptions": {"Visual diagram from video"},
-                    "occurrences": [{
-                        "source": source if text_content else f"diagram_{i}",
-                        "frame_index": diagram.get("frame_index"),
-                    }],
+                    "occurrences": [
+                        {
+                            "source": source if text_content else f"diagram_{i}",
+                            "frame_index": diagram.get("frame_index"),
+                        }
+                    ],
                 }
 
     def to_data(self) -> KnowledgeGraphData:
@@ -184,12 +201,14 @@ class KnowledgeGraph:
             descs = node.get("descriptions", set())
             if isinstance(descs, set):
                 descs = list(descs)
-            nodes.append(Entity(
-                name=node["name"],
-                type=node.get("type", "concept"),
-                descriptions=descs,
-                occurrences=node.get("occurrences", []),
-            ))
+            nodes.append(
+                Entity(
+                    name=node["name"],
+                    type=node.get("type", "concept"),
+                    descriptions=descs,
+                    occurrences=node.get("occurrences", []),
+                )
+            )
 
         rels = [
             Relationship(
@@ -282,7 +301,8 @@ class KnowledgeGraph:
         node_importance = {}
         for node_id in self.nodes:
             count = sum(
-                1 for rel in self.relationships
+                1
+                for rel in self.relationships
                 if rel["source"] == node_id or rel["target"] == node_id
             )
             node_importance[node_id] = count

@@ -4,9 +4,7 @@ import json
 import logging
 import os
 import sys
-import time
 from pathlib import Path
-from typing import List, Optional
 
 import click
 import colorlog
@@ -51,7 +49,9 @@ def cli(ctx, verbose):
 
 
 @cli.command()
-@click.option("--input", "-i", required=True, type=click.Path(exists=True), help="Input video file path")
+@click.option(
+    "--input", "-i", required=True, type=click.Path(exists=True), help="Input video file path"
+)
 @click.option("--output", "-o", required=True, type=click.Path(), help="Output directory")
 @click.option(
     "--depth",
@@ -59,11 +59,18 @@ def cli(ctx, verbose):
     default="standard",
     help="Processing depth",
 )
-@click.option("--focus", type=str, help='Comma-separated focus areas (e.g., "diagrams,action-items")')
+@click.option(
+    "--focus", type=str, help='Comma-separated focus areas (e.g., "diagrams,action-items")'
+)
 @click.option("--use-gpu", is_flag=True, help="Enable GPU acceleration if available")
 @click.option("--sampling-rate", type=float, default=0.5, help="Frame sampling rate")
 @click.option("--change-threshold", type=float, default=0.15, help="Visual change threshold")
-@click.option("--periodic-capture", type=float, default=30.0, help="Capture a frame every N seconds regardless of change (0 to disable)")
+@click.option(
+    "--periodic-capture",
+    type=float,
+    default=30.0,
+    help="Capture a frame every N seconds regardless of change (0 to disable)",
+)
 @click.option("--title", type=str, help="Title for the analysis report")
 @click.option(
     "--provider",
@@ -104,7 +111,7 @@ def analyze(
     )
 
     try:
-        manifest = process_single_video(
+        process_single_video(
             input_path=input,
             output_dir=output,
             provider_manager=pm,
@@ -129,7 +136,9 @@ def analyze(
 
 
 @cli.command()
-@click.option("--input-dir", "-i", type=click.Path(), default=None, help="Local directory of videos")
+@click.option(
+    "--input-dir", "-i", type=click.Path(), default=None, help="Local directory of videos"
+)
 @click.option("--output", "-o", required=True, type=click.Path(), help="Output directory")
 @click.option(
     "--depth",
@@ -161,16 +170,31 @@ def analyze(
 )
 @click.option("--folder-id", type=str, default=None, help="Google Drive folder ID")
 @click.option("--folder-path", type=str, default=None, help="Cloud folder path")
-@click.option("--recursive/--no-recursive", default=True, help="Recurse into subfolders (default: recursive)")
+@click.option(
+    "--recursive/--no-recursive", default=True, help="Recurse into subfolders (default: recursive)"
+)
 @click.pass_context
-def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model, chat_model, source, folder_id, folder_path, recursive):
+def batch(
+    ctx,
+    input_dir,
+    output,
+    depth,
+    pattern,
+    title,
+    provider,
+    vision_model,
+    chat_model,
+    source,
+    folder_id,
+    folder_path,
+    recursive,
+):
     """Process a folder of videos in batch."""
     from video_processor.integrators.knowledge_graph import KnowledgeGraph
     from video_processor.integrators.plan_generator import PlanGenerator
     from video_processor.models import BatchManifest, BatchVideoEntry
     from video_processor.output_structure import (
         create_batch_output_dirs,
-        read_video_manifest,
         write_batch_manifest,
     )
     from video_processor.pipeline import process_single_video
@@ -192,8 +216,10 @@ def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model,
             if not cloud.authenticate():
                 logging.error("Google Drive authentication failed")
                 sys.exit(1)
-            cloud_files = cloud.list_videos(folder_id=folder_id, folder_path=folder_path, patterns=patterns, recursive=recursive)
-            local_paths = cloud.download_all(cloud_files, download_dir)
+            cloud_files = cloud.list_videos(
+                folder_id=folder_id, folder_path=folder_path, patterns=patterns, recursive=recursive
+            )
+            cloud.download_all(cloud_files, download_dir)
         elif source == "dropbox":
             from video_processor.sources.dropbox_source import DropboxSource
 
@@ -202,7 +228,7 @@ def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model,
                 logging.error("Dropbox authentication failed")
                 sys.exit(1)
             cloud_files = cloud.list_videos(folder_path=folder_path, patterns=patterns)
-            local_paths = cloud.download_all(cloud_files, download_dir)
+            cloud.download_all(cloud_files, download_dir)
         else:
             logging.error(f"Unknown source: {source}")
             sys.exit(1)
@@ -304,7 +330,10 @@ def batch(ctx, input_dir, output, depth, pattern, title, provider, vision_model,
     )
     write_batch_manifest(batch_manifest, output)
     click.echo(pm.usage.format_summary())
-    click.echo(f"\n  Batch complete: {batch_manifest.completed_videos}/{batch_manifest.total_videos} succeeded")
+    click.echo(
+        f"\n  Batch complete: {batch_manifest.completed_videos}"
+        f"/{batch_manifest.total_videos} succeeded"
+    )
     click.echo(f"  Results: {output}/batch_manifest.json")
 
 
@@ -376,7 +405,9 @@ def clear_cache(ctx, cache_dir, older_than, clear_all):
 
 
 @cli.command("agent-analyze")
-@click.option("--input", "-i", required=True, type=click.Path(exists=True), help="Input video file path")
+@click.option(
+    "--input", "-i", required=True, type=click.Path(exists=True), help="Input video file path"
+)
 @click.option("--output", "-o", required=True, type=click.Path(), help="Output directory")
 @click.option(
     "--depth",

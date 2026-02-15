@@ -1,9 +1,6 @@
 """Tests for API response cache."""
 
-import json
 import time
-
-import pytest
 
 from video_processor.utils.api_cache import ApiCache
 
@@ -73,7 +70,7 @@ class TestApiCache:
         assert cache_b.get("key") == "value_b"
 
     def test_creates_namespace_dir(self, tmp_path):
-        cache = ApiCache(tmp_path / "sub", namespace="deep")
+        ApiCache(tmp_path / "sub", namespace="deep")
         assert (tmp_path / "sub" / "deep").exists()
 
     def test_cache_path_uses_hash(self, tmp_path):

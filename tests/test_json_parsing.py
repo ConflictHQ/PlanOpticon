@@ -1,7 +1,5 @@
 """Tests for robust JSON parsing from LLM responses."""
 
-import pytest
-
 from video_processor.utils.json_parsing import parse_json_from_response
 
 
@@ -10,14 +8,14 @@ class TestParseJsonFromResponse:
         assert parse_json_from_response('{"key": "value"}') == {"key": "value"}
 
     def test_direct_array(self):
-        assert parse_json_from_response('[1, 2, 3]') == [1, 2, 3]
+        assert parse_json_from_response("[1, 2, 3]") == [1, 2, 3]
 
     def test_markdown_fenced_json(self):
         text = '```json\n{"key": "value"}\n```'
         assert parse_json_from_response(text) == {"key": "value"}
 
     def test_markdown_fenced_no_lang(self):
-        text = '```\n[1, 2]\n```'
+        text = "```\n[1, 2]\n```"
         assert parse_json_from_response(text) == [1, 2]
 
     def test_json_embedded_in_text(self):

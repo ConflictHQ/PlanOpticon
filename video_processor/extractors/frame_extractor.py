@@ -1,4 +1,5 @@
 """Frame extraction module for video processing."""
+
 import functools
 import logging
 from pathlib import Path
@@ -115,6 +116,7 @@ def filter_people_frames(
         logger.info(f"Filtered out {removed}/{len(frames)} people/webcam frames")
     return filtered, removed
 
+
 def is_gpu_available() -> bool:
     """Check if GPU acceleration is available for OpenCV."""
     try:
@@ -124,30 +126,34 @@ def is_gpu_available() -> bool:
     except Exception:
         return False
 
+
 def gpu_accelerated(func):
     """Decorator to use GPU implementation when available."""
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        if is_gpu_available() and not kwargs.get('disable_gpu'):
+        if is_gpu_available() and not kwargs.get("disable_gpu"):
             # Remove the disable_gpu kwarg if it exists
-            kwargs.pop('disable_gpu', None)
+            kwargs.pop("disable_gpu", None)
             return func_gpu(*args, **kwargs)
         # Remove the disable_gpu kwarg if it exists
-        kwargs.pop('disable_gpu', None)
+        kwargs.pop("disable_gpu", None)
         return func(*args, **kwargs)
+
     return wrapper
+
 
 def calculate_frame_difference(prev_frame: np.ndarray, curr_frame: np.ndarray) -> float:
     """
     Calculate the difference between two frames.
-    
+
     Parameters
     ----------
     prev_frame : np.ndarray
         Previous frame
     curr_frame : np.ndarray
         Current frame
-        
+
     Returns
     -------
     float
@@ -158,17 +164,18 @@ def calculate_frame_difference(prev_frame: np.ndarray, curr_frame: np.ndarray) -
         prev_gray = cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
     else:
         prev_gray = prev_frame
-        
+
     if len(curr_frame.shape) == 3:
         curr_gray = cv2.cvtColor(curr_frame, cv2.COLOR_BGR2GRAY)
     else:
         curr_gray = curr_frame
-    
+
     # Calculate absolute difference
     diff = cv2.absdiff(prev_gray, curr_gray)
-    
+
     # Normalize and return mean difference
     return np.mean(diff) / 255.0
+
 
 @gpu_accelerated
 def extract_frames(
@@ -177,7 +184,7 @@ def extract_frames(
     change_threshold: float = 0.15,
     periodic_capture_seconds: float = 30.0,
     max_frames: Optional[int] = None,
-    resize_to: Optional[Tuple[int, int]] = None
+    resize_to: Optional[Tuple[int, int]] = None,
 ) -> List[np.ndarray]:
     """
     Extract frames from video based on visual change detection + periodic capture.
@@ -275,7 +282,9 @@ def extract_frames(
                     reason = f"change={diff:.3f}"
 
                 # Periodic capture — even if change is small
-                elif periodic_interval > 0 and (frame_idx - last_capture_frame) >= periodic_interval:
+                elif (
+                    periodic_interval > 0 and (frame_idx - last_capture_frame) >= periodic_interval
+                ):
                     should_capture = True
                     reason = "periodic"
 
@@ -302,6 +311,7 @@ def extract_frames(
     logger.info(f"Extracted {len(extracted_frames)} frames from {frame_count} total frames")
     return extracted_frames
 
+
 def func_gpu(*args, **kwargs):
     """GPU-accelerated version of extract_frames."""
     # This would be implemented with CUDA acceleration
@@ -309,10 +319,13 @@ def func_gpu(*args, **kwargs):
     logger.info("GPU acceleration not yet implemented, falling back to CPU")
     return extract_frames.__wrapped__(*args, **kwargs)
 
-def save_frames(frames: List[np.ndarray], output_dir: Union[str, Path], base_filename: str = "frame") -> List[Path]:
+
+def save_frames(
+    frames: List[np.ndarray], output_dir: Union[str, Path], base_filename: str = "frame"
+) -> List[Path]:
     """
     Save extracted frames to disk.
-    
+
     Parameters
     ----------
     frames : list
@@ -321,7 +334,7 @@ def save_frames(frames: List[np.ndarray], output_dir: Union[str, Path], base_fil
         Directory to save frames in
     base_filename : str
         Base name for frame files
-        
+
     Returns
     -------
     list
@@ -329,11 +342,11 @@ def save_frames(frames: List[np.ndarray], output_dir: Union[str, Path], base_fil
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     saved_paths = []
     for i, frame in enumerate(frames):
         output_path = output_dir / f"{base_filename}_{i:04d}.jpg"
         cv2.imwrite(str(output_path), frame)
         saved_paths.append(output_path)
-        
+
     return saved_paths

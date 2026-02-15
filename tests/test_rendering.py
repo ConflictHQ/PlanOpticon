@@ -1,10 +1,6 @@
 """Tests for rendering and export utilities."""
 
-import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import patch
 
 from video_processor.models import (
     ActionItem,
@@ -103,7 +99,7 @@ class TestReproduceChart:
     def test_creates_output_dir(self, tmp_path):
         nested = tmp_path / "charts" / "output"
         data = {"labels": ["A"], "values": [1], "chart_type": "bar"}
-        result = reproduce_chart(data, nested, "test")
+        reproduce_chart(data, nested, "test")
         assert nested.exists()
 
 
@@ -182,7 +178,7 @@ class TestExportAllFormats:
         (tmp_path / "results").mkdir()
         (tmp_path / "diagrams").mkdir()
 
-        result = export_all_formats(tmp_path, manifest)
+        export_all_formats(tmp_path, manifest)
         # Chart should be reproduced
         chart_svg = tmp_path / "diagrams" / "diagram_0_chart.svg"
         assert chart_svg.exists()

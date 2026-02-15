@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discussions
+    url: https://github.com/ConflictHQ/PlanOpticon/discussions
+    about: Ask questions, share ideas, or discuss PlanOpticon with the community.

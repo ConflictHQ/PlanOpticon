@@ -99,12 +99,14 @@ class AnthropicProvider(BaseProvider):
             for m in page.data:
                 mid = m.id
                 caps = ["chat", "vision"]  # All Claude models support chat + vision
-                models.append(ModelInfo(
-                    id=mid,
-                    provider="anthropic",
-                    display_name=getattr(m, "display_name", mid),
-                    capabilities=caps,
-                ))
+                models.append(
+                    ModelInfo(
+                        id=mid,
+                        provider="anthropic",
+                        display_name=getattr(m, "display_name", mid),
+                        capabilities=caps,
+                    )
+                )
         except Exception as e:
             logger.warning(f"Failed to list Anthropic models: {e}")
         return sorted(models, key=lambda m: m.id)
