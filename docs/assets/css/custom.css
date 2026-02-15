@@ -1,0 +1,156 @@
+/* CONFLICT brand overrides for MkDocs Material */
+
+:root {
+  --conflict-red: #DB394C;
+  --conflict-dark-red: #9C2633;
+  --conflict-pink: #FF1D5D;
+  --conflict-black: #1D1D1D;
+  --conflict-black-2: #282828;
+  --conflict-gray: #A8A8A7;
+  --conflict-light: #ECEFF5;
+}
+
+/* Dark scheme (default) */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--conflict-black);
+  --md-primary-bg-color: #fff;
+  --md-accent-fg-color: var(--conflict-red);
+  --md-default-bg-color: var(--conflict-black);
+  --md-typeset-a-color: var(--conflict-red);
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  background-color: var(--conflict-black);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-md-color-scheme="slate"] .md-tabs {
+  background-color: var(--conflict-black-2);
+}
+
+/* Light scheme */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #fff;
+  --md-primary-bg-color: var(--conflict-black);
+  --md-accent-fg-color: var(--conflict-red);
+  --md-typeset-a-color: var(--conflict-red);
+}
+
+[data-md-color-scheme="default"] .md-header {
+  background-color: #fff;
+  border-bottom: 1px solid var(--conflict-light);
+  color: var(--conflict-black);
+}
+
+[data-md-color-scheme="default"] .md-header .md-header__topic,
+[data-md-color-scheme="default"] .md-header .md-header__title,
+[data-md-color-scheme="default"] .md-header .md-ellipsis {
+  color: var(--conflict-black);
+}
+
+[data-md-color-scheme="default"] .md-tabs {
+  background-color: #fafafa;
+  border-bottom: 1px solid var(--conflict-light);
+}
+
+[data-md-color-scheme="default"] .md-tabs__link {
+  color: var(--conflict-black-2);
+}
+
+[data-md-color-scheme="default"] .md-tabs__link--active,
+[data-md-color-scheme="default"] .md-tabs__link:hover {
+  color: var(--conflict-red);
+}
+
+[data-md-color-scheme="default"] .md-search__input {
+  background-color: var(--conflict-light);
+}
+
+/* Links */
+.md-typeset a:hover {
+  color: var(--conflict-pink);
+}
+
+/* Nav active items */
+.md-nav__link--active,
+.md-nav__link:hover {
+  color: var(--conflict-red) !important;
+}
+
+/* Code blocks */
+[data-md-color-scheme="slate"] .md-typeset code {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+[data-md-color-scheme="slate"] .highlight pre {
+  background-color: #141414 !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+[data-md-color-scheme="default"] .highlight pre {
+  border: 1px solid var(--conflict-light);
+  border-radius: 8px;
+}
+
+/* Tables */
+.md-typeset table:not([class]) th {
+  background-color: var(--conflict-red);
+  color: #fff;
+}
+
+[data-md-color-scheme="default"] .md-typeset table:not([class]) th {
+  background-color: var(--conflict-red);
+  color: #fff;
+}
+
+/* Buttons / admonitions */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 8px;
+}
+
+/* Footer */
+.md-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-md-color-scheme="slate"] .md-footer {
+  background-color: var(--conflict-black);
+}
+
+/* Header logo sizing */
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  height: 1.4rem;
+  width: auto;
+}
+
+/* Scrollbar styling for dark mode */
+[data-md-color-scheme="slate"] ::-webkit-scrollbar {
+  width: 8px;
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-track {
+  background: var(--conflict-black);
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb {
+  background: var(--conflict-black-2);
+  border-radius: 4px;
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb:hover {
+  background: #3a3a3a;
+}
+
+/* Content max width for readability */
+.md-grid {
+  max-width: 1220px;
+}
+
+/* Hero-style heading on index */
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
