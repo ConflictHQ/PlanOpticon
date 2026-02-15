@@ -25,7 +25,7 @@ pip install planopticon[all]
 ## From source
 
 ```bash
-git clone https://github.com/conflict-llc/PlanOpticon.git
+git clone https://github.com/ConflictHQ/PlanOpticon.git
 cd PlanOpticon
 pip install -e ".[dev]"
 ```
@@ -33,7 +33,7 @@ pip install -e ".[dev]"
 ## Binary download
 
 Download standalone binaries (no Python required) from
-[GitHub Releases](https://github.com/conflict-llc/PlanOpticon/releases):
+[GitHub Releases](https://github.com/ConflictHQ/PlanOpticon/releases):
 
 | Platform | Download |
 |----------|----------|

@@ -3,7 +3,7 @@
 ## Development setup
 
 ```bash
-git clone https://github.com/conflict-llc/PlanOpticon.git
+git clone https://github.com/ConflictHQ/PlanOpticon.git
 cd PlanOpticon
 python -m venv .venv
 source .venv/bin/activate

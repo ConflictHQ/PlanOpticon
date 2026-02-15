@@ -2,8 +2,8 @@ site_name: PlanOpticon
 site_url: https://planopticon.dev
 site_description: AI-powered video analysis and knowledge extraction
 site_author: CONFLICT LLC
-repo_url: https://github.com/conflict-llc/PlanOpticon
-repo_name: conflict-llc/PlanOpticon
+repo_url: https://github.com/ConflictHQ/PlanOpticon
+repo_name: ConflictHQ/PlanOpticon
 
 theme:
   name: material
@@ -88,6 +88,6 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/conflict-llc/PlanOpticon
+      link: https://github.com/ConflictHQ/PlanOpticon
 
 copyright: Copyright &copy; 2026 CONFLICT LLC

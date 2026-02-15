@@ -77,8 +77,8 @@ all = [
 [project.urls]
 Homepage = "https://planopticon.dev"
 Documentation = "https://planopticon.dev"
-Repository = "https://github.com/conflict-llc/PlanOpticon"
-Issues = "https://github.com/conflict-llc/PlanOpticon/issues"
+Repository = "https://github.com/ConflictHQ/PlanOpticon"
+Issues = "https://github.com/ConflictHQ/PlanOpticon/issues"
 
 [project.scripts]
 planopticon = "video_processor.cli.commands:main"
