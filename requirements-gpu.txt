@@ -1,5 +1,5 @@
 # NVIDIA GPU acceleration dependencies
-torch==2.0.0+cu118
+torch==2.10.0
 torchvision==0.25.0
 torchaudio==2.10.0
 
