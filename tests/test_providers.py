@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from video_processor.providers.base import BaseProvider, ModelInfo
 from video_processor.providers.manager import ProviderManager
 
@@ -109,17 +111,23 @@ class TestProviderManager:
 
 class TestDiscovery:
     @patch("video_processor.providers.discovery._cached_models", None)
+    @patch(
+        "video_processor.providers.ollama_provider.OllamaProvider.is_available", return_value=False
+    )
     @patch.dict("os.environ", {}, clear=True)
-    def test_discover_skips_missing_keys(self):
+    def test_discover_skips_missing_keys(self, mock_ollama):
         from video_processor.providers.discovery import discover_available_models
 
-        # No API keys -> empty list, no errors
+        # No API keys and no Ollama -> empty list, no errors
         models = discover_available_models(api_keys={"openai": "", "anthropic": "", "gemini": ""})
         assert models == []
 
     @patch.dict("os.environ", {}, clear=True)
+    @patch(
+        "video_processor.providers.ollama_provider.OllamaProvider.is_available", return_value=False
+    )
     @patch("video_processor.providers.discovery._cached_models", None)
-    def test_discover_caches_results(self):
+    def test_discover_caches_results(self, mock_ollama):
         from video_processor.providers import discovery
 
         models = discovery.discover_available_models(
@@ -133,3 +141,83 @@ class TestDiscovery:
         # Force refresh
         discovery.clear_discovery_cache()
         # Would try to connect with real key, so skip that test
+
+
+class TestOllamaProvider:
+    @patch("video_processor.providers.ollama_provider.requests")
+    def test_is_available_when_running(self, mock_requests):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_requests.get.return_value = mock_resp
+
+        from video_processor.providers.ollama_provider import OllamaProvider
+
+        assert OllamaProvider.is_available()
+
+    @patch("video_processor.providers.ollama_provider.requests")
+    def test_is_available_when_not_running(self, mock_requests):
+        mock_requests.get.side_effect = ConnectionError
+
+        from video_processor.providers.ollama_provider import OllamaProvider
+
+        assert not OllamaProvider.is_available()
+
+    @patch("video_processor.providers.ollama_provider.requests")
+    @patch("video_processor.providers.ollama_provider.OpenAI")
+    def test_transcribe_raises(self, mock_openai, mock_requests):
+        from video_processor.providers.ollama_provider import OllamaProvider
+
+        provider = OllamaProvider()
+        with pytest.raises(NotImplementedError):
+            provider.transcribe_audio("/tmp/test.wav")
+
+    @patch("video_processor.providers.ollama_provider.requests")
+    @patch("video_processor.providers.ollama_provider.OpenAI")
+    def test_list_models(self, mock_openai, mock_requests):
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "models": [
+                {"name": "llama3.2:latest", "details": {"family": "llama"}},
+                {"name": "llava:13b", "details": {"family": "llava"}},
+            ]
+        }
+        mock_requests.get.return_value = mock_resp
+
+        from video_processor.providers.ollama_provider import OllamaProvider
+
+        provider = OllamaProvider()
+        models = provider.list_models()
+        assert len(models) == 2
+        assert models[0].provider == "ollama"
+
+        # llava should have vision capability
+        llava = [m for m in models if "llava" in m.id][0]
+        assert "vision" in llava.capabilities
+
+        # llama should have only chat
+        llama = [m for m in models if "llama" in m.id][0]
+        assert "chat" in llama.capabilities
+        assert "vision" not in llama.capabilities
+
+    def test_provider_for_model_ollama_via_discovery(self):
+        mgr = ProviderManager()
+        mgr._available_models = [
+            ModelInfo(id="llama3.2:latest", provider="ollama", capabilities=["chat"]),
+        ]
+        assert mgr._provider_for_model("llama3.2:latest") == "ollama"
+
+    def test_provider_for_model_ollama_fuzzy_tag(self):
+        mgr = ProviderManager()
+        mgr._available_models = [
+            ModelInfo(id="llama3.2:latest", provider="ollama", capabilities=["chat"]),
+        ]
+        # Should match "llama3.2" to "llama3.2:latest" via prefix
+        assert mgr._provider_for_model("llama3.2") == "ollama"
+
+    def test_init_forced_provider_ollama(self):
+        mgr = ProviderManager(provider="ollama")
+        # Ollama defaults are empty (resolved dynamically)
+        assert mgr.vision_model == ""
+        assert mgr.chat_model == ""
+        assert mgr.transcription_model == ""

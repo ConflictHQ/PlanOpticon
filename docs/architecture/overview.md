@@ -45,6 +45,7 @@ video_processor/
 │   ├── openai_provider.py
 │   ├── anthropic_provider.py
 │   ├── gemini_provider.py
+│   ├── ollama_provider.py  # Local Ollama (offline)
 │   ├── discovery.py        # Auto-model-discovery
 │   └── manager.py          # ProviderManager routing
 ├── utils/
@@ -62,6 +63,6 @@ video_processor/
 
 - **Pydantic everywhere** — All structured data uses pydantic models for validation and serialization
 - **Manifest-driven** — Every run produces `manifest.json` as the single source of truth
-- **Provider abstraction** — Single `ProviderManager` wraps OpenAI, Anthropic, Gemini behind a common interface
+- **Provider abstraction** — Single `ProviderManager` wraps OpenAI, Anthropic, Gemini, and Ollama behind a common interface
 - **No hardcoded models** — Model lists come from API discovery
 - **Screengrab fallback** — When extraction fails, save the frame as a captioned screenshot

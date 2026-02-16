@@ -8,11 +8,11 @@
 
 **AI-powered video analysis and knowledge extraction.**
 
-PlanOpticon processes video recordings into structured knowledge — transcripts, diagrams, action items, key points, and knowledge graphs. It auto-discovers available models across OpenAI, Anthropic, and Gemini, and produces rich multi-format output.
+PlanOpticon processes video recordings into structured knowledge — transcripts, diagrams, action items, key points, and knowledge graphs. It auto-discovers available models across OpenAI, Anthropic, Gemini, and Ollama, and produces rich multi-format output.
 
 ## Features
 
-- **Multi-provider AI** — Auto-discovers and routes to the best available model across OpenAI, Anthropic, and Google Gemini
+- **Multi-provider AI** — Auto-discovers and routes to the best available model across OpenAI, Anthropic, Google Gemini, and Ollama (fully offline)
 - **Smart frame extraction** — Change detection for transitions + periodic capture for slow-evolving content (document scrolling, screen shares)
 - **People frame filtering** — OpenCV face detection automatically removes webcam/video conference frames, keeping only shared content
 - **Diagram extraction** — Vision model classification detects flowcharts, architecture diagrams, charts, and whiteboards
@@ -67,7 +67,7 @@ Download standalone binaries (no Python required) from [GitHub Releases](https:/
 
 - Python 3.10+
 - FFmpeg (`brew install ffmpeg` / `apt install ffmpeg`)
-- At least one API key: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GEMINI_API_KEY`
+- At least one API key (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GEMINI_API_KEY`) **or** [Ollama](https://ollama.com) running locally
 
 ## Output Structure
 

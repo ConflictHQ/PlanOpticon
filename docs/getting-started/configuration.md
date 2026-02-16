@@ -7,6 +7,7 @@
 | `OPENAI_API_KEY` | OpenAI API key |
 | `ANTHROPIC_API_KEY` | Anthropic API key |
 | `GEMINI_API_KEY` | Google Gemini API key |
+| `OLLAMA_HOST` | Ollama server URL (default: `http://localhost:11434`) |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to Google service account JSON (for Drive) |
 | `CACHE_DIR` | Directory for API response caching |
 
@@ -16,9 +17,11 @@ PlanOpticon auto-discovers available models and routes each task to the best opt
 
 | Task | Default preference |
 |------|--------------------|
-| Vision (diagrams) | Gemini Flash > GPT-4o > Claude Sonnet |
-| Chat (analysis) | Claude Sonnet > GPT-4o > Gemini Flash |
-| Transcription | Whisper-1 > Gemini Flash |
+| Vision (diagrams) | Gemini Flash > GPT-4o > Claude Sonnet > Ollama |
+| Chat (analysis) | Claude Sonnet > GPT-4o > Gemini Flash > Ollama |
+| Transcription | Local Whisper > Whisper-1 > Gemini Flash |
+
+If no cloud API keys are configured, PlanOpticon automatically falls back to Ollama when a local server is running. This enables fully offline operation when paired with local Whisper for transcription.
 
 Override with `--provider`, `--vision-model`, or `--chat-model` flags.
 

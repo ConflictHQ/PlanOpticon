@@ -64,7 +64,11 @@ PlanOpticon requires **FFmpeg** for audio extraction:
 
 ## API keys
 
-You need at least one AI provider API key. Set them as environment variables:
+You need at least one AI provider API key **or** a running Ollama server.
+
+### Cloud providers
+
+Set API keys as environment variables:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -79,5 +83,20 @@ OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=AI...
 ```
+
+### Ollama (fully offline)
+
+No API keys needed — just install and run [Ollama](https://ollama.com):
+
+```bash
+# Install Ollama, then pull models
+ollama pull llama3.2        # Chat/analysis
+ollama pull llava            # Vision (diagram detection)
+
+# Start the server (if not already running)
+ollama serve
+```
+
+PlanOpticon auto-detects Ollama and uses it as a fallback when no cloud API keys are set. For a fully offline pipeline, pair Ollama with local Whisper transcription (`pip install planopticon[gpu]`).
 
 PlanOpticon will automatically discover which providers are available and route to the best model for each task.

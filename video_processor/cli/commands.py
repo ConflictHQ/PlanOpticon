@@ -75,7 +75,7 @@ def cli(ctx, verbose):
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["auto", "openai", "anthropic", "gemini"]),
+    type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
     default="auto",
     help="API provider",
 )
@@ -156,7 +156,7 @@ def analyze(
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["auto", "openai", "anthropic", "gemini"]),
+    type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
     default="auto",
     help="API provider",
 )
@@ -345,8 +345,10 @@ def list_models(ctx):
 
     models = discover_available_models(force_refresh=True)
     if not models:
-        click.echo("No models discovered. Check that at least one API key is set:")
-        click.echo("  OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY")
+        click.echo(
+            "No models discovered. Check that at least one API key is set or Ollama is running:"
+        )
+        click.echo("  OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY, or `ollama serve`")
         return
 
     by_provider: dict[str, list] = {}
@@ -419,7 +421,7 @@ def clear_cache(ctx, cache_dir, older_than, clear_all):
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["auto", "openai", "anthropic", "gemini"]),
+    type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
     default="auto",
     help="API provider",
 )
@@ -513,7 +515,7 @@ def _interactive_menu(ctx):
         )
         provider = click.prompt(
             "  Provider",
-            type=click.Choice(["auto", "openai", "anthropic", "gemini"]),
+            type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
             default="auto",
         )
         ctx.invoke(
@@ -542,7 +544,7 @@ def _interactive_menu(ctx):
         )
         provider = click.prompt(
             "  Provider",
-            type=click.Choice(["auto", "openai", "anthropic", "gemini"]),
+            type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
             default="auto",
         )
         ctx.invoke(
