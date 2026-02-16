@@ -77,6 +77,18 @@ def discover_available_models(
         except Exception as e:
             logger.warning(f"Gemini discovery failed: {e}")
 
+    # Ollama (local, no API key needed)
+    try:
+        from video_processor.providers.ollama_provider import OllamaProvider
+
+        if OllamaProvider.is_available():
+            provider = OllamaProvider()
+            models = provider.list_models()
+            logger.info(f"Discovered {len(models)} Ollama models")
+            all_models.extend(models)
+    except Exception as e:
+        logger.info(f"Ollama discovery skipped: {e}")
+
     # Sort by provider then id
     all_models.sort(key=lambda m: (m.provider, m.id))
     _cached_models = all_models

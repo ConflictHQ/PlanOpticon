@@ -93,6 +93,11 @@ class ProviderManager:
                 "vision": "gemini-2.5-flash",
                 "audio": "gemini-2.5-flash",
             },
+            "ollama": {
+                "chat": "",
+                "vision": "",
+                "audio": "",
+            },
         }
         return defaults.get(provider, {}).get(capability, "")
 
@@ -111,6 +116,10 @@ class ProviderManager:
                 from video_processor.providers.gemini_provider import GeminiProvider
 
                 self._providers[provider_name] = GeminiProvider()
+            elif provider_name == "ollama":
+                from video_processor.providers.ollama_provider import OllamaProvider
+
+                self._providers[provider_name] = OllamaProvider()
             else:
                 raise ValueError(f"Unknown provider: {provider_name}")
         return self._providers[provider_name]
@@ -129,10 +138,13 @@ class ProviderManager:
             return "anthropic"
         if model_id.startswith("gemini-"):
             return "gemini"
-        # Try discovery
+        # Try discovery (exact match, then prefix match for ollama name:tag format)
         models = self._get_available_models()
         for m in models:
             if m.id == model_id:
+                return m.provider
+        for m in models:
+            if m.id.startswith(model_id + ":"):
                 return m.provider
         raise ValueError(f"Cannot determine provider for model: {model_id}")
 
@@ -162,9 +174,22 @@ class ProviderManager:
                 except (ValueError, ImportError):
                     continue
 
+            # Fallback: try Ollama if available (no API key needed)
+            try:
+                from video_processor.providers.ollama_provider import OllamaProvider
+
+                if OllamaProvider.is_available():
+                    provider = self._get_provider("ollama")
+                    models = provider.list_models()
+                    for m in models:
+                        if capability in m.capabilities:
+                            return "ollama", m.id
+            except Exception:
+                pass
+
         raise RuntimeError(
             f"No provider available for capability '{capability}'. "
-            "Set an API key for at least one provider."
+            "Set an API key for at least one provider, or start Ollama."
         )
 
     def _track(self, provider: BaseProvider, prov_name: str, model: str) -> None:

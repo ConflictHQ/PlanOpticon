@@ -38,6 +38,9 @@ planopticon analyze -i video.mp4 -o ./out
 # Force a specific provider
 planopticon analyze -i video.mp4 -o ./out --provider openai
 
+# Use Ollama for fully offline processing (no API keys needed)
+planopticon analyze -i video.mp4 -o ./out --provider ollama
+
 # Override specific models
 planopticon analyze -i video.mp4 -o ./out \
     --vision-model gpt-4o \
