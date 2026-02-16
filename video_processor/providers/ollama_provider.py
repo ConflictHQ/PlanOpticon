@@ -88,8 +88,10 @@ class OllamaProvider(BaseProvider):
             temperature=temperature,
         )
         self._last_usage = {
-            "input_tokens": getattr(response.usage, "prompt_tokens", 0) if response.usage else 0,
-            "output_tokens": getattr(response.usage, "completion_tokens", 0)
+            "input_tokens": (getattr(response.usage, "prompt_tokens", 0) or 0)
+            if response.usage
+            else 0,
+            "output_tokens": (getattr(response.usage, "completion_tokens", 0) or 0)
             if response.usage
             else 0,
         }
@@ -125,8 +127,10 @@ class OllamaProvider(BaseProvider):
             max_tokens=max_tokens,
         )
         self._last_usage = {
-            "input_tokens": getattr(response.usage, "prompt_tokens", 0) if response.usage else 0,
-            "output_tokens": getattr(response.usage, "completion_tokens", 0)
+            "input_tokens": (getattr(response.usage, "prompt_tokens", 0) or 0)
+            if response.usage
+            else 0,
+            "output_tokens": (getattr(response.usage, "completion_tokens", 0) or 0)
             if response.usage
             else 0,
         }
