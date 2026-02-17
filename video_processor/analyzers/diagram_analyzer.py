@@ -196,17 +196,43 @@ class DiagramAnalyzer:
                 except ValueError:
                     diagram_type = DiagramType.unknown
 
-                dr = DiagramResult(
-                    frame_index=i,
-                    diagram_type=diagram_type,
-                    confidence=confidence,
-                    description=analysis.get("description"),
-                    text_content=analysis.get("text_content"),
-                    elements=analysis.get("elements") or [],
-                    relationships=analysis.get("relationships") or [],
-                    mermaid=analysis.get("mermaid"),
-                    chart_data=analysis.get("chart_data"),
-                )
+                # Normalize relationships: llava sometimes returns dicts instead of strings
+                raw_rels = analysis.get("relationships") or []
+                relationships = []
+                for rel in raw_rels:
+                    if isinstance(rel, str):
+                        relationships.append(rel)
+                    elif isinstance(rel, dict):
+                        src = rel.get("source", rel.get("from", "?"))
+                        dst = rel.get("destination", rel.get("to", "?"))
+                        label = rel.get("label", rel.get("relationship", ""))
+                        relationships.append(
+                            f"{src} -> {dst}: {label}" if label else f"{src} -> {dst}"
+                        )
+                    else:
+                        relationships.append(str(rel))
+
+                try:
+                    dr = DiagramResult(
+                        frame_index=i,
+                        diagram_type=diagram_type,
+                        confidence=confidence,
+                        description=analysis.get("description"),
+                        text_content=analysis.get("text_content"),
+                        elements=analysis.get("elements") or [],
+                        relationships=relationships,
+                        mermaid=analysis.get("mermaid"),
+                        chart_data=analysis.get("chart_data"),
+                    )
+                except Exception as e:
+                    logger.warning(
+                        f"DiagramResult validation failed for frame {i}: {e}, "
+                        "falling back to screengrab"
+                    )
+                    capture = self._save_screengrab(fp, i, capture_idx, captures_dir, confidence)
+                    captures.append(capture)
+                    capture_idx += 1
+                    continue
 
                 # Save outputs (story 3.4)
                 if diagrams_dir:
