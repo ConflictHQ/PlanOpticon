@@ -24,6 +24,32 @@ PlanOpticon processes video recordings into structured knowledge — transcripts
 - **Checkpoint/resume** — Pipeline resumes from where it left off if interrupted
 - **Screengrab fallback** — When extraction isn't perfect, captures frames with captions — something is always better than nothing
 
+## Local Run
+
+PlanOpticon runs entirely offline with Ollama — no API keys, no cloud, no cost.
+
+> **13.2 hours of video content analyzed, knowledge-graphed, and summarized in ~25 hours of processing time, entirely on local hardware, for free.**
+
+18 meeting recordings processed on a single machine using `llava` (vision), `qwen3:30b` (chat), and `whisper-large` (transcription via Apple Silicon GPU):
+
+| Metric | Value |
+|--------|-------|
+| Recordings | 18 |
+| Video duration | 13.2 hours |
+| Processing time | 24.9 hours |
+| Frames extracted | 1,783 |
+| API calls (local) | 1,841 |
+| Tokens processed | 4.87M |
+| Total cost | **$0.00** |
+
+```bash
+# Fully local analysis — no API keys needed, just Ollama running
+planopticon analyze -i meeting.mp4 -o ./output \
+  --provider ollama \
+  --vision-model llava:latest \
+  --chat-model qwen3:30b
+```
+
 ## Quick Start
 
 ```bash
