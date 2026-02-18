@@ -212,14 +212,49 @@ class DiagramAnalyzer:
                     else:
                         relationships.append(str(rel))
 
+                # Normalize elements: llava may return dicts or nested lists
+                raw_elements = analysis.get("elements") or []
+                elements = []
+                for elem in raw_elements:
+                    if isinstance(elem, str):
+                        elements.append(elem)
+                    elif isinstance(elem, dict):
+                        name = elem.get("name", elem.get("element", ""))
+                        etype = elem.get("type", elem.get("element_type", ""))
+                        if name and etype:
+                            elements.append(f"{etype}: {name}")
+                        elif name:
+                            elements.append(name)
+                        else:
+                            elements.append(json.dumps(elem))
+                    elif isinstance(elem, list):
+                        elements.extend(str(e) for e in elem)
+                    else:
+                        elements.append(str(elem))
+
+                # Normalize text_content: llava may return dict instead of string
+                raw_text = analysis.get("text_content")
+                if isinstance(raw_text, dict):
+                    parts = []
+                    for k, v in raw_text.items():
+                        if isinstance(v, list):
+                            parts.append(f"{k}: {', '.join(str(x) for x in v)}")
+                        else:
+                            parts.append(f"{k}: {v}")
+                    text_content = "\n".join(parts)
+                elif isinstance(raw_text, list):
+                    text_content = "\n".join(str(x) for x in raw_text)
+                else:
+                    text_content = raw_text
+
                 try:
                     dr = DiagramResult(
                         frame_index=i,
                         diagram_type=diagram_type,
                         confidence=confidence,
                         description=analysis.get("description"),
-                        text_content=analysis.get("text_content"),
-                        elements=analysis.get("elements") or [],
+                        text_content=text_content,
+                        elements=elements,
                         relationships=relationships,
                         mermaid=analysis.get("mermaid"),
                         chart_data=analysis.get("chart_data"),
