@@ -20,25 +20,25 @@ from video_processor.output_structure import (
 )
 
 
+def _make_kg_with_entity(name, entity_type="concept", descriptions=None, occurrences=None):
+    """Helper to build a KnowledgeGraph with entities via the store API."""
+    kg = KnowledgeGraph()
+    descs = list(descriptions) if descriptions else []
+    kg._store.merge_entity(name, entity_type, descs)
+    for occ in occurrences or []:
+        kg._store.add_occurrence(name, occ.get("source", ""), occ.get("timestamp"), occ.get("text"))
+    return kg
+
+
 class TestKnowledgeGraphMerge:
     def test_merge_new_nodes(self):
         kg1 = KnowledgeGraph()
-        kg1.nodes["Python"] = {
-            "id": "Python",
-            "name": "Python",
-            "type": "concept",
-            "descriptions": {"A programming language"},
-            "occurrences": [{"source": "video1"}],
-        }
+        kg1._store.merge_entity("Python", "concept", ["A programming language"])
+        kg1._store.add_occurrence("Python", "video1")
 
         kg2 = KnowledgeGraph()
-        kg2.nodes["Rust"] = {
-            "id": "Rust",
-            "name": "Rust",
-            "type": "concept",
-            "descriptions": {"A systems language"},
-            "occurrences": [{"source": "video2"}],
-        }
+        kg2._store.merge_entity("Rust", "concept", ["A systems language"])
+        kg2._store.add_occurrence("Rust", "video2")
 
         kg1.merge(kg2)
         assert "Python" in kg1.nodes
@@ -47,22 +47,12 @@ class TestKnowledgeGraphMerge:
 
     def test_merge_overlapping_nodes_case_insensitive(self):
         kg1 = KnowledgeGraph()
-        kg1.nodes["Python"] = {
-            "id": "Python",
-            "name": "Python",
-            "type": "concept",
-            "descriptions": {"Language A"},
-            "occurrences": [{"source": "v1"}],
-        }
+        kg1._store.merge_entity("Python", "concept", ["Language A"])
+        kg1._store.add_occurrence("Python", "v1")
 
         kg2 = KnowledgeGraph()
-        kg2.nodes["python"] = {
-            "id": "python",
-            "name": "python",
-            "type": "concept",
-            "descriptions": {"Language B"},
-            "occurrences": [{"source": "v2"}],
-        }
+        kg2._store.merge_entity("python", "concept", ["Language B"])
+        kg2._store.add_occurrence("python", "v2")
 
         kg1.merge(kg2)
         # Should merge into existing node, not create duplicate
@@ -73,23 +63,22 @@ class TestKnowledgeGraphMerge:
 
     def test_merge_relationships(self):
         kg1 = KnowledgeGraph()
-        kg1.relationships = [{"source": "A", "target": "B", "type": "uses"}]
+        kg1._store.merge_entity("A", "concept", [])
+        kg1._store.merge_entity("B", "concept", [])
+        kg1._store.add_relationship("A", "B", "uses")
 
         kg2 = KnowledgeGraph()
-        kg2.relationships = [{"source": "C", "target": "D", "type": "calls"}]
+        kg2._store.merge_entity("C", "concept", [])
+        kg2._store.merge_entity("D", "concept", [])
+        kg2._store.add_relationship("C", "D", "calls")
 
         kg1.merge(kg2)
         assert len(kg1.relationships) == 2
 
     def test_merge_empty_into_populated(self):
         kg1 = KnowledgeGraph()
-        kg1.nodes["X"] = {
-            "id": "X",
-            "name": "X",
-            "type": "concept",
-            "descriptions": set(),
-            "occurrences": [],
-        }
+        kg1._store.merge_entity("X", "concept", [])
+
         kg2 = KnowledgeGraph()
         kg1.merge(kg2)
         assert len(kg1.nodes) == 1
@@ -98,14 +87,10 @@ class TestKnowledgeGraphMerge:
 class TestKnowledgeGraphFromDict:
     def test_round_trip(self):
         kg = KnowledgeGraph()
-        kg.nodes["Alice"] = {
-            "id": "Alice",
-            "name": "Alice",
-            "type": "person",
-            "descriptions": {"Team lead"},
-            "occurrences": [{"source": "transcript"}],
-        }
-        kg.relationships = [{"source": "Alice", "target": "Bob", "type": "manages"}]
+        kg._store.merge_entity("Alice", "person", ["Team lead"])
+        kg._store.add_occurrence("Alice", "transcript")
+        kg._store.merge_entity("Bob", "person", [])
+        kg._store.add_relationship("Alice", "Bob", "manages")
 
         data = kg.to_dict()
         restored = KnowledgeGraph.from_dict(data)
@@ -139,13 +124,8 @@ class TestKnowledgeGraphFromDict:
 class TestKnowledgeGraphSave:
     def test_save_as_pydantic(self, tmp_path):
         kg = KnowledgeGraph()
-        kg.nodes["Test"] = {
-            "id": "Test",
-            "name": "Test",
-            "type": "concept",
-            "descriptions": {"A test entity"},
-            "occurrences": [],
-        }
+        kg._store.merge_entity("Test", "concept", ["A test entity"])
+
         path = kg.save(tmp_path / "kg.json")
         assert path.exists()
         data = json.loads(path.read_text())
@@ -227,14 +207,8 @@ class TestBatchSummary:
             VideoManifest(video=VideoMetadata(title="V1")),
         ]
         kg = KnowledgeGraph()
-        kg.nodes["Test"] = {
-            "id": "Test",
-            "name": "Test",
-            "type": "concept",
-            "descriptions": set(),
-            "occurrences": [],
-        }
-        kg.relationships = [{"source": "Test", "target": "Test", "type": "self"}]
+        kg._store.merge_entity("Test", "concept", [])
+        kg._store.add_relationship("Test", "Test", "self")
 
         gen = PlanGenerator()
         summary = gen.generate_batch_summary(

@@ -178,6 +178,7 @@ class VideoManifest(BaseModel):
     analysis_html: Optional[str] = Field(default=None)
     analysis_pdf: Optional[str] = Field(default=None)
     knowledge_graph_json: Optional[str] = Field(default=None)
+    knowledge_graph_db: Optional[str] = Field(default=None)
     key_points_json: Optional[str] = Field(default=None)
     action_items_json: Optional[str] = Field(default=None)
 
@@ -227,3 +228,4 @@ class BatchManifest(BaseModel):
     # Batch-level output paths (relative)
     batch_summary_md: Optional[str] = Field(default=None)
     merged_knowledge_graph_json: Optional[str] = Field(default=None)
+    merged_knowledge_graph_db: Optional[str] = Field(default=None)

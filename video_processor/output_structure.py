@@ -27,6 +27,7 @@ def create_video_output_dirs(output_dir: str | Path, video_name: str) -> Dict[st
             results/
                 analysis.md, .html, .pdf
                 knowledge_graph.json
+                knowledge_graph.db (when falkordblite installed)
                 key_points.json
                 action_items.json
             cache/
@@ -58,6 +59,7 @@ def create_batch_output_dirs(output_dir: str | Path, batch_name: str) -> Dict[st
             manifest.json
             batch_summary.md
             knowledge_graph.json
+            knowledge_graph.db (when falkordblite installed)
             videos/
                 video_1/manifest.json
                 video_2/manifest.json
