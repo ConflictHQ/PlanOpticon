@@ -71,6 +71,13 @@ class GraphStore(ABC):
         """Check if an entity exists (case-insensitive)."""
         ...
 
+    def raw_query(self, query_string: str) -> Any:
+        """Execute a raw query against the backend (e.g. Cypher for FalkorDB).
+
+        Not supported by all backends — raises NotImplementedError by default.
+        """
+        raise NotImplementedError(f"{type(self).__name__} does not support raw queries")
+
     def to_dict(self) -> Dict[str, Any]:
         """Export to JSON-compatible dict matching knowledge_graph.json format."""
         entities = self.get_all_entities()
@@ -361,6 +368,11 @@ class FalkorDBStore(GraphStore):
             params={"name_lower": name.lower()},
         )
         return result.result_set[0][0] > 0 if result.result_set else False
+
+    def raw_query(self, query_string: str) -> Any:
+        """Execute a raw Cypher query and return the result set."""
+        result = self._graph.query(query_string)
+        return result.result_set
 
     def close(self) -> None:
         """Release references. FalkorDB Lite handles persistence automatically."""
