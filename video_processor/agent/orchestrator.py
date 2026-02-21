@@ -193,7 +193,8 @@ class AgentOrchestrator:
             from video_processor.integrators.knowledge_graph import KnowledgeGraph
 
             transcript = self._results.get("transcribe", {})
-            kg = KnowledgeGraph(provider_manager=self.pm)
+            kg_db_path = dirs["results"] / "knowledge_graph.db"
+            kg = KnowledgeGraph(provider_manager=self.pm, db_path=kg_db_path)
             kg.process_transcript(transcript)
 
             diagram_result = self._results.get("detect_diagrams", {})

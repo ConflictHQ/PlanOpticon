@@ -256,7 +256,8 @@ def batch(
     dirs = create_batch_output_dirs(output, title)
     manifests = []
     entries = []
-    merged_kg = KnowledgeGraph()
+    merged_kg_db = Path(output) / "knowledge_graph.db"
+    merged_kg = KnowledgeGraph(db_path=merged_kg_db)
 
     for idx, video_path in enumerate(tqdm(videos, desc="Batch processing", unit="video")):
         video_name = video_path.stem
@@ -327,6 +328,7 @@ def batch(
         videos=entries,
         batch_summary_md="batch_summary.md",
         merged_knowledge_graph_json="knowledge_graph.json",
+        merged_knowledge_graph_db="knowledge_graph.db",
     )
     write_batch_manifest(batch_manifest, output)
     click.echo(pm.usage.format_summary())

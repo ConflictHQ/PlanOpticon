@@ -193,14 +193,14 @@ def process_single_video(
     pm.usage.start_step("Knowledge graph")
     pipeline_bar.set_description("Pipeline: building knowledge graph")
     kg_json_path = dirs["results"] / "knowledge_graph.json"
+    kg_db_path = dirs["results"] / "knowledge_graph.db"
     if kg_json_path.exists():
         logger.info("Resuming: found knowledge graph on disk, loading")
         kg_data = json.loads(kg_json_path.read_text())
-        kg = KnowledgeGraph(provider_manager=pm)
-        kg = KnowledgeGraph.from_dict(kg_data)
+        kg = KnowledgeGraph.from_dict(kg_data, db_path=kg_db_path)
     else:
         logger.info("Building knowledge graph...")
-        kg = KnowledgeGraph(provider_manager=pm)
+        kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
         kg.process_transcript(transcript_data)
         if diagrams:
             diagram_dicts = [d.model_dump() for d in diagrams]
@@ -267,6 +267,7 @@ def process_single_video(
         transcript_srt="transcript/transcript.srt",
         analysis_md="results/analysis.md",
         knowledge_graph_json="results/knowledge_graph.json",
+        knowledge_graph_db="results/knowledge_graph.db",
         key_points_json="results/key_points.json",
         action_items_json="results/action_items.json",
         key_points=key_points,

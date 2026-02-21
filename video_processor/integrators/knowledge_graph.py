@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Union
 
 from tqdm import tqdm
 
+from video_processor.integrators.graph_store import GraphStore, create_store
 from video_processor.models import Entity, KnowledgeGraphData, Relationship
 from video_processor.providers.manager import ProviderManager
 from video_processor.utils.json_parsing import parse_json_from_response
@@ -19,10 +20,32 @@ class KnowledgeGraph:
     def __init__(
         self,
         provider_manager: Optional[ProviderManager] = None,
+        db_path: Optional[Path] = None,
+        store: Optional[GraphStore] = None,
     ):
         self.pm = provider_manager
-        self.nodes: Dict[str, dict] = {}
-        self.relationships: List[dict] = []
+        self._store = store or create_store(db_path)
+
+    @property
+    def nodes(self) -> Dict[str, dict]:
+        """Backward-compatible read access to nodes as a dict keyed by entity name."""
+        result = {}
+        for entity in self._store.get_all_entities():
+            name = entity["name"]
+            descs = entity.get("descriptions", [])
+            result[name] = {
+                "id": entity.get("id", name),
+                "name": name,
+                "type": entity.get("type", "concept"),
+                "descriptions": set(descs) if isinstance(descs, list) else descs,
+                "occurrences": entity.get("occurrences", []),
+            }
+        return result
+
+    @property
+    def relationships(self) -> List[dict]:
+        """Backward-compatible read access to relationships."""
+        return self._store.get_all_relationships()
 
     def _chat(self, prompt: str, temperature: float = 0.3) -> str:
         """Send a chat message through ProviderManager (or return empty if none)."""
@@ -94,43 +117,20 @@ class KnowledgeGraph:
         """Add content to knowledge graph by extracting entities and relationships."""
         entities, relationships = self.extract_entities_and_relationships(text)
 
+        snippet = text[:100] + "..." if len(text) > 100 else text
+
         for entity in entities:
-            eid = entity.name
-            if eid in self.nodes:
-                self.nodes[eid]["occurrences"].append(
-                    {
-                        "source": source,
-                        "timestamp": timestamp,
-                        "text": text[:100] + "..." if len(text) > 100 else text,
-                    }
-                )
-                if entity.descriptions:
-                    self.nodes[eid]["descriptions"].update(entity.descriptions)
-            else:
-                self.nodes[eid] = {
-                    "id": eid,
-                    "name": entity.name,
-                    "type": entity.type,
-                    "descriptions": set(entity.descriptions),
-                    "occurrences": [
-                        {
-                            "source": source,
-                            "timestamp": timestamp,
-                            "text": text[:100] + "..." if len(text) > 100 else text,
-                        }
-                    ],
-                }
+            self._store.merge_entity(entity.name, entity.type, entity.descriptions, source=source)
+            self._store.add_occurrence(entity.name, source, timestamp, snippet)
 
         for rel in relationships:
-            if rel.source in self.nodes and rel.target in self.nodes:
-                self.relationships.append(
-                    {
-                        "source": rel.source,
-                        "target": rel.target,
-                        "type": rel.type,
-                        "content_source": source,
-                        "timestamp": timestamp,
-                    }
+            if self._store.has_entity(rel.source) and self._store.has_entity(rel.target):
+                self._store.add_relationship(
+                    rel.source,
+                    rel.target,
+                    rel.type,
+                    content_source=source,
+                    timestamp=timestamp,
                 )
 
     def process_transcript(self, transcript: Dict, batch_size: int = 10) -> None:
@@ -144,14 +144,8 @@ class KnowledgeGraph:
         # Register speakers first
         for i, segment in enumerate(segments):
             speaker = segment.get("speaker", None)
-            if speaker and speaker not in self.nodes:
-                self.nodes[speaker] = {
-                    "id": speaker,
-                    "name": speaker,
-                    "type": "person",
-                    "descriptions": {"Speaker in transcript"},
-                    "occurrences": [],
-                }
+            if speaker and not self._store.has_entity(speaker):
+                self._store.merge_entity(speaker, "person", ["Speaker in transcript"])
 
         # Batch segments together for fewer API calls
         batches = []
@@ -175,38 +169,32 @@ class KnowledgeGraph:
         """Process diagram results into knowledge graph."""
         for i, diagram in enumerate(tqdm(diagrams, desc="Processing diagrams for KG", unit="diag")):
             text_content = diagram.get("text_content", "")
+            source = f"diagram_{i}"
             if text_content:
-                source = f"diagram_{i}"
                 self.add_content(text_content, source)
 
             diagram_id = f"diagram_{i}"
-            if diagram_id not in self.nodes:
-                self.nodes[diagram_id] = {
-                    "id": diagram_id,
-                    "name": f"Diagram {i}",
-                    "type": "diagram",
-                    "descriptions": {"Visual diagram from video"},
-                    "occurrences": [
-                        {
-                            "source": source if text_content else f"diagram_{i}",
-                            "frame_index": diagram.get("frame_index"),
-                        }
-                    ],
-                }
+            if not self._store.has_entity(diagram_id):
+                self._store.merge_entity(diagram_id, "diagram", ["Visual diagram from video"])
+                self._store.add_occurrence(
+                    diagram_id,
+                    source if text_content else diagram_id,
+                    text=f"frame_index={diagram.get('frame_index')}",
+                )
 
     def to_data(self) -> KnowledgeGraphData:
         """Convert to pydantic KnowledgeGraphData model."""
         nodes = []
-        for node in self.nodes.values():
-            descs = node.get("descriptions", set())
+        for entity in self._store.get_all_entities():
+            descs = entity.get("descriptions", [])
             if isinstance(descs, set):
                 descs = list(descs)
             nodes.append(
                 Entity(
-                    name=node["name"],
-                    type=node.get("type", "concept"),
+                    name=entity["name"],
+                    type=entity.get("type", "concept"),
                     descriptions=descs,
-                    occurrences=node.get("occurrences", []),
+                    occurrences=entity.get("occurrences", []),
                 )
             )
 
@@ -218,20 +206,13 @@ class KnowledgeGraph:
                 content_source=r.get("content_source"),
                 timestamp=r.get("timestamp"),
             )
-            for r in self.relationships
+            for r in self._store.get_all_relationships()
         ]
         return KnowledgeGraphData(nodes=nodes, relationships=rels)
 
     def to_dict(self) -> Dict:
         """Convert knowledge graph to dictionary (backward-compatible)."""
-        nodes_json = []
-        for node_id, node in self.nodes.items():
-            node_json = node.copy()
-            descs = node.get("descriptions", set())
-            node_json["descriptions"] = list(descs) if isinstance(descs, set) else descs
-            nodes_json.append(node_json)
-
-        return {"nodes": nodes_json, "relationships": self.relationships}
+        return self._store.to_dict()
 
     def save(self, output_path: Union[str, Path]) -> Path:
         """Save knowledge graph to JSON file."""
@@ -243,68 +224,75 @@ class KnowledgeGraph:
         data = self.to_data()
         output_path.write_text(data.model_dump_json(indent=2))
         logger.info(
-            f"Saved knowledge graph with {len(self.nodes)} nodes "
-            f"and {len(self.relationships)} relationships to {output_path}"
+            f"Saved knowledge graph with {self._store.get_entity_count()} nodes "
+            f"and {self._store.get_relationship_count()} relationships to {output_path}"
         )
         return output_path
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "KnowledgeGraph":
+    def from_dict(cls, data: Dict, db_path: Optional[Path] = None) -> "KnowledgeGraph":
         """Reconstruct a KnowledgeGraph from saved JSON dict."""
-        kg = cls()
+        kg = cls(db_path=db_path)
         for node in data.get("nodes", []):
-            nid = node.get("id", node.get("name", ""))
+            name = node.get("name", node.get("id", ""))
             descs = node.get("descriptions", [])
-            kg.nodes[nid] = {
-                "id": nid,
-                "name": node.get("name", nid),
-                "type": node.get("type", "concept"),
-                "descriptions": set(descs) if isinstance(descs, list) else descs,
-                "occurrences": node.get("occurrences", []),
-            }
-        kg.relationships = data.get("relationships", [])
+            if isinstance(descs, set):
+                descs = list(descs)
+            kg._store.merge_entity(
+                name, node.get("type", "concept"), descs, source=node.get("source")
+            )
+            for occ in node.get("occurrences", []):
+                kg._store.add_occurrence(
+                    name,
+                    occ.get("source", ""),
+                    occ.get("timestamp"),
+                    occ.get("text"),
+                )
+        for rel in data.get("relationships", []):
+            kg._store.add_relationship(
+                rel.get("source", ""),
+                rel.get("target", ""),
+                rel.get("type", "related_to"),
+                content_source=rel.get("content_source"),
+                timestamp=rel.get("timestamp"),
+            )
         return kg
 
     def merge(self, other: "KnowledgeGraph") -> None:
         """Merge another KnowledgeGraph into this one."""
-        for nid, node in other.nodes.items():
-            nid_lower = nid.lower()
-            # Find existing node by case-insensitive match
-            existing_id = None
-            for eid in self.nodes:
-                if eid.lower() == nid_lower:
-                    existing_id = eid
-                    break
+        for entity in other._store.get_all_entities():
+            name = entity["name"]
+            descs = entity.get("descriptions", [])
+            if isinstance(descs, set):
+                descs = list(descs)
+            self._store.merge_entity(
+                name, entity.get("type", "concept"), descs, source=entity.get("source")
+            )
+            for occ in entity.get("occurrences", []):
+                self._store.add_occurrence(
+                    name,
+                    occ.get("source", ""),
+                    occ.get("timestamp"),
+                    occ.get("text"),
+                )
 
-            if existing_id:
-                existing = self.nodes[existing_id]
-                existing["occurrences"].extend(node.get("occurrences", []))
-                descs = node.get("descriptions", set())
-                if isinstance(descs, set):
-                    existing["descriptions"].update(descs)
-                elif isinstance(descs, list):
-                    existing["descriptions"].update(descs)
-            else:
-                descs = node.get("descriptions", set())
-                self.nodes[nid] = {
-                    "id": nid,
-                    "name": node.get("name", nid),
-                    "type": node.get("type", "concept"),
-                    "descriptions": set(descs) if isinstance(descs, list) else descs,
-                    "occurrences": list(node.get("occurrences", [])),
-                }
-
-        self.relationships.extend(other.relationships)
+        for rel in other._store.get_all_relationships():
+            self._store.add_relationship(
+                rel.get("source", ""),
+                rel.get("target", ""),
+                rel.get("type", "related_to"),
+                content_source=rel.get("content_source"),
+                timestamp=rel.get("timestamp"),
+            )
 
     def generate_mermaid(self, max_nodes: int = 30) -> str:
         """Generate Mermaid visualization code."""
+        nodes = self.nodes
+        rels = self.relationships
+
         node_importance = {}
-        for node_id in self.nodes:
-            count = sum(
-                1
-                for rel in self.relationships
-                if rel["source"] == node_id or rel["target"] == node_id
-            )
+        for node_id in nodes:
+            count = sum(1 for rel in rels if rel["source"] == node_id or rel["target"] == node_id)
             node_importance[node_id] = count
 
         important = sorted(node_importance.items(), key=lambda x: x[1], reverse=True)
@@ -313,7 +301,7 @@ class KnowledgeGraph:
         mermaid = ["graph LR"]
 
         for nid in important_ids:
-            node = self.nodes[nid]
+            node = nodes[nid]
             ntype = node.get("type", "concept")
             # Sanitize id for mermaid (alphanumeric + underscore only)
             safe_id = "".join(c if c.isalnum() or c == "_" else "_" for c in nid)
@@ -321,7 +309,7 @@ class KnowledgeGraph:
             mermaid.append(f'    {safe_id}["{safe_name}"]:::{ntype}')
 
         added = set()
-        for rel in self.relationships:
+        for rel in rels:
             src, tgt = rel["source"], rel["target"]
             if src in important_ids and tgt in important_ids:
                 rtype = rel.get("type", "related_to")
