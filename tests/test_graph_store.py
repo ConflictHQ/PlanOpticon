@@ -158,7 +158,7 @@ class TestCreateStore:
 # Conditional FalkorDB tests
 _falkordb_available = False
 try:
-    import falkordb  # noqa: F401
+    import redislite  # noqa: F401
 
     _falkordb_available = True
 except ImportError:

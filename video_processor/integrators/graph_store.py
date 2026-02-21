@@ -173,7 +173,7 @@ class FalkorDBStore(GraphStore):
     """FalkorDB Lite-backed graph store. Requires falkordblite package."""
 
     def __init__(self, db_path: Union[str, Path]) -> None:
-        from falkordb import FalkorDB
+        from redislite import FalkorDB
 
         self._db_path = str(db_path)
         self._db = FalkorDB(self._db_path)
