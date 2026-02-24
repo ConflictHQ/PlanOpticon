@@ -180,6 +180,12 @@ class FalkorDBStore(GraphStore):
     """FalkorDB Lite-backed graph store. Requires falkordblite package."""
 
     def __init__(self, db_path: Union[str, Path]) -> None:
+        # Patch redis 7.x compat: UnixDomainSocketConnection missing 'port'
+        import redis.connection
+
+        if not hasattr(redis.connection.UnixDomainSocketConnection, "port"):
+            redis.connection.UnixDomainSocketConnection.port = 0
+
         from redislite import FalkorDB
 
         self._db_path = str(db_path)
