@@ -466,6 +466,188 @@ def agent_analyze(ctx, input, output, depth, title, provider, vision_model, chat
 
 
 @cli.command()
+@click.argument("question", required=False, default=None)
+@click.option(
+    "--db-path",
+    type=click.Path(),
+    default=None,
+    help="Path to knowledge_graph.db or .json (auto-detected if omitted)",
+)
+@click.option(
+    "--mode",
+    type=click.Choice(["direct", "agentic", "auto"]),
+    default="auto",
+    help="Query mode: direct (no LLM), agentic (LLM), or auto",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json", "mermaid"]),
+    default="text",
+    help="Output format",
+)
+@click.option("--interactive", "-I", is_flag=True, help="Enter interactive REPL mode")
+@click.option(
+    "--provider",
+    "-p",
+    type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
+    default="auto",
+    help="API provider for agentic mode",
+)
+@click.option("--chat-model", type=str, default=None, help="Override model for agentic mode")
+@click.pass_context
+def query(ctx, question, db_path, mode, output_format, interactive, provider, chat_model):
+    """Query a knowledge graph. Runs stats if no question given.
+
+    Direct commands recognized in QUESTION: stats, entities, relationships,
+    neighbors, cypher. Natural language questions use agentic mode.
+
+    Examples:
+
+        planopticon query
+        planopticon query stats
+        planopticon query "entities --type technology"
+        planopticon query "neighbors Alice"
+        planopticon query "What was discussed?"
+        planopticon query -I
+    """
+    from video_processor.integrators.graph_discovery import find_nearest_graph
+    from video_processor.integrators.graph_query import GraphQueryEngine
+
+    # Resolve graph path
+    if db_path:
+        graph_path = Path(db_path)
+        if not graph_path.exists():
+            click.echo(f"Error: file not found: {db_path}", err=True)
+            sys.exit(1)
+    else:
+        graph_path = find_nearest_graph()
+        if not graph_path:
+            click.echo(
+                "No knowledge graph found. Run 'planopticon analyze' first to generate one,\n"
+                "or use --db-path to specify a file.",
+                err=True,
+            )
+            sys.exit(1)
+        click.echo(f"Using: {graph_path}")
+
+    # Build provider manager for agentic mode
+    pm = None
+    if mode in ("agentic", "auto"):
+        try:
+            from video_processor.providers.manager import ProviderManager
+
+            prov = None if provider == "auto" else provider
+            pm = ProviderManager(chat_model=chat_model, provider=prov)
+        except Exception:
+            if mode == "agentic":
+                click.echo("Warning: could not initialize LLM provider for agentic mode.", err=True)
+
+    # Create engine
+    if graph_path.suffix == ".json":
+        engine = GraphQueryEngine.from_json_path(graph_path, provider_manager=pm)
+    else:
+        engine = GraphQueryEngine.from_db_path(graph_path, provider_manager=pm)
+
+    if interactive:
+        _query_repl(engine, output_format)
+        return
+
+    if not question:
+        question = "stats"
+
+    result = _execute_query(engine, question, mode)
+    _print_result(result, output_format)
+
+
+def _execute_query(engine, question, mode):
+    """Parse a question string and execute the appropriate query."""
+    parts = question.strip().split()
+    cmd = parts[0].lower() if parts else ""
+
+    # Direct commands
+    if cmd == "stats":
+        return engine.stats()
+
+    if cmd == "entities":
+        kwargs = _parse_filter_args(parts[1:])
+        return engine.entities(
+            name=kwargs.get("name"),
+            entity_type=kwargs.get("type"),
+            limit=int(kwargs.get("limit", 50)),
+        )
+
+    if cmd == "relationships":
+        kwargs = _parse_filter_args(parts[1:])
+        return engine.relationships(
+            source=kwargs.get("source"),
+            target=kwargs.get("target"),
+            rel_type=kwargs.get("type"),
+            limit=int(kwargs.get("limit", 50)),
+        )
+
+    if cmd == "neighbors":
+        entity_name = " ".join(parts[1:]) if len(parts) > 1 else ""
+        return engine.neighbors(entity_name)
+
+    if cmd == "cypher":
+        cypher_query = " ".join(parts[1:])
+        return engine.cypher(cypher_query)
+
+    # Natural language → agentic (or fallback to entity search in direct mode)
+    if mode == "direct":
+        return engine.entities(name=question)
+    return engine.ask(question)
+
+
+def _parse_filter_args(parts):
+    """Parse --key value pairs from a split argument list."""
+    kwargs = {}
+    i = 0
+    while i < len(parts):
+        if parts[i].startswith("--") and i + 1 < len(parts):
+            key = parts[i][2:]
+            kwargs[key] = parts[i + 1]
+            i += 2
+        else:
+            # Treat as name filter
+            kwargs.setdefault("name", parts[i])
+            i += 1
+    return kwargs
+
+
+def _print_result(result, output_format):
+    """Print a QueryResult in the requested format."""
+    if output_format == "json":
+        click.echo(result.to_json())
+    elif output_format == "mermaid":
+        click.echo(result.to_mermaid())
+    else:
+        click.echo(result.to_text())
+
+
+def _query_repl(engine, output_format):
+    """Interactive REPL for querying the knowledge graph."""
+    click.echo("PlanOpticon Knowledge Graph REPL")
+    click.echo("Type a query, or 'quit' / 'exit' to leave.\n")
+    while True:
+        try:
+            line = click.prompt("query", prompt_suffix="> ")
+        except (KeyboardInterrupt, EOFError):
+            click.echo("\nBye.")
+            break
+        line = line.strip()
+        if not line:
+            continue
+        if line.lower() in ("quit", "exit", "q"):
+            click.echo("Bye.")
+            break
+        result = _execute_query(engine, line, "auto")
+        _print_result(result, output_format)
+        click.echo()
+
+
+@cli.command()
 @click.argument("service", type=click.Choice(["google", "dropbox"]))
 @click.pass_context
 def auth(ctx, service):
@@ -503,9 +685,10 @@ def _interactive_menu(ctx):
     click.echo("  4. Authenticate cloud service")
     click.echo("  5. Clear cache")
     click.echo("  6. Show help")
+    click.echo("  7. Query knowledge graph")
     click.echo()
 
-    choice = click.prompt("  Select an option", type=click.IntRange(1, 6))
+    choice = click.prompt("  Select an option", type=click.IntRange(1, 7))
 
     if choice == 1:
         input_path = click.prompt("  Video file path", type=click.Path(exists=True))
@@ -588,6 +771,18 @@ def _interactive_menu(ctx):
     elif choice == 6:
         click.echo()
         click.echo(ctx.get_help())
+
+    elif choice == 7:
+        ctx.invoke(
+            query,
+            question=None,
+            db_path=None,
+            mode="auto",
+            output_format="text",
+            interactive=True,
+            provider="auto",
+            chat_model=None,
+        )
 
 
 def main():

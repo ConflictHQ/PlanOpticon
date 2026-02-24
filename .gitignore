@@ -43,7 +43,6 @@ ENV/
 .aider/
 .continue/
 .copilot/
-CLAUDE.md
 AGENTS.md
 GEMINI.md
 
