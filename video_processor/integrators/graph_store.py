@@ -71,6 +71,46 @@ class GraphStore(ABC):
         """Check if an entity exists (case-insensitive)."""
         ...
 
+    @abstractmethod
+    def add_typed_relationship(
+        self,
+        source: str,
+        target: str,
+        edge_label: str,
+        properties: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Add a relationship with a custom edge label (e.g. DEPENDS_ON, USES_SYSTEM).
+
+        Unlike add_relationship which always uses RELATED_TO, this creates edges
+        with the specified label for richer graph semantics.
+        """
+        ...
+
+    @abstractmethod
+    def set_entity_properties(
+        self,
+        name: str,
+        properties: Dict[str, Any],
+    ) -> bool:
+        """Set arbitrary key/value properties on an existing entity.
+
+        Returns True if the entity was found and updated, False otherwise.
+        """
+        ...
+
+    @abstractmethod
+    def has_relationship(
+        self,
+        source: str,
+        target: str,
+        edge_label: Optional[str] = None,
+    ) -> bool:
+        """Check if a relationship exists between two entities.
+
+        If edge_label is None, checks for any relationship type.
+        """
+        ...
+
     def raw_query(self, query_string: str) -> Any:
         """Execute a raw query against the backend (e.g. Cypher for FalkorDB).
 
@@ -175,6 +215,47 @@ class InMemoryStore(GraphStore):
     def has_entity(self, name: str) -> bool:
         return name.lower() in self._nodes
 
+    def add_typed_relationship(
+        self,
+        source: str,
+        target: str,
+        edge_label: str,
+        properties: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        entry: Dict[str, Any] = {
+            "source": source,
+            "target": target,
+            "type": edge_label,
+        }
+        if properties:
+            entry.update(properties)
+        self._relationships.append(entry)
+
+    def set_entity_properties(
+        self,
+        name: str,
+        properties: Dict[str, Any],
+    ) -> bool:
+        key = name.lower()
+        if key not in self._nodes:
+            return False
+        self._nodes[key].update(properties)
+        return True
+
+    def has_relationship(
+        self,
+        source: str,
+        target: str,
+        edge_label: Optional[str] = None,
+    ) -> bool:
+        src_lower = source.lower()
+        tgt_lower = target.lower()
+        for rel in self._relationships:
+            if rel["source"].lower() == src_lower and rel["target"].lower() == tgt_lower:
+                if edge_label is None or rel.get("type") == edge_label:
+                    return True
+        return False
+
 
 class FalkorDBStore(GraphStore):
     """FalkorDB Lite-backed graph store. Requires falkordblite package."""
@@ -197,6 +278,7 @@ class FalkorDBStore(GraphStore):
         for query in [
             "CREATE INDEX FOR (e:Entity) ON (e.name_lower)",
             "CREATE INDEX FOR (e:Entity) ON (e.type)",
+            "CREATE INDEX FOR (e:Entity) ON (e.dag_id)",
         ]:
             try:
                 self._graph.query(query)
@@ -365,8 +447,12 @@ class FalkorDBStore(GraphStore):
         return result.result_set[0][0] if result.result_set else 0
 
     def get_relationship_count(self) -> int:
-        result = self._graph.query("MATCH ()-[r:RELATED_TO]->() RETURN count(r)")
-        return result.result_set[0][0] if result.result_set else 0
+        result = self._graph.query("MATCH ()-[r]->() RETURN count(r)")
+        count = result.result_set[0][0] if result.result_set else 0
+        # Subtract occurrence edges which are internal bookkeeping
+        occ_result = self._graph.query("MATCH ()-[r:OCCURRED_IN]->() RETURN count(r)")
+        occ_count = occ_result.result_set[0][0] if occ_result.result_set else 0
+        return count - occ_count
 
     def has_entity(self, name: str) -> bool:
         result = self._graph.query(
@@ -379,6 +465,90 @@ class FalkorDBStore(GraphStore):
         """Execute a raw Cypher query and return the result set."""
         result = self._graph.query(query_string)
         return result.result_set
+
+    def add_typed_relationship(
+        self,
+        source: str,
+        target: str,
+        edge_label: str,
+        properties: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        props = properties or {}
+        # Build property string for Cypher SET clause
+        prop_assignments = []
+        params: Dict[str, Any] = {
+            "src_lower": source.lower(),
+            "tgt_lower": target.lower(),
+        }
+        for i, (k, v) in enumerate(props.items()):
+            param_name = f"prop_{i}"
+            prop_assignments.append(f"r.{k} = ${param_name}")
+            params[param_name] = v
+
+        set_clause = ""
+        if prop_assignments:
+            set_clause = " SET " + ", ".join(prop_assignments)
+
+        # FalkorDB requires static relationship types in CREATE, so we use
+        # a parameterized approach with specific known labels
+        query = (
+            f"MATCH (a:Entity {{name_lower: $src_lower}}) "
+            f"MATCH (b:Entity {{name_lower: $tgt_lower}}) "
+            f"CREATE (a)-[r:{edge_label}]->(b)"
+            f"{set_clause}"
+        )
+        self._graph.query(query, params=params)
+
+    def set_entity_properties(
+        self,
+        name: str,
+        properties: Dict[str, Any],
+    ) -> bool:
+        name_lower = name.lower()
+        # Check entity exists
+        if not self.has_entity(name):
+            return False
+
+        params: Dict[str, Any] = {"name_lower": name_lower}
+        set_parts = []
+        for i, (k, v) in enumerate(properties.items()):
+            param_name = f"prop_{i}"
+            set_parts.append(f"e.{k} = ${param_name}")
+            params[param_name] = v
+
+        if not set_parts:
+            return True
+
+        query = f"MATCH (e:Entity {{name_lower: $name_lower}}) SET {', '.join(set_parts)}"
+        self._graph.query(query, params=params)
+        return True
+
+    def has_relationship(
+        self,
+        source: str,
+        target: str,
+        edge_label: Optional[str] = None,
+    ) -> bool:
+        params = {
+            "src_lower": source.lower(),
+            "tgt_lower": target.lower(),
+        }
+        if edge_label:
+            query = (
+                f"MATCH (a:Entity {{name_lower: $src_lower}})"
+                f"-[:{edge_label}]->"
+                f"(b:Entity {{name_lower: $tgt_lower}}) "
+                f"RETURN count(*)"
+            )
+        else:
+            query = (
+                "MATCH (a:Entity {name_lower: $src_lower})"
+                "-[]->"
+                "(b:Entity {name_lower: $tgt_lower}) "
+                "RETURN count(*)"
+            )
+        result = self._graph.query(query, params=params)
+        return result.result_set[0][0] > 0 if result.result_set else False
 
     def close(self) -> None:
         """Release references. FalkorDB Lite handles persistence automatically."""
