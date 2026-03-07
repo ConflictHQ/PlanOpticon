@@ -1,14 +1,19 @@
 # PlanOpticon
 
-**AI-powered video analysis and knowledge extraction.**
+**AI-powered video analysis, knowledge extraction, and planning.**
 
-PlanOpticon processes video recordings into structured knowledge — transcripts, diagrams, action items, key points, and knowledge graphs. It auto-discovers available models across OpenAI, Anthropic, and Gemini, and produces rich multi-format output.
+PlanOpticon processes video recordings and documents into structured knowledge — transcripts, diagrams, action items, key points, and knowledge graphs. It connects to 20+ source platforms, auto-discovers available models across multiple AI providers, and produces rich multi-format output with an interactive companion REPL and planning agent.
 
 ---
 
 ## Features
 
-- **Multi-provider AI** — Automatically discovers and routes to the best available model across OpenAI, Anthropic, and Google Gemini
+- **Multi-provider AI** — Automatically discovers and routes to the best available model across OpenAI, Anthropic, Google Gemini, and more
+- **Planning agent** — Agentic analysis that adaptively adjusts depth, focus, and strategy based on content
+- **Companion REPL** — Interactive chat interface for exploring your knowledge base conversationally
+- **20+ source connectors** — Google Workspace, Microsoft 365, Zoom, Teams, Meet, Notion, GitHub, YouTube, Obsidian, Apple Notes, and more
+- **Document export** — Export knowledge to Markdown, Obsidian, Notion, and exchange formats
+- **OAuth authentication** — Built-in `planopticon auth` for Google, Dropbox, Zoom, Notion, GitHub, and Microsoft
 - **Smart frame extraction** — Change detection for transitions + periodic capture (every 30s) for slow-evolving content like document scrolling
 - **People frame filtering** — OpenCV face detection removes webcam/video conference frames, keeping only shared content (slides, documents, screen shares)
 - **Diagram extraction** — Vision model-based classification detects flowcharts, architecture diagrams, charts, and whiteboards
@@ -16,7 +21,7 @@ PlanOpticon processes video recordings into structured knowledge — transcripts
 - **Action item detection** — Finds commitments, tasks, and follow-ups with assignees and deadlines
 - **Batch processing** — Process entire folders of videos with merged knowledge graphs and cross-referencing
 - **Rich output** — Markdown, HTML, PDF, Mermaid diagrams, SVG/PNG renderings, JSON manifests
-- **Cloud sources** — Fetch videos from Google Drive and Dropbox shared folders
+- **Cloud sources** — Fetch videos from Google Drive, Dropbox, and many more cloud platforms
 - **Checkpoint/resume** — Pipeline resumes from where it left off if interrupted — no wasted work
 - **Screengrab fallback** — When extraction isn't perfect, captures frames with captions — something is always better than nothing
 
@@ -28,6 +33,21 @@ pip install planopticon
 
 # Analyze a single video
 planopticon analyze -i meeting.mp4 -o ./output
+
+# Ingest documents and build a knowledge graph
+planopticon ingest ./notes/ --output ./kb --recursive
+
+# Chat with your knowledge base
+planopticon companion --kb ./kb
+
+# Run the planning agent interactively
+planopticon agent --kb ./kb --interactive
+
+# Query the knowledge graph
+planopticon query stats
+
+# Export to Obsidian
+planopticon export obsidian --input ./kb --output ./vault
 
 # Process a folder of videos
 planopticon batch -i ./recordings -o ./output --title "Weekly Meetings"

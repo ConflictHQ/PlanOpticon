@@ -66,6 +66,86 @@ Batch mode produces per-video outputs plus:
 - Batch summary with aggregated action items
 - Cross-referenced entities
 
+## Ingest documents
+
+Build a knowledge graph from documents, notes, or any text content:
+
+```bash
+# Ingest a single file
+planopticon ingest ./meeting-notes.md --output ./kb
+
+# Ingest a directory recursively
+planopticon ingest ./docs/ --output ./kb --recursive
+
+# Ingest from a URL
+planopticon ingest "https://www.youtube.com/watch?v=example" --output ./kb
+```
+
+## Companion REPL
+
+Chat with your knowledge base interactively:
+
+```bash
+# Start the companion
+planopticon companion --kb ./kb
+
+# Use a specific provider
+planopticon companion --kb ./kb --provider anthropic
+```
+
+The companion understands your knowledge graph and can answer questions, find connections, and summarize topics conversationally.
+
+## Planning agent
+
+Run the planning agent for adaptive, goal-directed analysis:
+
+```bash
+# Interactive mode — the agent asks before each action
+planopticon agent --kb ./kb --interactive
+
+# Non-interactive with export
+planopticon agent --kb ./kb --export ./plan.md
+```
+
+## Query the knowledge graph
+
+Query your knowledge graph directly without an AI provider:
+
+```bash
+# Show graph stats (entity/relationship counts)
+planopticon query stats
+
+# List entities by type
+planopticon query "entities --type technology"
+
+# Find neighbors of an entity
+planopticon query "neighbors Alice"
+
+# Natural language query (requires API key)
+planopticon query "What technologies were discussed?"
+
+# Interactive REPL
+planopticon query -I
+```
+
+## Export
+
+Export your knowledge base to various formats:
+
+```bash
+# Export to Markdown files
+planopticon export markdown --input ./kb --output ./docs
+
+# Export to an Obsidian vault
+planopticon export obsidian --input ./kb --output ~/Obsidian/PlanOpticon
+
+# Export to Notion
+planopticon export notion --input ./kb --parent-page abc123
+
+# Export as exchange format (portable JSON)
+planopticon export exchange --input ./kb --output ./export.json
+```
+
 ## Discover available models
 
 ```bash
