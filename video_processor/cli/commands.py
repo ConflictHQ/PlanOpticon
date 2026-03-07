@@ -1586,6 +1586,108 @@ def wiki_push(wiki_dir, repo, message):
 
 
 @cli.group()
+def recordings():
+    """Fetch meeting recordings from Zoom, Teams, and Google Meet."""
+    pass
+
+
+@recordings.command("zoom-list")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def recordings_zoom_list(as_json):
+    """List Zoom cloud recordings.
+
+    Requires ZOOM_CLIENT_ID (and optionally ZOOM_CLIENT_SECRET,
+    ZOOM_ACCOUNT_ID) environment variables.
+
+    Examples:
+
+        planopticon recordings zoom-list
+
+        planopticon recordings zoom-list --json
+    """
+    from video_processor.sources.zoom_source import ZoomSource
+
+    source = ZoomSource()
+    if not source.authenticate():
+        click.echo("Zoom authentication failed.", err=True)
+        sys.exit(1)
+
+    files = source.list_videos()
+    if as_json:
+        click.echo(json.dumps([f.__dict__ for f in files], indent=2, default=str))
+    else:
+        click.echo(f"Found {len(files)} recording(s):")
+        for f in files:
+            size = f"{f.size_bytes // 1_000_000} MB" if f.size_bytes else "unknown"
+            click.echo(f"  {f.name}  ({size})  {f.modified_at or ''}")
+
+
+@recordings.command("teams-list")
+@click.option("--user-id", default="me", help="Microsoft user ID")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def recordings_teams_list(user_id, as_json):
+    """List Teams meeting recordings via the m365 CLI.
+
+    Requires: npm install -g @pnp/cli-microsoft365 && m365 login
+
+    Examples:
+
+        planopticon recordings teams-list
+
+        planopticon recordings teams-list --json
+    """
+    from video_processor.sources.teams_recording_source import (
+        TeamsRecordingSource,
+    )
+
+    source = TeamsRecordingSource(user_id=user_id)
+    if not source.authenticate():
+        click.echo("Teams authentication failed.", err=True)
+        sys.exit(1)
+
+    files = source.list_videos()
+    if as_json:
+        click.echo(json.dumps([f.__dict__ for f in files], indent=2, default=str))
+    else:
+        click.echo(f"Found {len(files)} recording(s):")
+        for f in files:
+            click.echo(f"  {f.name}  {f.modified_at or ''}")
+
+
+@recordings.command("meet-list")
+@click.option("--folder-id", default=None, help="Drive folder ID")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def recordings_meet_list(folder_id, as_json):
+    """List Google Meet recordings in Drive via the gws CLI.
+
+    Requires: npm install -g @googleworkspace/cli && gws auth login
+
+    Examples:
+
+        planopticon recordings meet-list
+
+        planopticon recordings meet-list --folder-id abc123
+    """
+    from video_processor.sources.meet_recording_source import (
+        MeetRecordingSource,
+    )
+
+    source = MeetRecordingSource(drive_folder_id=folder_id)
+    if not source.authenticate():
+        click.echo("Google Meet authentication failed.", err=True)
+        sys.exit(1)
+
+    files = source.list_videos()
+    if as_json:
+        click.echo(json.dumps([f.__dict__ for f in files], indent=2, default=str))
+    else:
+        click.echo(f"Found {len(files)} recording(s):")
+        for f in files:
+            size = f"{f.size_bytes // 1_000_000} MB" if f.size_bytes else "unknown"
+            click.echo(f"  {f.name}  ({size})  {f.modified_at or ''}")
+
+
+@cli.group()
 def kg():
     """Knowledge graph utilities: convert, sync, and inspect."""
     pass

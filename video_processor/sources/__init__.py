@@ -14,15 +14,18 @@ __all__ = [
     "HackerNewsSource",
     "LogseqSource",
     "M365Source",
+    "MeetRecordingSource",
     "NotionSource",
     "ObsidianSource",
     "OneNoteSource",
     "PodcastSource",
+    "TeamsRecordingSource",
     "RedditSource",
     "RSSSource",
     "TwitterSource",
     "WebSource",
     "YouTubeSource",
+    "ZoomSource",
 ]
 
 
@@ -38,15 +41,18 @@ def __getattr__(name: str):
         "HackerNewsSource": "video_processor.sources.hackernews_source",
         "LogseqSource": "video_processor.sources.logseq_source",
         "M365Source": "video_processor.sources.m365_source",
+        "MeetRecordingSource": "video_processor.sources.meet_recording_source",
         "NotionSource": "video_processor.sources.notion_source",
         "ObsidianSource": "video_processor.sources.obsidian_source",
         "OneNoteSource": "video_processor.sources.onenote_source",
         "PodcastSource": "video_processor.sources.podcast_source",
+        "TeamsRecordingSource": "video_processor.sources.teams_recording_source",
         "RedditSource": "video_processor.sources.reddit_source",
         "RSSSource": "video_processor.sources.rss_source",
         "TwitterSource": "video_processor.sources.twitter_source",
         "WebSource": "video_processor.sources.web_source",
         "YouTubeSource": "video_processor.sources.youtube_source",
+        "ZoomSource": "video_processor.sources.zoom_source",
     }
     if name in _lazy_map:
         import importlib

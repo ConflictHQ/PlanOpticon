@@ -1342,3 +1342,231 @@ class TestOneNoteSource:
         assert "<tag>" in result
         assert '"quoted"' in result
         assert "'apos'" in result
+
+
+# ---------------------------------------------------------------------------
+# ZoomSource
+# ---------------------------------------------------------------------------
+
+
+class TestZoomSource:
+    def test_import(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        assert ZoomSource is not None
+
+    def test_constructor_defaults(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        src = ZoomSource()
+        assert src.client_id is None or isinstance(src.client_id, str)
+        assert src._access_token is None
+
+    def test_constructor_explicit(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        src = ZoomSource(
+            client_id="cid",
+            client_secret="csec",
+            account_id="aid",
+        )
+        assert src.client_id == "cid"
+        assert src.client_secret == "csec"
+        assert src.account_id == "aid"
+
+    def test_authenticate_no_credentials(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        src = ZoomSource(client_id=None, client_secret=None, account_id=None)
+        # No saved token, no account_id, no client_id → should fail
+        assert src.authenticate() is False
+
+    def test_list_videos_not_authenticated(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        src = ZoomSource()
+        with pytest.raises(RuntimeError, match="Not authenticated"):
+            src.list_videos()
+
+    def test_download_not_authenticated(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        src = ZoomSource()
+        sf = SourceFile(name="test.mp4", id="123")
+        with pytest.raises(RuntimeError, match="Not authenticated"):
+            src.download(sf, "/tmp/test.mp4")
+
+    def test_fetch_transcript_not_authenticated(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        src = ZoomSource()
+        with pytest.raises(RuntimeError, match="Not authenticated"):
+            src.fetch_transcript("meeting123")
+
+    def test_mime_types_mapping(self):
+        from video_processor.sources.zoom_source import _MIME_TYPES
+
+        assert _MIME_TYPES["MP4"] == "video/mp4"
+        assert _MIME_TYPES["TRANSCRIPT"] == "text/vtt"
+        assert _MIME_TYPES["M4A"] == "audio/mp4"
+
+
+# ---------------------------------------------------------------------------
+# TeamsRecordingSource
+# ---------------------------------------------------------------------------
+
+
+class TestTeamsRecordingSource:
+    def test_import(self):
+        from video_processor.sources.teams_recording_source import (
+            TeamsRecordingSource,
+        )
+
+        assert TeamsRecordingSource is not None
+
+    def test_constructor_default(self):
+        from video_processor.sources.teams_recording_source import (
+            TeamsRecordingSource,
+        )
+
+        src = TeamsRecordingSource()
+        assert src.user_id == "me"
+
+    def test_constructor_custom_user(self):
+        from video_processor.sources.teams_recording_source import (
+            TeamsRecordingSource,
+        )
+
+        src = TeamsRecordingSource(user_id="user@example.com")
+        assert src.user_id == "user@example.com"
+
+    @patch("shutil.which", return_value=None)
+    def test_authenticate_no_m365(self, _mock_which):
+        from video_processor.sources.teams_recording_source import (
+            TeamsRecordingSource,
+        )
+
+        src = TeamsRecordingSource()
+        assert src.authenticate() is False
+
+    def test_vtt_to_text(self):
+        from video_processor.sources.teams_recording_source import (
+            _vtt_to_text,
+        )
+
+        vtt = (
+            "WEBVTT\n\n"
+            "1\n"
+            "00:00:01.000 --> 00:00:05.000\n"
+            "<v Speaker1>Hello everyone\n\n"
+            "2\n"
+            "00:00:05.000 --> 00:00:10.000\n"
+            "<v Speaker2>Welcome to the meeting\n"
+        )
+        result = _vtt_to_text(vtt)
+        assert "Hello everyone" in result
+        assert "Welcome to the meeting" in result
+        assert "WEBVTT" not in result
+        assert "-->" not in result
+
+    def test_vtt_to_text_empty(self):
+        from video_processor.sources.teams_recording_source import (
+            _vtt_to_text,
+        )
+
+        assert _vtt_to_text("") == ""
+
+    def test_vtt_to_text_deduplicates(self):
+        from video_processor.sources.teams_recording_source import (
+            _vtt_to_text,
+        )
+
+        vtt = (
+            "WEBVTT\n\n"
+            "00:00:01.000 --> 00:00:03.000\n"
+            "Same line\n\n"
+            "00:00:03.000 --> 00:00:05.000\n"
+            "Same line\n"
+        )
+        result = _vtt_to_text(vtt)
+        assert result.count("Same line") == 1
+
+    def test_extract_meetings_list_dict(self):
+        from video_processor.sources.teams_recording_source import (
+            TeamsRecordingSource,
+        )
+
+        src = TeamsRecordingSource()
+        result = src._extract_meetings_list({"value": [{"id": "m1"}]})
+        assert len(result) == 1
+
+    def test_extract_meetings_list_list(self):
+        from video_processor.sources.teams_recording_source import (
+            TeamsRecordingSource,
+        )
+
+        src = TeamsRecordingSource()
+        result = src._extract_meetings_list([{"id": "m1"}])
+        assert len(result) == 1
+
+
+# ---------------------------------------------------------------------------
+# MeetRecordingSource
+# ---------------------------------------------------------------------------
+
+
+class TestMeetRecordingSource:
+    def test_import(self):
+        from video_processor.sources.meet_recording_source import (
+            MeetRecordingSource,
+        )
+
+        assert MeetRecordingSource is not None
+
+    def test_constructor_default(self):
+        from video_processor.sources.meet_recording_source import (
+            MeetRecordingSource,
+        )
+
+        src = MeetRecordingSource()
+        assert src.drive_folder_id is None
+
+    def test_constructor_with_folder(self):
+        from video_processor.sources.meet_recording_source import (
+            MeetRecordingSource,
+        )
+
+        src = MeetRecordingSource(drive_folder_id="folder123")
+        assert src.drive_folder_id == "folder123"
+
+    @patch("shutil.which", return_value=None)
+    def test_authenticate_no_gws(self, _mock_which):
+        from video_processor.sources.meet_recording_source import (
+            MeetRecordingSource,
+        )
+
+        src = MeetRecordingSource()
+        assert src.authenticate() is False
+
+    def test_find_matching_transcript_date_extraction(self):
+        import re
+
+        name = "Meet Recording 2026-03-07T14:30:00"
+        match = re.search(r"\d{4}-\d{2}-\d{2}", name)
+        assert match is not None
+        assert match.group(0) == "2026-03-07"
+
+    def test_lazy_import(self):
+        from video_processor.sources import MeetRecordingSource
+
+        assert MeetRecordingSource is not None
+
+    def test_teams_lazy_import(self):
+        from video_processor.sources import TeamsRecordingSource
+
+        assert TeamsRecordingSource is not None
+
+    def test_zoom_lazy_import(self):
+        from video_processor.sources import ZoomSource
+
+        assert ZoomSource is not None

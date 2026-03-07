@@ -24,6 +24,7 @@ class TestCLIRoot:
         assert "kg" in result.output
         assert "gws" in result.output
         assert "m365" in result.output
+        assert "recordings" in result.output
         assert "ingest" in result.output
         assert "batch" in result.output
 
@@ -194,6 +195,34 @@ class TestM365Help:
         assert "--web-url" in result.output
         assert "--file-id" in result.output
         assert "--db-path" in result.output
+
+
+class TestRecordingsHelp:
+    def test_group_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["recordings", "--help"])
+        assert result.exit_code == 0
+        assert "zoom-list" in result.output
+        assert "teams-list" in result.output
+        assert "meet-list" in result.output
+
+    def test_zoom_list_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["recordings", "zoom-list", "--help"])
+        assert result.exit_code == 0
+        assert "ZOOM_CLIENT_ID" in result.output
+
+    def test_teams_list_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["recordings", "teams-list", "--help"])
+        assert result.exit_code == 0
+        assert "--user-id" in result.output
+
+    def test_meet_list_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["recordings", "meet-list", "--help"])
+        assert result.exit_code == 0
+        assert "--folder-id" in result.output
 
 
 class TestAuthHelp:
