@@ -97,8 +97,8 @@ def describe_graph(db_path: Path) -> Dict:
     Returns dict with: entity_count, relationship_count, entity_types, store_type.
     """
     from video_processor.integrators.graph_store import (
-        FalkorDBStore,
         InMemoryStore,
+        SQLiteStore,
         create_store,
     )
 
@@ -124,7 +124,7 @@ def describe_graph(db_path: Path) -> Dict:
         store_type = "json"
     else:
         store = create_store(db_path)
-        store_type = "falkordb" if isinstance(store, FalkorDBStore) else "inmemory"
+        store_type = "sqlite" if isinstance(store, SQLiteStore) else "inmemory"
 
     entities = store.get_all_entities()
     entity_types = {}

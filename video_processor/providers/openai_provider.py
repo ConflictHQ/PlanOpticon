@@ -9,7 +9,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from openai import OpenAI
 
-from video_processor.providers.base import BaseProvider, ModelInfo
+from video_processor.providers.base import BaseProvider, ModelInfo, ProviderRegistry
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class OpenAIProvider(BaseProvider):
         temperature: float = 0.7,
         model: Optional[str] = None,
     ) -> str:
-        model = model or "gpt-4o"
+        model = model or "gpt-4o-mini"
         response = self.client.chat.completions.create(
             model=model,
             messages=messages,
@@ -70,7 +70,7 @@ class OpenAIProvider(BaseProvider):
         max_tokens: int = 4096,
         model: Optional[str] = None,
     ) -> str:
-        model = model or "gpt-4o"
+        model = model or "gpt-4o-mini"
         b64 = base64.b64encode(image_bytes).decode()
         response = self.client.chat.completions.create(
             model=model,
@@ -227,3 +227,12 @@ class OpenAIProvider(BaseProvider):
         except Exception as e:
             logger.warning(f"Failed to list OpenAI models: {e}")
         return sorted(models, key=lambda m: m.id)
+
+
+ProviderRegistry.register(
+    name="openai",
+    provider_class=OpenAIProvider,
+    env_var="OPENAI_API_KEY",
+    model_prefixes=["gpt-", "o1", "o3", "o4", "whisper"],
+    default_models={"chat": "gpt-4o-mini", "vision": "gpt-4o-mini", "audio": "whisper-1"},
+)

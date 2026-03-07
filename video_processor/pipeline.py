@@ -1,7 +1,9 @@
 """Core video processing pipeline — the reusable function both CLI commands call."""
 
+import hashlib
 import json
 import logging
+import mimetypes
 import time
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +24,7 @@ from video_processor.models import (
     ActionItem,
     KeyPoint,
     ProcessingStats,
+    ProgressCallback,
     VideoManifest,
     VideoMetadata,
 )
@@ -30,6 +33,16 @@ from video_processor.providers.manager import ProviderManager
 from video_processor.utils.export import export_all_formats
 
 logger = logging.getLogger(__name__)
+
+
+def _notify(cb: Optional[ProgressCallback], method: str, *args, **kwargs) -> None:
+    """Safely invoke a callback method, logging any errors."""
+    if cb is None:
+        return
+    try:
+        getattr(cb, method)(*args, **kwargs)
+    except Exception as e:
+        logger.warning(f"Progress callback {method} failed: {e}")
 
 
 def process_single_video(
@@ -43,6 +56,8 @@ def process_single_video(
     periodic_capture_seconds: float = 30.0,
     use_gpu: bool = False,
     title: Optional[str] = None,
+    progress_callback: Optional[ProgressCallback] = None,
+    speaker_hints: Optional[list[str]] = None,
 ) -> VideoManifest:
     """
     Full pipeline: frames -> audio -> transcription -> diagrams -> KG -> report -> export.
@@ -77,7 +92,10 @@ def process_single_video(
     ]
     pipeline_bar = tqdm(steps, desc="Pipeline", unit="step", position=0)
 
+    total_steps = len(steps)
+
     # --- Step 1: Extract frames ---
+    _notify(progress_callback, "on_step_start", steps[0], 1, total_steps)
     pm.usage.start_step("Frame extraction")
     pipeline_bar.set_description("Pipeline: extracting frames")
     existing_frames = sorted(dirs["frames"].glob("frame_*.jpg"))
@@ -101,8 +119,10 @@ def process_single_video(
         frame_paths = save_frames(frames, dirs["frames"], "frame")
         logger.info(f"Saved {len(frames)} content frames ({people_removed} people frames filtered)")
     pipeline_bar.update(1)
+    _notify(progress_callback, "on_step_complete", steps[0], 1, total_steps)
 
     # --- Step 2: Extract audio ---
+    _notify(progress_callback, "on_step_start", steps[1], 2, total_steps)
     pm.usage.start_step("Audio extraction")
     pipeline_bar.set_description("Pipeline: extracting audio")
     audio_path = dirs["root"] / "audio" / f"{video_name}.wav"
@@ -114,8 +134,10 @@ def process_single_video(
         audio_path = audio_extractor.extract_audio(input_path, output_path=audio_path)
     audio_props = audio_extractor.get_audio_properties(audio_path)
     pipeline_bar.update(1)
+    _notify(progress_callback, "on_step_complete", steps[1], 2, total_steps)
 
     # --- Step 3: Transcribe ---
+    _notify(progress_callback, "on_step_start", steps[2], 3, total_steps)
     pm.usage.start_step("Transcription")
     pipeline_bar.set_description("Pipeline: transcribing audio")
     transcript_json = dirs["transcript"] / "transcript.json"
@@ -126,7 +148,7 @@ def process_single_video(
         segments = transcript_data.get("segments", [])
     else:
         logger.info("Transcribing audio...")
-        transcription = pm.transcribe_audio(audio_path)
+        transcription = pm.transcribe_audio(audio_path, speaker_hints=speaker_hints)
         transcript_text = transcription.get("text", "")
         segments = transcription.get("segments", [])
 
@@ -156,8 +178,10 @@ def process_single_video(
             srt_lines.append("")
         transcript_srt.write_text("\n".join(srt_lines))
     pipeline_bar.update(1)
+    _notify(progress_callback, "on_step_complete", steps[2], 3, total_steps)
 
     # --- Step 4: Diagram extraction ---
+    _notify(progress_callback, "on_step_start", steps[3], 4, total_steps)
     pm.usage.start_step("Visual analysis")
     pipeline_bar.set_description("Pipeline: analyzing visuals")
     diagrams = []
@@ -188,27 +212,46 @@ def process_single_video(
             subset, diagrams_dir=dirs["diagrams"], captures_dir=dirs["captures"]
         )
     pipeline_bar.update(1)
+    _notify(progress_callback, "on_step_complete", steps[3], 4, total_steps)
 
     # --- Step 5: Knowledge graph ---
+    _notify(progress_callback, "on_step_start", steps[4], 5, total_steps)
     pm.usage.start_step("Knowledge graph")
     pipeline_bar.set_description("Pipeline: building knowledge graph")
-    kg_json_path = dirs["results"] / "knowledge_graph.json"
     kg_db_path = dirs["results"] / "knowledge_graph.db"
-    if kg_json_path.exists():
+    kg_json_path = dirs["results"] / "knowledge_graph.json"
+    # Generate a stable source ID from the input path
+    source_id = hashlib.sha256(str(input_path).encode()).hexdigest()[:12]
+    mime_type = mimetypes.guess_type(str(input_path))[0] or "video/mp4"
+
+    if kg_db_path.exists():
         logger.info("Resuming: found knowledge graph on disk, loading")
-        kg_data = json.loads(kg_json_path.read_text())
-        kg = KnowledgeGraph.from_dict(kg_data, db_path=kg_db_path)
+        kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
     else:
         logger.info("Building knowledge graph...")
         kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
+        kg.register_source(
+            {
+                "source_id": source_id,
+                "source_type": "video",
+                "title": title,
+                "path": str(input_path),
+                "mime_type": mime_type,
+                "ingested_at": datetime.now().isoformat(),
+                "metadata": {"duration_seconds": audio_props.get("duration")},
+            }
+        )
         kg.process_transcript(transcript_data)
         if diagrams:
             diagram_dicts = [d.model_dump() for d in diagrams]
             kg.process_diagrams(diagram_dicts)
-        kg.save(kg_json_path)
+    # Export JSON copy alongside the SQLite db
+    kg.save(kg_json_path)
     pipeline_bar.update(1)
+    _notify(progress_callback, "on_step_complete", steps[4], 5, total_steps)
 
     # --- Step 6: Extract key points & action items ---
+    _notify(progress_callback, "on_step_start", steps[5], 6, total_steps)
     pm.usage.start_step("Key points & actions")
     pipeline_bar.set_description("Pipeline: extracting key points")
     kp_path = dirs["results"] / "key_points.json"
@@ -224,8 +267,10 @@ def process_single_video(
         kp_path.write_text(json.dumps([kp.model_dump() for kp in key_points], indent=2))
         ai_path.write_text(json.dumps([ai.model_dump() for ai in action_items], indent=2))
     pipeline_bar.update(1)
+    _notify(progress_callback, "on_step_complete", steps[5], 6, total_steps)
 
     # --- Step 7: Generate markdown report ---
+    _notify(progress_callback, "on_step_start", steps[6], 7, total_steps)
     pm.usage.start_step("Report generation")
     pipeline_bar.set_description("Pipeline: generating report")
     md_path = dirs["results"] / "analysis.md"
@@ -243,6 +288,7 @@ def process_single_video(
             output_path=md_path,
         )
     pipeline_bar.update(1)
+    _notify(progress_callback, "on_step_complete", steps[6], 7, total_steps)
 
     # --- Build manifest ---
     elapsed = time.time() - start_time
@@ -278,12 +324,14 @@ def process_single_video(
     )
 
     # --- Step 8: Export all formats ---
+    _notify(progress_callback, "on_step_start", steps[7], 8, total_steps)
     pm.usage.start_step("Export formats")
     pipeline_bar.set_description("Pipeline: exporting formats")
     manifest = export_all_formats(output_dir, manifest)
 
     pm.usage.end_step()
     pipeline_bar.update(1)
+    _notify(progress_callback, "on_step_complete", steps[7], 8, total_steps)
     pipeline_bar.set_description("Pipeline: complete")
     pipeline_bar.close()
 

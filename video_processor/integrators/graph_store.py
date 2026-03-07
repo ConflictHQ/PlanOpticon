@@ -1,6 +1,8 @@
 """Graph storage backends for PlanOpticon knowledge graphs."""
 
+import json
 import logging
+import sqlite3
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -111,8 +113,34 @@ class GraphStore(ABC):
         """
         ...
 
+    def register_source(self, source: Dict[str, Any]) -> None:
+        """Register a content source. Default no-op for backends that don't support it."""
+        pass
+
+    def get_sources(self) -> List[Dict[str, Any]]:
+        """Return all registered sources."""
+        return []
+
+    def get_source(self, source_id: str) -> Optional[Dict[str, Any]]:
+        """Get a source by ID."""
+        return None
+
+    def add_source_location(
+        self,
+        source_id: str,
+        entity_name_lower: Optional[str] = None,
+        relationship_id: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        """Link a source to an entity or relationship with location details."""
+        pass
+
+    def get_entity_provenance(self, name: str) -> List[Dict[str, Any]]:
+        """Get all source locations for an entity."""
+        return []
+
     def raw_query(self, query_string: str) -> Any:
-        """Execute a raw query against the backend (e.g. Cypher for FalkorDB).
+        """Execute a raw query against the backend (e.g. SQL for SQLite).
 
         Not supported by all backends — raises NotImplementedError by default.
         """
@@ -135,7 +163,11 @@ class GraphStore(ABC):
                     "occurrences": e.get("occurrences", []),
                 }
             )
-        return {"nodes": nodes, "relationships": self.get_all_relationships()}
+        result = {"nodes": nodes, "relationships": self.get_all_relationships()}
+        sources = self.get_sources()
+        if sources:
+            result["sources"] = sources
+        return result
 
 
 class InMemoryStore(GraphStore):
@@ -144,6 +176,8 @@ class InMemoryStore(GraphStore):
     def __init__(self) -> None:
         self._nodes: Dict[str, Dict[str, Any]] = {}  # keyed by name.lower()
         self._relationships: List[Dict[str, Any]] = []
+        self._sources: Dict[str, Dict[str, Any]] = {}  # keyed by source_id
+        self._source_locations: List[Dict[str, Any]] = []
 
     def merge_entity(
         self,
@@ -156,6 +190,8 @@ class InMemoryStore(GraphStore):
         if key in self._nodes:
             if descriptions:
                 self._nodes[key]["descriptions"].update(descriptions)
+            if entity_type and entity_type != self._nodes[key]["type"]:
+                self._nodes[key]["type"] = entity_type
         else:
             self._nodes[key] = {
                 "id": name,
@@ -242,6 +278,43 @@ class InMemoryStore(GraphStore):
         self._nodes[key].update(properties)
         return True
 
+    def register_source(self, source: Dict[str, Any]) -> None:
+        source_id = source.get("source_id", "")
+        self._sources[source_id] = dict(source)
+
+    def get_sources(self) -> List[Dict[str, Any]]:
+        return list(self._sources.values())
+
+    def get_source(self, source_id: str) -> Optional[Dict[str, Any]]:
+        return self._sources.get(source_id)
+
+    def add_source_location(
+        self,
+        source_id: str,
+        entity_name_lower: Optional[str] = None,
+        relationship_id: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        entry: Dict[str, Any] = {
+            "source_id": source_id,
+            "entity_name_lower": entity_name_lower,
+            "relationship_id": relationship_id,
+        }
+        entry.update(kwargs)
+        self._source_locations.append(entry)
+
+    def get_entity_provenance(self, name: str) -> List[Dict[str, Any]]:
+        name_lower = name.lower()
+        results = []
+        for loc in self._source_locations:
+            if loc.get("entity_name_lower") == name_lower:
+                entry = dict(loc)
+                src = self._sources.get(loc.get("source_id", ""))
+                if src:
+                    entry["source"] = src
+                results.append(entry)
+        return results
+
     def has_relationship(
         self,
         source: str,
@@ -257,33 +330,73 @@ class InMemoryStore(GraphStore):
         return False
 
 
-class FalkorDBStore(GraphStore):
-    """FalkorDB Lite-backed graph store. Requires falkordblite package."""
+class SQLiteStore(GraphStore):
+    """SQLite-backed graph store. Uses Python's built-in sqlite3 module."""
+
+    _SCHEMA = """
+        CREATE TABLE IF NOT EXISTS entities (
+            name TEXT NOT NULL,
+            name_lower TEXT NOT NULL UNIQUE,
+            type TEXT NOT NULL DEFAULT 'concept',
+            descriptions TEXT NOT NULL DEFAULT '[]',
+            source TEXT,
+            properties TEXT NOT NULL DEFAULT '{}'
+        );
+        CREATE TABLE IF NOT EXISTS occurrences (
+            entity_name_lower TEXT NOT NULL,
+            source TEXT NOT NULL,
+            timestamp REAL,
+            text TEXT,
+            FOREIGN KEY (entity_name_lower) REFERENCES entities(name_lower)
+        );
+        CREATE TABLE IF NOT EXISTS relationships (
+            source TEXT NOT NULL,
+            target TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'related_to',
+            content_source TEXT,
+            timestamp REAL,
+            properties TEXT NOT NULL DEFAULT '{}'
+        );
+        CREATE INDEX IF NOT EXISTS idx_entities_name_lower ON entities(name_lower);
+        CREATE INDEX IF NOT EXISTS idx_entities_type ON entities(type);
+        CREATE INDEX IF NOT EXISTS idx_occurrences_entity ON occurrences(entity_name_lower);
+        CREATE INDEX IF NOT EXISTS idx_relationships_source ON relationships(source);
+        CREATE INDEX IF NOT EXISTS idx_relationships_target ON relationships(target);
+
+        CREATE TABLE IF NOT EXISTS sources (
+            source_id TEXT PRIMARY KEY,
+            source_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            path TEXT,
+            url TEXT,
+            mime_type TEXT,
+            ingested_at TEXT NOT NULL,
+            metadata TEXT NOT NULL DEFAULT '{}'
+        );
+        CREATE TABLE IF NOT EXISTS source_locations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_id TEXT NOT NULL REFERENCES sources(source_id),
+            entity_name_lower TEXT,
+            relationship_id INTEGER,
+            timestamp REAL,
+            page INTEGER,
+            section TEXT,
+            line_start INTEGER,
+            line_end INTEGER,
+            text_snippet TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_source_locations_source ON source_locations(source_id);
+        CREATE INDEX IF NOT EXISTS idx_source_locations_entity
+            ON source_locations(entity_name_lower);
+    """
 
     def __init__(self, db_path: Union[str, Path]) -> None:
-        # Patch redis 7.x compat: UnixDomainSocketConnection missing 'port'
-        import redis.connection
-
-        if not hasattr(redis.connection.UnixDomainSocketConnection, "port"):
-            redis.connection.UnixDomainSocketConnection.port = 0
-
-        from redislite import FalkorDB
-
         self._db_path = str(db_path)
-        self._db = FalkorDB(self._db_path)
-        self._graph = self._db.select_graph("knowledge")
-        self._ensure_indexes()
-
-    def _ensure_indexes(self) -> None:
-        for query in [
-            "CREATE INDEX FOR (e:Entity) ON (e.name_lower)",
-            "CREATE INDEX FOR (e:Entity) ON (e.type)",
-            "CREATE INDEX FOR (e:Entity) ON (e.dag_id)",
-        ]:
-            try:
-                self._graph.query(query)
-            except Exception:
-                pass  # index already exists
+        self._conn = sqlite3.connect(self._db_path)
+        self._conn.execute("PRAGMA journal_mode=WAL")
+        self._conn.execute("PRAGMA foreign_keys=ON")
+        self._conn.executescript(self._SCHEMA)
+        self._conn.commit()
 
     def merge_entity(
         self,
@@ -293,36 +406,25 @@ class FalkorDBStore(GraphStore):
         source: Optional[str] = None,
     ) -> None:
         name_lower = name.lower()
+        row = self._conn.execute(
+            "SELECT descriptions FROM entities WHERE name_lower = ?",
+            (name_lower,),
+        ).fetchone()
 
-        # Check if entity exists
-        result = self._graph.query(
-            "MATCH (e:Entity {name_lower: $name_lower}) RETURN e.descriptions",
-            params={"name_lower": name_lower},
-        )
-
-        if result.result_set:
-            # Entity exists — merge descriptions
-            existing_descs = result.result_set[0][0] or []
-            merged = list(set(existing_descs + descriptions))
-            self._graph.query(
-                "MATCH (e:Entity {name_lower: $name_lower}) SET e.descriptions = $descs",
-                params={"name_lower": name_lower, "descs": merged},
+        if row:
+            existing = json.loads(row[0])
+            merged = list(set(existing + descriptions))
+            self._conn.execute(
+                "UPDATE entities SET descriptions = ?, type = ? WHERE name_lower = ?",
+                (json.dumps(merged), entity_type, name_lower),
             )
         else:
-            # Create new entity
-            self._graph.query(
-                "CREATE (e:Entity {"
-                "name: $name, name_lower: $name_lower, type: $type, "
-                "descriptions: $descs, source: $source"
-                "})",
-                params={
-                    "name": name,
-                    "name_lower": name_lower,
-                    "type": entity_type,
-                    "descs": descriptions,
-                    "source": source,
-                },
+            self._conn.execute(
+                "INSERT INTO entities (name, name_lower, type, descriptions, source) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (name, name_lower, entity_type, json.dumps(descriptions), source),
             )
+        self._conn.commit()
 
     def add_occurrence(
         self,
@@ -332,17 +434,17 @@ class FalkorDBStore(GraphStore):
         text: Optional[str] = None,
     ) -> None:
         name_lower = entity_name.lower()
-        self._graph.query(
-            "MATCH (e:Entity {name_lower: $name_lower}) "
-            "CREATE (o:Occurrence {source: $source, timestamp: $timestamp, text: $text}) "
-            "CREATE (e)-[:OCCURRED_IN]->(o)",
-            params={
-                "name_lower": name_lower,
-                "source": source,
-                "timestamp": timestamp,
-                "text": text,
-            },
+        exists = self._conn.execute(
+            "SELECT 1 FROM entities WHERE name_lower = ?", (name_lower,)
+        ).fetchone()
+        if not exists:
+            return
+        self._conn.execute(
+            "INSERT INTO occurrences (entity_name_lower, source, timestamp, text) "
+            "VALUES (?, ?, ?, ?)",
+            (name_lower, source, timestamp, text),
         )
+        self._conn.commit()
 
     def add_relationship(
         self,
@@ -352,74 +454,55 @@ class FalkorDBStore(GraphStore):
         content_source: Optional[str] = None,
         timestamp: Optional[float] = None,
     ) -> None:
-        self._graph.query(
-            "MATCH (a:Entity {name_lower: $src_lower}) "
-            "MATCH (b:Entity {name_lower: $tgt_lower}) "
-            "CREATE (a)-[:RELATED_TO {"
-            "rel_type: $rel_type, content_source: $content_source, timestamp: $timestamp"
-            "}]->(b)",
-            params={
-                "src_lower": source.lower(),
-                "tgt_lower": target.lower(),
-                "rel_type": rel_type,
-                "content_source": content_source,
-                "timestamp": timestamp,
-            },
+        self._conn.execute(
+            "INSERT INTO relationships (source, target, type, content_source, timestamp) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (source, target, rel_type, content_source, timestamp),
         )
+        self._conn.commit()
 
     def get_entity(self, name: str) -> Optional[Dict[str, Any]]:
-        result = self._graph.query(
-            "MATCH (e:Entity {name_lower: $name_lower}) "
-            "RETURN e.name, e.type, e.descriptions, e.source",
-            params={"name_lower": name.lower()},
-        )
-        if not result.result_set:
+        row = self._conn.execute(
+            "SELECT name, type, descriptions, source FROM entities WHERE name_lower = ?",
+            (name.lower(),),
+        ).fetchone()
+        if not row:
             return None
 
-        row = result.result_set[0]
         entity_name = row[0]
-
-        # Fetch occurrences
-        occ_result = self._graph.query(
-            "MATCH (e:Entity {name_lower: $name_lower})-[:OCCURRED_IN]->(o:Occurrence) "
-            "RETURN o.source, o.timestamp, o.text",
-            params={"name_lower": name.lower()},
-        )
-        occurrences = [
-            {"source": o[0], "timestamp": o[1], "text": o[2]} for o in occ_result.result_set
-        ]
+        occ_rows = self._conn.execute(
+            "SELECT source, timestamp, text FROM occurrences WHERE entity_name_lower = ?",
+            (name.lower(),),
+        ).fetchall()
+        occurrences = [{"source": o[0], "timestamp": o[1], "text": o[2]} for o in occ_rows]
 
         return {
             "id": entity_name,
             "name": entity_name,
             "type": row[1] or "concept",
-            "descriptions": row[2] or [],
+            "descriptions": json.loads(row[2]) if row[2] else [],
             "occurrences": occurrences,
             "source": row[3],
         }
 
     def get_all_entities(self) -> List[Dict[str, Any]]:
-        result = self._graph.query(
-            "MATCH (e:Entity) RETURN e.name, e.name_lower, e.type, e.descriptions, e.source"
-        )
+        rows = self._conn.execute(
+            "SELECT name, name_lower, type, descriptions, source FROM entities"
+        ).fetchall()
         entities = []
-        for row in result.result_set:
+        for row in rows:
             name_lower = row[1]
-            # Fetch occurrences for this entity
-            occ_result = self._graph.query(
-                "MATCH (e:Entity {name_lower: $name_lower})-[:OCCURRED_IN]->(o:Occurrence) "
-                "RETURN o.source, o.timestamp, o.text",
-                params={"name_lower": name_lower},
-            )
-            occurrences = [
-                {"source": o[0], "timestamp": o[1], "text": o[2]} for o in occ_result.result_set
-            ]
+            occ_rows = self._conn.execute(
+                "SELECT source, timestamp, text FROM occurrences WHERE entity_name_lower = ?",
+                (name_lower,),
+            ).fetchall()
+            occurrences = [{"source": o[0], "timestamp": o[1], "text": o[2]} for o in occ_rows]
             entities.append(
                 {
                     "id": row[0],
                     "name": row[0],
                     "type": row[2] or "concept",
-                    "descriptions": row[3] or [],
+                    "descriptions": json.loads(row[3]) if row[3] else [],
                     "occurrences": occurrences,
                     "source": row[4],
                 }
@@ -427,10 +510,9 @@ class FalkorDBStore(GraphStore):
         return entities
 
     def get_all_relationships(self) -> List[Dict[str, Any]]:
-        result = self._graph.query(
-            "MATCH (a:Entity)-[r:RELATED_TO]->(b:Entity) "
-            "RETURN a.name, b.name, r.rel_type, r.content_source, r.timestamp"
-        )
+        rows = self._conn.execute(
+            "SELECT source, target, type, content_source, timestamp FROM relationships"
+        ).fetchall()
         return [
             {
                 "source": row[0],
@@ -439,32 +521,27 @@ class FalkorDBStore(GraphStore):
                 "content_source": row[3],
                 "timestamp": row[4],
             }
-            for row in result.result_set
+            for row in rows
         ]
 
     def get_entity_count(self) -> int:
-        result = self._graph.query("MATCH (e:Entity) RETURN count(e)")
-        return result.result_set[0][0] if result.result_set else 0
+        row = self._conn.execute("SELECT COUNT(*) FROM entities").fetchone()
+        return row[0] if row else 0
 
     def get_relationship_count(self) -> int:
-        result = self._graph.query("MATCH ()-[r]->() RETURN count(r)")
-        count = result.result_set[0][0] if result.result_set else 0
-        # Subtract occurrence edges which are internal bookkeeping
-        occ_result = self._graph.query("MATCH ()-[r:OCCURRED_IN]->() RETURN count(r)")
-        occ_count = occ_result.result_set[0][0] if occ_result.result_set else 0
-        return count - occ_count
+        row = self._conn.execute("SELECT COUNT(*) FROM relationships").fetchone()
+        return row[0] if row else 0
 
     def has_entity(self, name: str) -> bool:
-        result = self._graph.query(
-            "MATCH (e:Entity {name_lower: $name_lower}) RETURN count(e)",
-            params={"name_lower": name.lower()},
-        )
-        return result.result_set[0][0] > 0 if result.result_set else False
+        row = self._conn.execute(
+            "SELECT 1 FROM entities WHERE name_lower = ?", (name.lower(),)
+        ).fetchone()
+        return row is not None
 
     def raw_query(self, query_string: str) -> Any:
-        """Execute a raw Cypher query and return the result set."""
-        result = self._graph.query(query_string)
-        return result.result_set
+        """Execute a raw SQL query and return all rows."""
+        cursor = self._conn.execute(query_string)
+        return cursor.fetchall()
 
     def add_typed_relationship(
         self,
@@ -473,31 +550,11 @@ class FalkorDBStore(GraphStore):
         edge_label: str,
         properties: Optional[Dict[str, Any]] = None,
     ) -> None:
-        props = properties or {}
-        # Build property string for Cypher SET clause
-        prop_assignments = []
-        params: Dict[str, Any] = {
-            "src_lower": source.lower(),
-            "tgt_lower": target.lower(),
-        }
-        for i, (k, v) in enumerate(props.items()):
-            param_name = f"prop_{i}"
-            prop_assignments.append(f"r.{k} = ${param_name}")
-            params[param_name] = v
-
-        set_clause = ""
-        if prop_assignments:
-            set_clause = " SET " + ", ".join(prop_assignments)
-
-        # FalkorDB requires static relationship types in CREATE, so we use
-        # a parameterized approach with specific known labels
-        query = (
-            f"MATCH (a:Entity {{name_lower: $src_lower}}) "
-            f"MATCH (b:Entity {{name_lower: $tgt_lower}}) "
-            f"CREATE (a)-[r:{edge_label}]->(b)"
-            f"{set_clause}"
+        self._conn.execute(
+            "INSERT INTO relationships (source, target, type, properties) VALUES (?, ?, ?, ?)",
+            (source, target, edge_label, json.dumps(properties or {})),
         )
-        self._graph.query(query, params=params)
+        self._conn.commit()
 
     def set_entity_properties(
         self,
@@ -505,22 +562,20 @@ class FalkorDBStore(GraphStore):
         properties: Dict[str, Any],
     ) -> bool:
         name_lower = name.lower()
-        # Check entity exists
         if not self.has_entity(name):
             return False
-
-        params: Dict[str, Any] = {"name_lower": name_lower}
-        set_parts = []
-        for i, (k, v) in enumerate(properties.items()):
-            param_name = f"prop_{i}"
-            set_parts.append(f"e.{k} = ${param_name}")
-            params[param_name] = v
-
-        if not set_parts:
+        if not properties:
             return True
-
-        query = f"MATCH (e:Entity {{name_lower: $name_lower}}) SET {', '.join(set_parts)}"
-        self._graph.query(query, params=params)
+        row = self._conn.execute(
+            "SELECT properties FROM entities WHERE name_lower = ?", (name_lower,)
+        ).fetchone()
+        existing = json.loads(row[0]) if row and row[0] else {}
+        existing.update(properties)
+        self._conn.execute(
+            "UPDATE entities SET properties = ? WHERE name_lower = ?",
+            (json.dumps(existing), name_lower),
+        )
+        self._conn.commit()
         return True
 
     def has_relationship(
@@ -529,49 +584,174 @@ class FalkorDBStore(GraphStore):
         target: str,
         edge_label: Optional[str] = None,
     ) -> bool:
-        params = {
-            "src_lower": source.lower(),
-            "tgt_lower": target.lower(),
-        }
         if edge_label:
-            query = (
-                f"MATCH (a:Entity {{name_lower: $src_lower}})"
-                f"-[:{edge_label}]->"
-                f"(b:Entity {{name_lower: $tgt_lower}}) "
-                f"RETURN count(*)"
+            row = self._conn.execute(
+                "SELECT 1 FROM relationships "
+                "WHERE LOWER(source) = ? AND LOWER(target) = ? AND type = ?",
+                (source.lower(), target.lower(), edge_label),
+            ).fetchone()
+        else:
+            row = self._conn.execute(
+                "SELECT 1 FROM relationships WHERE LOWER(source) = ? AND LOWER(target) = ?",
+                (source.lower(), target.lower()),
+            ).fetchone()
+        return row is not None
+
+    def register_source(self, source: Dict[str, Any]) -> None:
+        source_id = source.get("source_id", "")
+        existing = self._conn.execute(
+            "SELECT 1 FROM sources WHERE source_id = ?", (source_id,)
+        ).fetchone()
+        if existing:
+            self._conn.execute(
+                "UPDATE sources SET source_type = ?, title = ?, path = ?, url = ?, "
+                "mime_type = ?, ingested_at = ?, metadata = ? WHERE source_id = ?",
+                (
+                    source.get("source_type", ""),
+                    source.get("title", ""),
+                    source.get("path"),
+                    source.get("url"),
+                    source.get("mime_type"),
+                    source.get("ingested_at", ""),
+                    json.dumps(source.get("metadata", {})),
+                    source_id,
+                ),
             )
         else:
-            query = (
-                "MATCH (a:Entity {name_lower: $src_lower})"
-                "-[]->"
-                "(b:Entity {name_lower: $tgt_lower}) "
-                "RETURN count(*)"
+            self._conn.execute(
+                "INSERT INTO sources (source_id, source_type, title, path, url, "
+                "mime_type, ingested_at, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    source_id,
+                    source.get("source_type", ""),
+                    source.get("title", ""),
+                    source.get("path"),
+                    source.get("url"),
+                    source.get("mime_type"),
+                    source.get("ingested_at", ""),
+                    json.dumps(source.get("metadata", {})),
+                ),
             )
-        result = self._graph.query(query, params=params)
-        return result.result_set[0][0] > 0 if result.result_set else False
+        self._conn.commit()
+
+    def get_sources(self) -> List[Dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT source_id, source_type, title, path, url, mime_type, "
+            "ingested_at, metadata FROM sources"
+        ).fetchall()
+        return [
+            {
+                "source_id": r[0],
+                "source_type": r[1],
+                "title": r[2],
+                "path": r[3],
+                "url": r[4],
+                "mime_type": r[5],
+                "ingested_at": r[6],
+                "metadata": json.loads(r[7]) if r[7] else {},
+            }
+            for r in rows
+        ]
+
+    def get_source(self, source_id: str) -> Optional[Dict[str, Any]]:
+        row = self._conn.execute(
+            "SELECT source_id, source_type, title, path, url, mime_type, "
+            "ingested_at, metadata FROM sources WHERE source_id = ?",
+            (source_id,),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "source_id": row[0],
+            "source_type": row[1],
+            "title": row[2],
+            "path": row[3],
+            "url": row[4],
+            "mime_type": row[5],
+            "ingested_at": row[6],
+            "metadata": json.loads(row[7]) if row[7] else {},
+        }
+
+    def add_source_location(
+        self,
+        source_id: str,
+        entity_name_lower: Optional[str] = None,
+        relationship_id: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        self._conn.execute(
+            "INSERT INTO source_locations (source_id, entity_name_lower, relationship_id, "
+            "timestamp, page, section, line_start, line_end, text_snippet) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                source_id,
+                entity_name_lower,
+                relationship_id,
+                kwargs.get("timestamp"),
+                kwargs.get("page"),
+                kwargs.get("section"),
+                kwargs.get("line_start"),
+                kwargs.get("line_end"),
+                kwargs.get("text_snippet"),
+            ),
+        )
+        self._conn.commit()
+
+    def get_entity_provenance(self, name: str) -> List[Dict[str, Any]]:
+        name_lower = name.lower()
+        rows = self._conn.execute(
+            "SELECT sl.source_id, sl.entity_name_lower, sl.relationship_id, "
+            "sl.timestamp, sl.page, sl.section, sl.line_start, sl.line_end, "
+            "sl.text_snippet, s.source_type, s.title, s.path, s.url, s.mime_type, "
+            "s.ingested_at, s.metadata "
+            "FROM source_locations sl "
+            "JOIN sources s ON sl.source_id = s.source_id "
+            "WHERE sl.entity_name_lower = ?",
+            (name_lower,),
+        ).fetchall()
+        results = []
+        for r in rows:
+            results.append(
+                {
+                    "source_id": r[0],
+                    "entity_name_lower": r[1],
+                    "relationship_id": r[2],
+                    "timestamp": r[3],
+                    "page": r[4],
+                    "section": r[5],
+                    "line_start": r[6],
+                    "line_end": r[7],
+                    "text_snippet": r[8],
+                    "source": {
+                        "source_id": r[0],
+                        "source_type": r[9],
+                        "title": r[10],
+                        "path": r[11],
+                        "url": r[12],
+                        "mime_type": r[13],
+                        "ingested_at": r[14],
+                        "metadata": json.loads(r[15]) if r[15] else {},
+                    },
+                }
+            )
+        return results
 
     def close(self) -> None:
-        """Release references. FalkorDB Lite handles persistence automatically."""
-        self._graph = None
-        self._db = None
+        """Close the SQLite connection."""
+        if self._conn:
+            self._conn.close()
+            self._conn = None
 
 
 def create_store(db_path: Optional[Union[str, Path]] = None) -> GraphStore:
     """Create the best available graph store.
 
-    If db_path is provided and falkordblite is installed, uses FalkorDBStore.
-    Otherwise falls back to InMemoryStore.
+    If db_path is provided, uses SQLiteStore for persistent storage.
+    Otherwise returns an InMemoryStore.
     """
     if db_path is not None:
         try:
-            return FalkorDBStore(db_path)
-        except ImportError:
-            logger.info(
-                "falkordblite not installed, falling back to in-memory store. "
-                "Install with: pip install planopticon[graph]"
-            )
+            return SQLiteStore(db_path)
         except Exception as e:
-            logger.warning(
-                f"Failed to initialize FalkorDB at {db_path}: {e}. Using in-memory store."
-            )
+            logger.warning(f"Failed to initialize SQLite at {db_path}: {e}. Using in-memory store.")
     return InMemoryStore()

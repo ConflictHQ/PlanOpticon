@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Union
 from tqdm import tqdm
 
 from video_processor.integrators.graph_store import GraphStore, create_store
-from video_processor.models import Entity, KnowledgeGraphData, Relationship
+from video_processor.models import Entity, KnowledgeGraphData, Relationship, SourceRecord
 from video_processor.providers.manager import ProviderManager
 from video_processor.utils.json_parsing import parse_json_from_response
 
@@ -25,6 +25,10 @@ class KnowledgeGraph:
     ):
         self.pm = provider_manager
         self._store = store or create_store(db_path)
+
+    def register_source(self, source: Dict) -> None:
+        """Register a content source for provenance tracking."""
+        self._store.register_source(source)
 
     @property
     def nodes(self) -> Dict[str, dict]:
@@ -113,7 +117,13 @@ class KnowledgeGraph:
 
         return entities, rels
 
-    def add_content(self, text: str, source: str, timestamp: Optional[float] = None) -> None:
+    def add_content(
+        self,
+        text: str,
+        source: str,
+        timestamp: Optional[float] = None,
+        source_id: Optional[str] = None,
+    ) -> None:
         """Add content to knowledge graph by extracting entities and relationships."""
         entities, relationships = self.extract_entities_and_relationships(text)
 
@@ -122,6 +132,13 @@ class KnowledgeGraph:
         for entity in entities:
             self._store.merge_entity(entity.name, entity.type, entity.descriptions, source=source)
             self._store.add_occurrence(entity.name, source, timestamp, snippet)
+            if source_id:
+                self._store.add_source_location(
+                    source_id,
+                    entity_name_lower=entity.name.lower(),
+                    timestamp=timestamp,
+                    text_snippet=snippet,
+                )
 
         for rel in relationships:
             if self._store.has_entity(rel.source) and self._store.has_entity(rel.target):
@@ -208,21 +225,65 @@ class KnowledgeGraph:
             )
             for r in self._store.get_all_relationships()
         ]
-        return KnowledgeGraphData(nodes=nodes, relationships=rels)
+
+        sources = [SourceRecord(**s) for s in self._store.get_sources()]
+
+        return KnowledgeGraphData(nodes=nodes, relationships=rels, sources=sources)
 
     def to_dict(self) -> Dict:
         """Convert knowledge graph to dictionary (backward-compatible)."""
         return self._store.to_dict()
 
     def save(self, output_path: Union[str, Path]) -> Path:
-        """Save knowledge graph to JSON file."""
+        """Save knowledge graph. Defaults to .db (SQLite), also supports .json."""
         output_path = Path(output_path)
         if not output_path.suffix:
-            output_path = output_path.with_suffix(".json")
+            output_path = output_path.with_suffix(".db")
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        data = self.to_data()
-        output_path.write_text(data.model_dump_json(indent=2))
+        if output_path.suffix == ".json":
+            data = self.to_data()
+            output_path.write_text(data.model_dump_json(indent=2))
+        elif output_path.suffix == ".db":
+            # If the backing store is already SQLite at this path, it's already persisted.
+            # Otherwise, create a new SQLite store and copy data into it.
+            from video_processor.integrators.graph_store import SQLiteStore
+
+            if not isinstance(self._store, SQLiteStore) or self._store._db_path != str(output_path):
+                target = SQLiteStore(output_path)
+                for source in self._store.get_sources():
+                    target.register_source(source)
+                for entity in self._store.get_all_entities():
+                    descs = entity.get("descriptions", [])
+                    if isinstance(descs, set):
+                        descs = list(descs)
+                    target.merge_entity(
+                        entity["name"],
+                        entity.get("type", "concept"),
+                        descs,
+                        source=entity.get("source"),
+                    )
+                    for occ in entity.get("occurrences", []):
+                        target.add_occurrence(
+                            entity["name"],
+                            occ.get("source", ""),
+                            occ.get("timestamp"),
+                            occ.get("text"),
+                        )
+                for rel in self._store.get_all_relationships():
+                    target.add_relationship(
+                        rel.get("source", ""),
+                        rel.get("target", ""),
+                        rel.get("type", "related_to"),
+                        content_source=rel.get("content_source"),
+                        timestamp=rel.get("timestamp"),
+                    )
+                target.close()
+        else:
+            # Unknown suffix — fall back to JSON
+            data = self.to_data()
+            output_path.write_text(data.model_dump_json(indent=2))
+
         logger.info(
             f"Saved knowledge graph with {self._store.get_entity_count()} nodes "
             f"and {self._store.get_relationship_count()} relationships to {output_path}"
@@ -233,6 +294,8 @@ class KnowledgeGraph:
     def from_dict(cls, data: Dict, db_path: Optional[Path] = None) -> "KnowledgeGraph":
         """Reconstruct a KnowledgeGraph from saved JSON dict."""
         kg = cls(db_path=db_path)
+        for source in data.get("sources", []):
+            kg._store.register_source(source)
         for node in data.get("nodes", []):
             name = node.get("name", node.get("id", ""))
             descs = node.get("descriptions", [])
@@ -258,19 +321,89 @@ class KnowledgeGraph:
             )
         return kg
 
+    # Type specificity ranking for conflict resolution during merge.
+    # Higher rank = more specific type wins when two entities match.
+    _TYPE_SPECIFICITY = {
+        "concept": 0,
+        "time": 1,
+        "diagram": 1,
+        "organization": 2,
+        "person": 3,
+        "technology": 3,
+    }
+
+    @staticmethod
+    def _fuzzy_match(name_a: str, name_b: str, threshold: float = 0.85) -> bool:
+        """Return True if two names are similar enough to be considered the same entity."""
+        from difflib import SequenceMatcher
+
+        return SequenceMatcher(None, name_a.lower(), name_b.lower()).ratio() >= threshold
+
+    def _more_specific_type(self, type_a: str, type_b: str) -> str:
+        """Return the more specific of two entity types."""
+        rank_a = self._TYPE_SPECIFICITY.get(type_a, 1)
+        rank_b = self._TYPE_SPECIFICITY.get(type_b, 1)
+        return type_a if rank_a >= rank_b else type_b
+
     def merge(self, other: "KnowledgeGraph") -> None:
-        """Merge another KnowledgeGraph into this one."""
+        """Merge another KnowledgeGraph into this one.
+
+        Improvements over naive merge:
+        - Fuzzy name matching (SequenceMatcher >= 0.85) to unify near-duplicate entities
+        - Type conflict resolution: prefer more specific types (e.g. technology > concept)
+        - Provenance: merged entities get a ``merged_from`` description entry
+        """
+        for source in other._store.get_sources():
+            self._store.register_source(source)
+
+        # Build a lookup of existing entity names for fuzzy matching
+        existing_entities = self._store.get_all_entities()
+        existing_names = {e["name"]: e for e in existing_entities}
+        # Cache lowercase -> canonical name for fast lookup
+        name_index: dict[str, str] = {n.lower(): n for n in existing_names}
+
         for entity in other._store.get_all_entities():
-            name = entity["name"]
+            incoming_name = entity["name"]
             descs = entity.get("descriptions", [])
             if isinstance(descs, set):
                 descs = list(descs)
-            self._store.merge_entity(
-                name, entity.get("type", "concept"), descs, source=entity.get("source")
-            )
+            incoming_type = entity.get("type", "concept")
+
+            # Try exact match first (case-insensitive), then fuzzy
+            matched_name: Optional[str] = None
+            if incoming_name.lower() in name_index:
+                matched_name = name_index[incoming_name.lower()]
+            else:
+                for existing_name in existing_names:
+                    if self._fuzzy_match(incoming_name, existing_name):
+                        matched_name = existing_name
+                        break
+
+            if matched_name is not None:
+                # Resolve type conflict
+                existing_type = existing_names[matched_name].get("type", "concept")
+                resolved_type = self._more_specific_type(existing_type, incoming_type)
+
+                # Add merge provenance
+                merge_note = f"merged_from:{incoming_name}"
+                merged_descs = descs if incoming_name == matched_name else descs + [merge_note]
+
+                self._store.merge_entity(
+                    matched_name, resolved_type, merged_descs, source=entity.get("source")
+                )
+                target_name = matched_name
+            else:
+                self._store.merge_entity(
+                    incoming_name, incoming_type, descs, source=entity.get("source")
+                )
+                # Update indexes for subsequent fuzzy matches within this merge
+                existing_names[incoming_name] = entity
+                name_index[incoming_name.lower()] = incoming_name
+                target_name = incoming_name
+
             for occ in entity.get("occurrences", []):
                 self._store.add_occurrence(
-                    name,
+                    target_name,
                     occ.get("source", ""),
                     occ.get("timestamp"),
                     occ.get("text"),
@@ -284,6 +417,15 @@ class KnowledgeGraph:
                 content_source=rel.get("content_source"),
                 timestamp=rel.get("timestamp"),
             )
+
+    def classify_for_planning(self):
+        """Classify entities in this knowledge graph into planning taxonomy types."""
+        from video_processor.integrators.taxonomy import TaxonomyClassifier
+
+        classifier = TaxonomyClassifier(provider_manager=self.pm)
+        entities = self._store.get_all_entities()
+        relationships = self._store.get_all_relationships()
+        return classifier.classify_entities(entities, relationships)
 
     def generate_mermaid(self, max_nodes: int = 30) -> str:
         """Generate Mermaid visualization code."""

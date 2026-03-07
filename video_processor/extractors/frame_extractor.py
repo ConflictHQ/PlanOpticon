@@ -2,6 +2,8 @@
 
 import functools
 import logging
+import sys
+import tempfile
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
@@ -185,6 +187,7 @@ def extract_frames(
     periodic_capture_seconds: float = 30.0,
     max_frames: Optional[int] = None,
     resize_to: Optional[Tuple[int, int]] = None,
+    max_memory_mb: int = 1024,
 ) -> List[np.ndarray]:
     """
     Extract frames from video based on visual change detection + periodic capture.
@@ -211,6 +214,11 @@ def extract_frames(
         Maximum number of frames to extract
     resize_to : tuple of (width, height), optional
         Resize frames to this dimension
+    max_memory_mb : int
+        Approximate memory limit in MB for held frames. When approaching this
+        limit, frames are flushed to disk early and only paths are retained
+        internally. The returned list still contains numpy arrays (reloaded
+        from the temp files at the end). Default 1024 MB.
 
     Returns
     -------
@@ -248,6 +256,12 @@ def extract_frames(
     prev_frame = None
     frame_idx = 0
     last_capture_frame = -periodic_interval  # allow first periodic capture immediately
+
+    # Memory safety valve
+    max_memory_bytes = max_memory_mb * 1024 * 1024
+    approx_memory_used = 0
+    _flush_dir = None  # lazily created temp dir for flushed frames
+    _flushed_paths: List[Path] = []  # paths of frames flushed to disk
 
     pbar = tqdm(
         total=frame_count,
@@ -290,9 +304,27 @@ def extract_frames(
 
             if should_capture:
                 extracted_frames.append(frame)
+                approx_memory_used += sys.getsizeof(frame) + (
+                    frame.nbytes if hasattr(frame, "nbytes") else 0
+                )
                 prev_frame = frame
                 last_capture_frame = frame_idx
                 logger.debug(f"Frame {frame_idx} extracted ({reason})")
+
+                # Memory safety valve: flush frames to disk when approaching limit
+                if approx_memory_used >= max_memory_bytes * 0.9:
+                    if _flush_dir is None:
+                        _flush_dir = tempfile.mkdtemp(prefix="planopticon_frames_")
+                        logger.info(
+                            f"Memory limit ~{max_memory_mb}MB approaching, "
+                            f"flushing frames to {_flush_dir}"
+                        )
+                    for fi, f in enumerate(extracted_frames):
+                        flush_path = Path(_flush_dir) / f"flush_{len(_flushed_paths) + fi:06d}.jpg"
+                        cv2.imwrite(str(flush_path), f)
+                        _flushed_paths.append(flush_path)
+                    extracted_frames.clear()
+                    approx_memory_used = 0
 
             pbar.set_postfix(extracted=len(extracted_frames))
 
@@ -308,6 +340,23 @@ def extract_frames(
 
     pbar.close()
     cap.release()
+
+    # If frames were flushed to disk, reload them
+    if _flushed_paths:
+        reloaded = []
+        for fp in _flushed_paths:
+            img = cv2.imread(str(fp))
+            if img is not None:
+                reloaded.append(img)
+        reloaded.extend(extracted_frames)
+        extracted_frames = reloaded
+        logger.info(f"Reloaded {len(_flushed_paths)} flushed frames from disk")
+        # Clean up temp files
+        import shutil
+
+        if _flush_dir:
+            shutil.rmtree(_flush_dir, ignore_errors=True)
+
     logger.info(f"Extracted {len(extracted_frames)} frames from {frame_count} total frames")
     return extracted_frames
 

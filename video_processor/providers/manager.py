@@ -6,23 +6,40 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from video_processor.providers.base import BaseProvider, ModelInfo
+from video_processor.providers.base import BaseProvider, ModelInfo, ProviderRegistry
 from video_processor.providers.discovery import discover_available_models
 from video_processor.utils.usage_tracker import UsageTracker
 
 load_dotenv()
 logger = logging.getLogger(__name__)
 
+
+def _ensure_providers_registered() -> None:
+    """Import all built-in provider modules so they register themselves."""
+    if ProviderRegistry.all_registered():
+        return
+    # Each module registers itself on import via ProviderRegistry.register()
+    import video_processor.providers.anthropic_provider  # noqa: F401
+    import video_processor.providers.azure_provider  # noqa: F401
+    import video_processor.providers.cerebras_provider  # noqa: F401
+    import video_processor.providers.fireworks_provider  # noqa: F401
+    import video_processor.providers.gemini_provider  # noqa: F401
+    import video_processor.providers.ollama_provider  # noqa: F401
+    import video_processor.providers.openai_provider  # noqa: F401
+    import video_processor.providers.together_provider  # noqa: F401
+    import video_processor.providers.xai_provider  # noqa: F401
+
+
 # Default model preference rankings (tried in order)
 _VISION_PREFERENCES = [
     ("gemini", "gemini-2.5-flash"),
-    ("openai", "gpt-4o"),
-    ("anthropic", "claude-sonnet-4-5-20250929"),
+    ("openai", "gpt-4o-mini"),
+    ("anthropic", "claude-haiku-4-5-20251001"),
 ]
 
 _CHAT_PREFERENCES = [
-    ("anthropic", "claude-sonnet-4-5-20250929"),
-    ("openai", "gpt-4o"),
+    ("anthropic", "claude-haiku-4-5-20251001"),
+    ("openai", "gpt-4o-mini"),
     ("gemini", "gemini-2.5-flash"),
 ]
 
@@ -59,6 +76,7 @@ class ProviderManager:
         provider : force all tasks to a single provider ('openai', 'anthropic', 'gemini')
         auto : if True and no model specified, pick the best available
         """
+        _ensure_providers_registered()
         self.auto = auto
         self._providers: dict[str, BaseProvider] = {}
         self._available_models: Optional[list[ModelInfo]] = None
@@ -81,63 +99,27 @@ class ProviderManager:
     @staticmethod
     def _default_for_provider(provider: str, capability: str) -> str:
         """Return the default model for a provider/capability combo."""
-        defaults = {
-            "openai": {"chat": "gpt-4o", "vision": "gpt-4o", "audio": "whisper-1"},
-            "anthropic": {
-                "chat": "claude-sonnet-4-5-20250929",
-                "vision": "claude-sonnet-4-5-20250929",
-                "audio": "",
-            },
-            "gemini": {
-                "chat": "gemini-2.5-flash",
-                "vision": "gemini-2.5-flash",
-                "audio": "gemini-2.5-flash",
-            },
-            "ollama": {
-                "chat": "",
-                "vision": "",
-                "audio": "",
-            },
-        }
-        return defaults.get(provider, {}).get(capability, "")
+        defaults = ProviderRegistry.get_default_models(provider)
+        if defaults:
+            return defaults.get(capability, "")
+        # Fallback for unregistered providers
+        return ""
 
     def _get_provider(self, provider_name: str) -> BaseProvider:
         """Lazily initialize and cache a provider instance."""
         if provider_name not in self._providers:
-            if provider_name == "openai":
-                from video_processor.providers.openai_provider import OpenAIProvider
-
-                self._providers[provider_name] = OpenAIProvider()
-            elif provider_name == "anthropic":
-                from video_processor.providers.anthropic_provider import AnthropicProvider
-
-                self._providers[provider_name] = AnthropicProvider()
-            elif provider_name == "gemini":
-                from video_processor.providers.gemini_provider import GeminiProvider
-
-                self._providers[provider_name] = GeminiProvider()
-            elif provider_name == "ollama":
-                from video_processor.providers.ollama_provider import OllamaProvider
-
-                self._providers[provider_name] = OllamaProvider()
-            else:
-                raise ValueError(f"Unknown provider: {provider_name}")
+            _ensure_providers_registered()
+            provider_class = ProviderRegistry.get(provider_name)
+            self._providers[provider_name] = provider_class()
         return self._providers[provider_name]
 
     def _provider_for_model(self, model_id: str) -> str:
         """Infer the provider from a model id."""
-        if (
-            model_id.startswith("gpt-")
-            or model_id.startswith("o1")
-            or model_id.startswith("o3")
-            or model_id.startswith("o4")
-            or model_id.startswith("whisper")
-        ):
-            return "openai"
-        if model_id.startswith("claude-"):
-            return "anthropic"
-        if model_id.startswith("gemini-"):
-            return "gemini"
+        _ensure_providers_registered()
+        # Check registry prefix matching first
+        provider_name = ProviderRegistry.get_by_model(model_id)
+        if provider_name:
+            return provider_name
         # Try discovery (exact match, then prefix match for ollama name:tag format)
         models = self._get_available_models()
         for m in models:
@@ -240,6 +222,7 @@ class ProviderManager:
         self,
         audio_path: str | Path,
         language: Optional[str] = None,
+        speaker_hints: Optional[list[str]] = None,
     ) -> dict:
         """Transcribe audio using local Whisper if available, otherwise API."""
         # Prefer local Whisper — no file size limits, no API costs
@@ -255,7 +238,13 @@ class ProviderManager:
                     if not hasattr(self, "_whisper_local"):
                         self._whisper_local = WhisperLocal(model_size=size)
                     logger.info(f"Transcription: using local whisper-{size}")
-                    result = self._whisper_local.transcribe(audio_path, language=language)
+                    # Pass speaker names as initial prompt hint for Whisper
+                    whisper_kwargs = {"language": language}
+                    if speaker_hints:
+                        whisper_kwargs["initial_prompt"] = (
+                            "Speakers: " + ", ".join(speaker_hints) + "."
+                        )
+                    result = self._whisper_local.transcribe(audio_path, **whisper_kwargs)
                     duration = result.get("duration") or 0
                     self.usage.record(
                         provider="local",
@@ -272,7 +261,15 @@ class ProviderManager:
         )
         logger.info(f"Transcription: using {prov_name}/{model}")
         provider = self._get_provider(prov_name)
-        result = provider.transcribe_audio(audio_path, language=language, model=model)
+        # Build transcription kwargs, passing speaker hints where supported
+        transcribe_kwargs: dict = {"language": language, "model": model}
+        if speaker_hints:
+            if prov_name == "openai":
+                # OpenAI Whisper supports a 'prompt' parameter for hints
+                transcribe_kwargs["prompt"] = "Speakers: " + ", ".join(speaker_hints) + "."
+            else:
+                transcribe_kwargs["speaker_hints"] = speaker_hints
+        result = provider.transcribe_audio(audio_path, **transcribe_kwargs)
         duration = result.get("duration") or 0
         self.usage.record(
             provider=prov_name,

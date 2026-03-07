@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PlanOpticon Knowledge Graph Viewer</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #1a1a2e; color: #e0e0e0; overflow: hidden; height: 100vh; }
+  #toolbar { position: fixed; top: 0; left: 0; right: 0; z-index: 10; background: #16213e; padding: 8px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #0f3460; flex-wrap: wrap; }
+  #toolbar h1 { font-size: 14px; font-weight: 600; color: #e94560; white-space: nowrap; }
+  #search { background: #1a1a2e; border: 1px solid #0f3460; color: #e0e0e0; padding: 5px 10px; border-radius: 4px; font-size: 13px; width: 200px; }
+  #search::placeholder { color: #666; }
+  .filter-btn { background: #1a1a2e; border: 1px solid #0f3460; color: #e0e0e0; padding: 4px 10px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+  .filter-btn.active { border-color: #e94560; }
+  .filter-btn .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  #drop-zone { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 20; background: #16213e; border: 2px dashed #0f3460; border-radius: 12px; padding: 60px; text-align: center; }
+  #drop-zone.hidden { display: none; }
+  #drop-zone h2 { color: #e94560; margin-bottom: 12px; }
+  #drop-zone p { color: #888; margin-bottom: 16px; font-size: 14px; }
+  #file-input { display: none; }
+  #drop-zone label { background: #e94560; color: white; padding: 8px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; }
+  #drop-zone label:hover { background: #c73e54; }
+  #graph-container { width: 100%; height: 100vh; padding-top: 44px; }
+  svg { width: 100%; height: 100%; }
+  .node circle { stroke: #333; stroke-width: 1.5px; cursor: pointer; }
+  .node text { font-size: 10px; fill: #e0e0e0; pointer-events: none; text-anchor: middle; }
+  .link { stroke: #334; stroke-opacity: 0.6; }
+  .link-label { font-size: 8px; fill: #666; pointer-events: none; }
+  .node.highlighted circle { stroke: #e94560; stroke-width: 3px; }
+  .node.dimmed { opacity: 0.15; }
+  .link.dimmed { opacity: 0.05; }
+  #detail-panel { position: fixed; top: 44px; right: 0; width: 300px; height: calc(100vh - 44px); background: #16213e; border-left: 1px solid #0f3460; padding: 16px; overflow-y: auto; transform: translateX(100%); transition: transform 0.2s; z-index: 10; }
+  #detail-panel.open { transform: translateX(0); }
+  #detail-panel h3 { color: #e94560; margin-bottom: 4px; font-size: 16px; }
+  #detail-panel .type-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; margin-bottom: 12px; }
+  #detail-panel .section { margin-bottom: 14px; }
+  #detail-panel .section h4 { font-size: 12px; color: #888; text-transform: uppercase; margin-bottom: 6px; }
+  #detail-panel .section p, #detail-panel .section li { font-size: 13px; line-height: 1.5; }
+  #detail-panel ul { list-style: none; padding: 0; }
+  #detail-panel ul li { padding: 3px 0; border-bottom: 1px solid #0f3460; }
+  #detail-panel .close-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; color: #888; cursor: pointer; font-size: 18px; }
+  #stats { font-size: 11px; color: #666; white-space: nowrap; }
+  .drag-over #drop-zone { border-color: #e94560; background: #1a1a3e; }
+  #no-d3-msg { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #16213e; padding: 40px; border-radius: 12px; text-align: center; border: 1px solid #e94560; z-index: 100; }
+  #no-d3-msg h2 { color: #e94560; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div id="no-d3-msg">
+  <h2>D3.js Required</h2>
+  <p>This viewer requires an internet connection on first load to fetch D3.js.</p>
+  <p style="color:#888; font-size:13px;">Load from: https://d3js.org/d3.v7.min.js</p>
+</div>
+
+<div id="toolbar">
+  <h1>PlanOpticon</h1>
+  <input type="text" id="search" placeholder="Search entities...">
+  <button class="filter-btn active" data-type="person"><span class="dot" style="background:#f9d5e5"></span> Person</button>
+  <button class="filter-btn active" data-type="concept"><span class="dot" style="background:#eeeeee"></span> Concept</button>
+  <button class="filter-btn active" data-type="technology"><span class="dot" style="background:#d5e5f9"></span> Technology</button>
+  <button class="filter-btn active" data-type="organization"><span class="dot" style="background:#f9e5d5"></span> Organization</button>
+  <span id="stats"></span>
+</div>
+
+<div id="drop-zone">
+  <h2>Load Knowledge Graph</h2>
+  <p>Drag and drop a knowledge_graph.json file here, or click to browse.</p>
+  <label for="file-input">Choose File</label>
+  <input type="file" id="file-input" accept=".json">
+</div>
+
+<div id="graph-container">
+  <svg id="graph-svg"></svg>
+</div>
+
+<div id="detail-panel">
+  <button class="close-btn" id="close-detail">&times;</button>
+  <h3 id="detail-name"></h3>
+  <div class="type-badge" id="detail-type"></div>
+  <div class="section" id="desc-section">
+    <h4>Descriptions</h4>
+    <ul id="detail-descriptions"></ul>
+  </div>
+  <div class="section" id="conn-section">
+    <h4>Connections</h4>
+    <ul id="detail-connections"></ul>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Check D3 loaded
+  if (typeof d3 === 'undefined') {
+    document.getElementById('no-d3-msg').style.display = 'block';
+    return;
+  }
+
+  const TYPE_COLORS = {
+    person: '#f9d5e5',
+    concept: '#eeeeee',
+    technology: '#d5e5f9',
+    organization: '#f9e5d5',
+    time: '#e5d5f9',
+    diagram: '#d5f9e5'
+  };
+  const DEFAULT_COLOR = '#cccccc';
+
+  let graphData = null;   // { nodes: [], relationships: [] }
+  let simulation = null;
+  let nodesG, linksG, labelsG;
+  let activeTypes = new Set(['person', 'concept', 'technology', 'organization', 'time', 'diagram']);
+
+  // --- File loading ---
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => document.body.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    document.body.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) loadFile(file);
+  });
+  fileInput.addEventListener('change', e => { if (e.target.files[0]) loadFile(e.target.files[0]); });
+
+  function loadFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        initGraph(data);
+      } catch (err) {
+        alert('Invalid JSON file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  // --- Pre-embedded data support ---
+  if (window.__PLANOPTICON_DATA__) {
+    window.addEventListener('DOMContentLoaded', () => initGraph(window.__PLANOPTICON_DATA__));
+  }
+  // Also check after script runs (if DOM already ready)
+  if (document.readyState !== 'loading' && window.__PLANOPTICON_DATA__) {
+    initGraph(window.__PLANOPTICON_DATA__);
+  }
+
+  // --- Graph init ---
+  function initGraph(raw) {
+    dropZone.classList.add('hidden');
+    graphData = normalize(raw);
+    render();
+  }
+
+  function normalize(raw) {
+    // Accept both { nodes: [], relationships: [] } and { entities: [], relationships: [] }
+    const rawNodes = raw.nodes || raw.entities || [];
+    const rawRels = raw.relationships || raw.edges || [];
+
+    const nodes = rawNodes.map(n => ({
+      id: n.name || n.id,
+      name: n.name || n.id,
+      type: (n.type || 'concept').toLowerCase(),
+      descriptions: n.descriptions || (n.description ? [n.description] : []),
+      occurrences: n.occurrences || []
+    }));
+
+    const nodeSet = new Set(nodes.map(n => n.id));
+
+    const links = rawRels
+      .filter(r => nodeSet.has(r.source) && nodeSet.has(r.target))
+      .map(r => ({
+        source: r.source,
+        target: r.target,
+        type: r.type || 'related_to'
+      }));
+
+    // Compute connection counts
+    const connCount = {};
+    links.forEach(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source;
+      const t = typeof l.target === 'object' ? l.target.id : l.target;
+      connCount[s] = (connCount[s] || 0) + 1;
+      connCount[t] = (connCount[t] || 0) + 1;
+    });
+    nodes.forEach(n => { n.connections = connCount[n.id] || 0; });
+
+    return { nodes, links };
+  }
+
+  function render() {
+    const svg = d3.select('#graph-svg');
+    svg.selectAll('*').remove();
+
+    const width = window.innerWidth;
+    const height = window.innerHeight - 44;
+
+    const g = svg.append('g');
+
+    // Zoom
+    const zoom = d3.zoom()
+      .scaleExtent([0.1, 8])
+      .on('zoom', e => g.attr('transform', e.transform));
+    svg.call(zoom);
+
+    // Filter nodes/links by active types
+    const visibleNodes = graphData.nodes.filter(n => activeTypes.has(n.type));
+    const visibleIds = new Set(visibleNodes.map(n => n.id));
+    const visibleLinks = graphData.links.filter(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source;
+      const t = typeof l.target === 'object' ? l.target.id : l.target;
+      return visibleIds.has(s) && visibleIds.has(t);
+    });
+
+    // Stats
+    document.getElementById('stats').textContent = visibleNodes.length + ' nodes, ' + visibleLinks.length + ' edges';
+
+    // Links
+    linksG = g.append('g').selectAll('line')
+      .data(visibleLinks)
+      .join('line')
+      .attr('class', 'link')
+      .attr('stroke-width', 1);
+
+    // Link labels
+    labelsG = g.append('g').selectAll('text')
+      .data(visibleLinks)
+      .join('text')
+      .attr('class', 'link-label')
+      .text(d => d.type);
+
+    // Nodes
+    const maxConn = Math.max(1, d3.max(visibleNodes, d => d.connections));
+    const radiusScale = d3.scaleSqrt().domain([0, maxConn]).range([5, 24]);
+
+    nodesG = g.append('g').selectAll('g')
+      .data(visibleNodes)
+      .join('g')
+      .attr('class', 'node')
+      .call(d3.drag()
+        .on('start', dragStart)
+        .on('drag', dragged)
+        .on('end', dragEnd))
+      .on('click', (e, d) => showDetail(d));
+
+    nodesG.append('circle')
+      .attr('r', d => radiusScale(d.connections))
+      .attr('fill', d => TYPE_COLORS[d.type] || DEFAULT_COLOR);
+
+    nodesG.append('text')
+      .attr('dy', d => radiusScale(d.connections) + 12)
+      .text(d => d.name.length > 20 ? d.name.slice(0, 18) + '..' : d.name);
+
+    // Simulation
+    simulation = d3.forceSimulation(visibleNodes)
+      .force('link', d3.forceLink(visibleLinks).id(d => d.id).distance(80))
+      .force('charge', d3.forceManyBody().strength(-200))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('collision', d3.forceCollide().radius(d => radiusScale(d.connections) + 4))
+      .on('tick', () => {
+        linksG
+          .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+        labelsG
+          .attr('x', d => (d.source.x + d.target.x) / 2)
+          .attr('y', d => (d.source.y + d.target.y) / 2);
+        nodesG.attr('transform', d => 'translate(' + d.x + ',' + d.y + ')');
+      });
+
+    // Drag handlers
+    function dragStart(e, d) {
+      if (!e.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x; d.fy = d.y;
+    }
+    function dragged(e, d) { d.fx = e.x; d.fy = e.y; }
+    function dragEnd(e, d) {
+      if (!e.active) simulation.alphaTarget(0);
+      d.fx = null; d.fy = null;
+    }
+
+    // Store zoom for centering
+    svg._zoom = zoom;
+    svg._g = g;
+  }
+
+  // --- Search ---
+  const searchInput = document.getElementById('search');
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    if (!graphData || !nodesG) return;
+
+    if (!q) {
+      nodesG.classed('highlighted', false).classed('dimmed', false);
+      linksG.classed('dimmed', false);
+      return;
+    }
+
+    const matches = new Set();
+    graphData.nodes.forEach(n => {
+      if (n.name.toLowerCase().includes(q)) matches.add(n.id);
+    });
+
+    // Also include direct neighbors of matches
+    const neighbors = new Set(matches);
+    graphData.links.forEach(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source;
+      const t = typeof l.target === 'object' ? l.target.id : l.target;
+      if (matches.has(s)) neighbors.add(t);
+      if (matches.has(t)) neighbors.add(s);
+    });
+
+    nodesG.classed('highlighted', d => matches.has(d.id));
+    nodesG.classed('dimmed', d => !neighbors.has(d.id));
+    linksG.classed('dimmed', d => {
+      const s = typeof d.source === 'object' ? d.source.id : d.source;
+      const t = typeof d.target === 'object' ? d.target.id : d.target;
+      return !neighbors.has(s) || !neighbors.has(t);
+    });
+
+    // Center on first match
+    if (matches.size > 0) {
+      const first = graphData.nodes.find(n => matches.has(n.id));
+      if (first && first.x != null) {
+        const svg = d3.select('#graph-svg');
+        const width = window.innerWidth;
+        const height = window.innerHeight - 44;
+        svg.transition().duration(500).call(
+          svg._zoom.transform,
+          d3.zoomIdentity.translate(width / 2 - first.x, height / 2 - first.y)
+        );
+      }
+    }
+  });
+
+  // --- Filter toggles ---
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.dataset.type;
+      btn.classList.toggle('active');
+      if (activeTypes.has(type)) activeTypes.delete(type);
+      else activeTypes.add(type);
+      if (graphData) render();
+    });
+  });
+
+  // --- Detail panel ---
+  function showDetail(node) {
+    const panel = document.getElementById('detail-panel');
+    document.getElementById('detail-name').textContent = node.name;
+    const badge = document.getElementById('detail-type');
+    badge.textContent = node.type;
+    badge.style.background = TYPE_COLORS[node.type] || DEFAULT_COLOR;
+    badge.style.color = '#1a1a2e';
+
+    const descList = document.getElementById('detail-descriptions');
+    descList.innerHTML = '';
+    if (node.descriptions.length === 0) {
+      descList.innerHTML = '<li style="color:#666">No descriptions</li>';
+    } else {
+      node.descriptions.forEach(d => {
+        const li = document.createElement('li');
+        li.textContent = d;
+        descList.appendChild(li);
+      });
+    }
+
+    const connList = document.getElementById('detail-connections');
+    connList.innerHTML = '';
+    const connections = [];
+    graphData.links.forEach(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source;
+      const t = typeof l.target === 'object' ? l.target.id : l.target;
+      if (s === node.id) connections.push({ target: t, type: l.type, dir: '->' });
+      if (t === node.id) connections.push({ target: s, type: l.type, dir: '<-' });
+    });
+    if (connections.length === 0) {
+      connList.innerHTML = '<li style="color:#666">No connections</li>';
+    } else {
+      connections.forEach(c => {
+        const li = document.createElement('li');
+        li.textContent = c.dir + ' ' + c.target + ' (' + c.type + ')';
+        li.style.cursor = 'pointer';
+        li.addEventListener('click', () => {
+          searchInput.value = c.target;
+          searchInput.dispatchEvent(new Event('input'));
+        });
+        connList.appendChild(li);
+      });
+    }
+
+    panel.classList.add('open');
+  }
+
+  document.getElementById('close-detail').addEventListener('click', () => {
+    document.getElementById('detail-panel').classList.remove('open');
+  });
+
+  // --- Resize ---
+  window.addEventListener('resize', () => { if (graphData) render(); });
+})();
+</script>
+</body>
+</html>

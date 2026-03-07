@@ -1,8 +1,6 @@
 """Tests for graph storage backends."""
 
-import pytest
-
-from video_processor.integrators.graph_store import InMemoryStore, create_store
+from video_processor.integrators.graph_store import InMemoryStore, SQLiteStore, create_store
 
 
 class TestInMemoryStore:
@@ -146,31 +144,17 @@ class TestCreateStore:
         store = create_store(db_path=None)
         assert isinstance(store, InMemoryStore)
 
-    def test_fallback_to_in_memory_when_falkordb_unavailable(self, tmp_path):
-        """When falkordblite is not installed, should fall back gracefully."""
+    def test_returns_sqlite_with_path(self, tmp_path):
         store = create_store(db_path=tmp_path / "test.db")
-        # Will be FalkorDBStore if installed, InMemoryStore if not
-        # Either way, it should work
+        assert isinstance(store, SQLiteStore)
         store.merge_entity("Test", "concept", ["test entity"])
         assert store.get_entity_count() == 1
+        store.close()
 
 
-# Conditional FalkorDB tests
-_falkordb_available = False
-try:
-    import redislite  # noqa: F401
-
-    _falkordb_available = True
-except ImportError:
-    pass
-
-
-@pytest.mark.skipif(not _falkordb_available, reason="falkordblite not installed")
-class TestFalkorDBStore:
+class TestSQLiteStore:
     def test_create_and_query_entity(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
-
-        store = FalkorDBStore(tmp_path / "test.db")
+        store = SQLiteStore(tmp_path / "test.db")
         store.merge_entity("Python", "technology", ["A language"])
         assert store.get_entity_count() == 1
         entity = store.get_entity("python")
@@ -179,9 +163,7 @@ class TestFalkorDBStore:
         store.close()
 
     def test_case_insensitive_merge(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
-
-        store = FalkorDBStore(tmp_path / "test.db")
+        store = SQLiteStore(tmp_path / "test.db")
         store.merge_entity("Python", "technology", ["Language"])
         store.merge_entity("python", "technology", ["Snake-based"])
         assert store.get_entity_count() == 1
@@ -191,9 +173,7 @@ class TestFalkorDBStore:
         store.close()
 
     def test_relationships(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
-
-        store = FalkorDBStore(tmp_path / "test.db")
+        store = SQLiteStore(tmp_path / "test.db")
         store.merge_entity("Alice", "person", [])
         store.merge_entity("Bob", "person", [])
         store.add_relationship("Alice", "Bob", "knows")
@@ -204,9 +184,7 @@ class TestFalkorDBStore:
         store.close()
 
     def test_occurrences(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
-
-        store = FalkorDBStore(tmp_path / "test.db")
+        store = SQLiteStore(tmp_path / "test.db")
         store.merge_entity("Alice", "person", ["Engineer"])
         store.add_occurrence("Alice", "transcript_0", timestamp=10.5, text="Alice said...")
         entity = store.get_entity("alice")
@@ -214,26 +192,27 @@ class TestFalkorDBStore:
         assert entity["occurrences"][0]["source"] == "transcript_0"
         store.close()
 
-    def test_persistence(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
+    def test_occurrence_nonexistent_entity(self, tmp_path):
+        store = SQLiteStore(tmp_path / "test.db")
+        store.add_occurrence("Ghost", "transcript_0")
+        assert store.get_entity_count() == 0
+        store.close()
 
+    def test_persistence(self, tmp_path):
         db_path = tmp_path / "persist.db"
 
-        store1 = FalkorDBStore(db_path)
+        store1 = SQLiteStore(db_path)
         store1.merge_entity("Python", "technology", ["A language"])
-        store1.add_relationship_count = 0  # just to trigger write
         store1.close()
 
-        store2 = FalkorDBStore(db_path)
+        store2 = SQLiteStore(db_path)
         assert store2.get_entity_count() == 1
         entity = store2.get_entity("python")
         assert entity["name"] == "Python"
         store2.close()
 
     def test_to_dict_format(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
-
-        store = FalkorDBStore(tmp_path / "test.db")
+        store = SQLiteStore(tmp_path / "test.db")
         store.merge_entity("Python", "technology", ["A language"])
         store.merge_entity("Django", "technology", ["A framework"])
         store.add_relationship("Django", "Python", "uses")
@@ -250,11 +229,46 @@ class TestFalkorDBStore:
         store.close()
 
     def test_has_entity(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
-
-        store = FalkorDBStore(tmp_path / "test.db")
+        store = SQLiteStore(tmp_path / "test.db")
         assert not store.has_entity("Python")
         store.merge_entity("Python", "technology", [])
         assert store.has_entity("Python")
         assert store.has_entity("python")
+        store.close()
+
+    def test_raw_query(self, tmp_path):
+        store = SQLiteStore(tmp_path / "test.db")
+        store.merge_entity("Alice", "person", ["Engineer"])
+        rows = store.raw_query("SELECT name FROM entities")
+        assert len(rows) >= 1
+        assert rows[0][0] == "Alice"
+        store.close()
+
+    def test_typed_relationship(self, tmp_path):
+        store = SQLiteStore(tmp_path / "test.db")
+        store.merge_entity("Django", "technology", [])
+        store.merge_entity("Python", "technology", [])
+        store.add_typed_relationship("Django", "Python", "DEPENDS_ON", {"version": "3.10"})
+        rels = store.get_all_relationships()
+        assert len(rels) == 1
+        assert rels[0]["type"] == "DEPENDS_ON"
+        store.close()
+
+    def test_set_entity_properties(self, tmp_path):
+        store = SQLiteStore(tmp_path / "test.db")
+        store.merge_entity("Python", "technology", [])
+        assert store.set_entity_properties("Python", {"version": "3.12", "stable": True})
+        assert not store.set_entity_properties("Ghost", {"key": "val"})
+        store.close()
+
+    def test_has_relationship(self, tmp_path):
+        store = SQLiteStore(tmp_path / "test.db")
+        store.merge_entity("Alice", "person", [])
+        store.merge_entity("Bob", "person", [])
+        store.add_relationship("Alice", "Bob", "knows")
+        assert store.has_relationship("Alice", "Bob")
+        assert store.has_relationship("alice", "bob")
+        assert store.has_relationship("Alice", "Bob", "knows")
+        assert not store.has_relationship("Alice", "Bob", "hates")
+        assert not store.has_relationship("Bob", "Alice")
         store.close()

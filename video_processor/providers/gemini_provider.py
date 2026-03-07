@@ -7,7 +7,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from video_processor.providers.base import BaseProvider, ModelInfo
+from video_processor.providers.base import BaseProvider, ModelInfo, ProviderRegistry
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -220,3 +220,16 @@ class GeminiProvider(BaseProvider):
         except Exception as e:
             logger.warning(f"Failed to list Gemini models: {e}")
         return sorted(models, key=lambda m: m.id)
+
+
+ProviderRegistry.register(
+    name="gemini",
+    provider_class=GeminiProvider,
+    env_var="GEMINI_API_KEY",
+    model_prefixes=["gemini-"],
+    default_models={
+        "chat": "gemini-2.5-flash",
+        "vision": "gemini-2.5-flash",
+        "audio": "gemini-2.5-flash",
+    },
+)

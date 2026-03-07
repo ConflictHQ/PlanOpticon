@@ -9,7 +9,7 @@ from typing import Optional
 import requests
 from openai import OpenAI
 
-from video_processor.providers.base import BaseProvider, ModelInfo
+from video_processor.providers.base import BaseProvider, ModelInfo, ProviderRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -170,3 +170,12 @@ class OllamaProvider(BaseProvider):
         except Exception as e:
             logger.warning(f"Failed to list Ollama models: {e}")
         return sorted(models, key=lambda m: m.id)
+
+
+ProviderRegistry.register(
+    name="ollama",
+    provider_class=OllamaProvider,
+    env_var="",
+    model_prefixes=[],
+    default_models={"chat": "", "vision": "", "audio": ""},
+)

@@ -2,9 +2,18 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
+
+
+@runtime_checkable
+class ProgressCallback(Protocol):
+    """Optional callback for pipeline progress updates."""
+
+    def on_step_start(self, step: str, index: int, total: int) -> None: ...
+    def on_step_complete(self, step: str, index: int, total: int) -> None: ...
+    def on_progress(self, step: str, percent: float, message: str = "") -> None: ...
 
 
 class DiagramType(str, Enum):
@@ -101,6 +110,22 @@ class ScreenCapture(BaseModel):
     )
 
 
+class SourceRecord(BaseModel):
+    """A content source registered in the knowledge graph for provenance tracking."""
+
+    source_id: str = Field(description="Unique identifier for this source")
+    source_type: str = Field(description="Source type: video, document, url, api, manual")
+    title: str = Field(description="Human-readable title")
+    path: Optional[str] = Field(default=None, description="Local file path")
+    url: Optional[str] = Field(default=None, description="URL if applicable")
+    mime_type: Optional[str] = Field(default=None, description="MIME type of the source")
+    ingested_at: str = Field(
+        default_factory=lambda: datetime.now().isoformat(),
+        description="ISO format ingestion timestamp",
+    )
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional source metadata")
+
+
 class Entity(BaseModel):
     """An entity in the knowledge graph."""
 
@@ -132,6 +157,50 @@ class KnowledgeGraphData(BaseModel):
     relationships: List[Relationship] = Field(
         default_factory=list, description="Graph relationships"
     )
+    sources: List[SourceRecord] = Field(
+        default_factory=list, description="Content sources for provenance tracking"
+    )
+
+
+class PlanningEntityType(str, Enum):
+    """Types of entities in a planning taxonomy."""
+
+    GOAL = "goal"
+    REQUIREMENT = "requirement"
+    CONSTRAINT = "constraint"
+    DECISION = "decision"
+    RISK = "risk"
+    ASSUMPTION = "assumption"
+    DEPENDENCY = "dependency"
+    MILESTONE = "milestone"
+    TASK = "task"
+    FEATURE = "feature"
+
+
+class PlanningEntity(BaseModel):
+    """An entity classified for planning purposes."""
+
+    name: str
+    planning_type: PlanningEntityType
+    description: str = ""
+    priority: Optional[str] = None  # "high", "medium", "low"
+    status: Optional[str] = None  # "identified", "confirmed", "resolved"
+    source_entities: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PlanningRelationshipType(str, Enum):
+    """Relationship types within a planning taxonomy."""
+
+    REQUIRES = "requires"
+    BLOCKED_BY = "blocked_by"
+    HAS_RISK = "has_risk"
+    DEPENDS_ON = "depends_on"
+    ADDRESSES = "addresses"
+    HAS_TRADEOFF = "has_tradeoff"
+    DELIVERS = "delivers"
+    IMPLEMENTS = "implements"
+    PARENT_OF = "parent_of"
 
 
 class ProcessingStats(BaseModel):

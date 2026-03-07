@@ -9,7 +9,7 @@ from typing import Optional
 import anthropic
 from dotenv import load_dotenv
 
-from video_processor.providers.base import BaseProvider, ModelInfo
+from video_processor.providers.base import BaseProvider, ModelInfo, ProviderRegistry
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -33,13 +33,27 @@ class AnthropicProvider(BaseProvider):
         temperature: float = 0.7,
         model: Optional[str] = None,
     ) -> str:
-        model = model or "claude-sonnet-4-5-20250929"
-        response = self.client.messages.create(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+        model = model or "claude-haiku-4-5-20251001"
+
+        # Anthropic requires system messages as a top-level parameter
+        system_parts = []
+        chat_messages = []
+        for msg in messages:
+            if msg.get("role") == "system":
+                system_parts.append(msg["content"])
+            else:
+                chat_messages.append(msg)
+
+        kwargs = {
+            "model": model,
+            "messages": chat_messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+
+        response = self.client.messages.create(**kwargs)
         self._last_usage = {
             "input_tokens": getattr(response.usage, "input_tokens", 0),
             "output_tokens": getattr(response.usage, "output_tokens", 0),
@@ -53,7 +67,7 @@ class AnthropicProvider(BaseProvider):
         max_tokens: int = 4096,
         model: Optional[str] = None,
     ) -> str:
-        model = model or "claude-sonnet-4-5-20250929"
+        model = model or "claude-haiku-4-5-20251001"
         b64 = base64.b64encode(image_bytes).decode()
         response = self.client.messages.create(
             model=model,
@@ -110,3 +124,16 @@ class AnthropicProvider(BaseProvider):
         except Exception as e:
             logger.warning(f"Failed to list Anthropic models: {e}")
         return sorted(models, key=lambda m: m.id)
+
+
+ProviderRegistry.register(
+    name="anthropic",
+    provider_class=AnthropicProvider,
+    env_var="ANTHROPIC_API_KEY",
+    model_prefixes=["claude-"],
+    default_models={
+        "chat": "claude-haiku-4-5-20251001",
+        "vision": "claude-haiku-4-5-20251001",
+        "audio": "",
+    },
+)

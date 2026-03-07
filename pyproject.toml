@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "planopticon"
-version = "0.3.0"
+version = "0.4.0"
 description = "AI-powered video analysis and knowledge extraction tool"
 readme = "README.md"
 license = "MIT"
@@ -52,14 +52,37 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-pdf = ["weasyprint>=60.0"]
+pdf = ["pymupdf>=1.24.0"]
 gpu = ["torch>=2.0.0", "torchvision>=0.15.0"]
 gdrive = ["google-auth>=2.0.0", "google-auth-oauthlib>=1.0.0", "google-api-python-client>=2.0.0"]
 dropbox = ["dropbox>=12.0.0"]
-graph = ["falkordblite>=0.4.0", "redis>=4.5"]
+azure = ["openai>=1.0.0"]
+together = ["openai>=1.0.0"]
+fireworks = ["openai>=1.0.0"]
+cerebras = ["openai>=1.0.0"]
+xai = ["openai>=1.0.0"]
+bedrock = ["boto3>=1.28"]
+vertex = ["google-cloud-aiplatform>=1.38"]
+mistral = ["mistralai>=1.0"]
+cohere = ["cohere>=5.0"]
+ai21 = ["ai21>=3.0"]
+huggingface = ["huggingface_hub>=0.20"]
+qianfan = ["qianfan>=0.4"]
+litellm = ["litellm>=1.0"]
+youtube = ["yt-dlp>=2023.0"]
+s3 = ["boto3>=1.28"]
+web = ["beautifulsoup4>=4.12"]
+rss = ["feedparser>=6.0"]
+graph = []
 cloud = [
     "planopticon[gdrive]",
     "planopticon[dropbox]",
+    "planopticon[s3]",
+]
+sources = [
+    "planopticon[youtube]",
+    "planopticon[web]",
+    "planopticon[rss]",
 ]
 dev = [
     "pytest>=7.3.0",
@@ -105,6 +128,7 @@ select = ["E", "F", "W", "I"]
 
 [tool.ruff.lint.per-file-ignores]
 "video_processor/utils/prompt_templates.py" = ["E501"]
+"video_processor/api/openapi_spec.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.10"
