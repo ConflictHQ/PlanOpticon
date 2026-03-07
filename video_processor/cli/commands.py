@@ -75,7 +75,20 @@ def cli(ctx, verbose):
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
+    type=click.Choice(
+        [
+            "auto",
+            "openai",
+            "anthropic",
+            "gemini",
+            "ollama",
+            "azure",
+            "together",
+            "fireworks",
+            "cerebras",
+            "xai",
+        ]
+    ),
     default="auto",
     help="API provider",
 )
@@ -156,7 +169,20 @@ def analyze(
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
+    type=click.Choice(
+        [
+            "auto",
+            "openai",
+            "anthropic",
+            "gemini",
+            "ollama",
+            "azure",
+            "together",
+            "fireworks",
+            "cerebras",
+            "xai",
+        ]
+    ),
     default="auto",
     help="API provider",
 )
@@ -426,7 +452,20 @@ def clear_cache(ctx, cache_dir, older_than, clear_all):
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
+    type=click.Choice(
+        [
+            "auto",
+            "openai",
+            "anthropic",
+            "gemini",
+            "ollama",
+            "azure",
+            "together",
+            "fireworks",
+            "cerebras",
+            "xai",
+        ]
+    ),
     default="auto",
     help="API provider",
 )
@@ -493,7 +532,20 @@ def agent_analyze(ctx, input, output, depth, title, provider, vision_model, chat
 @click.option(
     "--provider",
     "-p",
-    type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
+    type=click.Choice(
+        [
+            "auto",
+            "openai",
+            "anthropic",
+            "gemini",
+            "ollama",
+            "azure",
+            "together",
+            "fireworks",
+            "cerebras",
+            "xai",
+        ]
+    ),
     default="auto",
     help="API provider for agentic mode",
 )
@@ -858,7 +910,20 @@ def _interactive_menu(ctx):
         )
         provider = click.prompt(
             "  Provider",
-            type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
+            type=click.Choice(
+                [
+                    "auto",
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "ollama",
+                    "azure",
+                    "together",
+                    "fireworks",
+                    "cerebras",
+                    "xai",
+                ]
+            ),
             default="auto",
         )
         ctx.invoke(
@@ -887,7 +952,20 @@ def _interactive_menu(ctx):
         )
         provider = click.prompt(
             "  Provider",
-            type=click.Choice(["auto", "openai", "anthropic", "gemini", "ollama"]),
+            type=click.Choice(
+                [
+                    "auto",
+                    "openai",
+                    "anthropic",
+                    "gemini",
+                    "ollama",
+                    "azure",
+                    "together",
+                    "fireworks",
+                    "cerebras",
+                    "xai",
+                ]
+            ),
             default="auto",
         )
         ctx.invoke(

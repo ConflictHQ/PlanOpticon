@@ -20,9 +20,14 @@ def _ensure_providers_registered() -> None:
         return
     # Each module registers itself on import via ProviderRegistry.register()
     import video_processor.providers.anthropic_provider  # noqa: F401
+    import video_processor.providers.azure_provider  # noqa: F401
+    import video_processor.providers.cerebras_provider  # noqa: F401
+    import video_processor.providers.fireworks_provider  # noqa: F401
     import video_processor.providers.gemini_provider  # noqa: F401
     import video_processor.providers.ollama_provider  # noqa: F401
     import video_processor.providers.openai_provider  # noqa: F401
+    import video_processor.providers.together_provider  # noqa: F401
+    import video_processor.providers.xai_provider  # noqa: F401
 
 
 # Default model preference rankings (tried in order)

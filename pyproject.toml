@@ -56,6 +56,11 @@ pdf = ["weasyprint>=60.0"]
 gpu = ["torch>=2.0.0", "torchvision>=0.15.0"]
 gdrive = ["google-auth>=2.0.0", "google-auth-oauthlib>=1.0.0", "google-api-python-client>=2.0.0"]
 dropbox = ["dropbox>=12.0.0"]
+azure = ["openai>=1.0.0"]
+together = ["openai>=1.0.0"]
+fireworks = ["openai>=1.0.0"]
+cerebras = ["openai>=1.0.0"]
+xai = ["openai>=1.0.0"]
 graph = []
 cloud = [
     "planopticon[gdrive]",
