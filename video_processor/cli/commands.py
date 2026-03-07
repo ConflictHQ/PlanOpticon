@@ -94,6 +94,18 @@ def cli(ctx, verbose):
 )
 @click.option("--vision-model", type=str, default=None, help="Override model for vision tasks")
 @click.option("--chat-model", type=str, default=None, help="Override model for LLM/chat tasks")
+@click.option(
+    "--output-format",
+    type=click.Choice(["default", "json"]),
+    default="default",
+    help="Output format: default (files + summary) or json (structured JSON to stdout)",
+)
+@click.option(
+    "--templates-dir",
+    type=click.Path(exists=True),
+    default=None,
+    help="Directory with custom prompt template .txt files",
+)
 @click.pass_context
 def analyze(
     ctx,
@@ -109,6 +121,8 @@ def analyze(
     provider,
     vision_model,
     chat_model,
+    output_format,
+    templates_dir,
 ):
     """Analyze a single video and extract structured knowledge."""
     from video_processor.pipeline import process_single_video
@@ -123,8 +137,13 @@ def analyze(
         provider=prov,
     )
 
+    if templates_dir:
+        from video_processor.utils.prompt_templates import PromptTemplate
+
+        pm.prompt_templates = PromptTemplate(templates_dir=templates_dir)
+
     try:
-        process_single_video(
+        manifest = process_single_video(
             input_path=input,
             output_dir=output,
             provider_manager=pm,
@@ -136,11 +155,17 @@ def analyze(
             use_gpu=use_gpu,
             title=title,
         )
-        click.echo(pm.usage.format_summary())
-        click.echo(f"\n  Results: {output}/manifest.json")
+        if output_format == "json":
+            click.echo(json.dumps(manifest.model_dump(), indent=2, default=str))
+        else:
+            click.echo(pm.usage.format_summary())
+            click.echo(f"\n  Results: {output}/manifest.json")
     except Exception as e:
         logging.error(f"Error: {e}")
-        click.echo(pm.usage.format_summary())
+        if output_format == "json":
+            click.echo(json.dumps({"error": str(e)}))
+        else:
+            click.echo(pm.usage.format_summary())
         if ctx.obj["verbose"]:
             import traceback
 
