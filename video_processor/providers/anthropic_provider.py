@@ -33,7 +33,7 @@ class AnthropicProvider(BaseProvider):
         temperature: float = 0.7,
         model: Optional[str] = None,
     ) -> str:
-        model = model or "claude-sonnet-4-5-20250929"
+        model = model or "claude-haiku-4-5-20251001"
 
         # Anthropic requires system messages as a top-level parameter
         system_parts = []
@@ -67,7 +67,7 @@ class AnthropicProvider(BaseProvider):
         max_tokens: int = 4096,
         model: Optional[str] = None,
     ) -> str:
-        model = model or "claude-sonnet-4-5-20250929"
+        model = model or "claude-haiku-4-5-20251001"
         b64 = base64.b64encode(image_bytes).decode()
         response = self.client.messages.create(
             model=model,
@@ -132,8 +132,8 @@ ProviderRegistry.register(
     env_var="ANTHROPIC_API_KEY",
     model_prefixes=["claude-"],
     default_models={
-        "chat": "claude-sonnet-4-5-20250929",
-        "vision": "claude-sonnet-4-5-20250929",
+        "chat": "claude-haiku-4-5-20251001",
+        "vision": "claude-haiku-4-5-20251001",
         "audio": "",
     },
 )

@@ -48,7 +48,7 @@ class OpenAIProvider(BaseProvider):
         temperature: float = 0.7,
         model: Optional[str] = None,
     ) -> str:
-        model = model or "gpt-4o"
+        model = model or "gpt-4o-mini"
         response = self.client.chat.completions.create(
             model=model,
             messages=messages,
@@ -70,7 +70,7 @@ class OpenAIProvider(BaseProvider):
         max_tokens: int = 4096,
         model: Optional[str] = None,
     ) -> str:
-        model = model or "gpt-4o"
+        model = model or "gpt-4o-mini"
         b64 = base64.b64encode(image_bytes).decode()
         response = self.client.chat.completions.create(
             model=model,
@@ -234,5 +234,5 @@ ProviderRegistry.register(
     provider_class=OpenAIProvider,
     env_var="OPENAI_API_KEY",
     model_prefixes=["gpt-", "o1", "o3", "o4", "whisper"],
-    default_models={"chat": "gpt-4o", "vision": "gpt-4o", "audio": "whisper-1"},
+    default_models={"chat": "gpt-4o-mini", "vision": "gpt-4o-mini", "audio": "whisper-1"},
 )
