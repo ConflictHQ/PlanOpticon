@@ -153,6 +153,47 @@ class KnowledgeGraphData(BaseModel):
     )
 
 
+class PlanningEntityType(str, Enum):
+    """Types of entities in a planning taxonomy."""
+
+    GOAL = "goal"
+    REQUIREMENT = "requirement"
+    CONSTRAINT = "constraint"
+    DECISION = "decision"
+    RISK = "risk"
+    ASSUMPTION = "assumption"
+    DEPENDENCY = "dependency"
+    MILESTONE = "milestone"
+    TASK = "task"
+    FEATURE = "feature"
+
+
+class PlanningEntity(BaseModel):
+    """An entity classified for planning purposes."""
+
+    name: str
+    planning_type: PlanningEntityType
+    description: str = ""
+    priority: Optional[str] = None  # "high", "medium", "low"
+    status: Optional[str] = None  # "identified", "confirmed", "resolved"
+    source_entities: List[str] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class PlanningRelationshipType(str, Enum):
+    """Relationship types within a planning taxonomy."""
+
+    REQUIRES = "requires"
+    BLOCKED_BY = "blocked_by"
+    HAS_RISK = "has_risk"
+    DEPENDS_ON = "depends_on"
+    ADDRESSES = "addresses"
+    HAS_TRADEOFF = "has_tradeoff"
+    DELIVERS = "delivers"
+    IMPLEMENTS = "implements"
+    PARENT_OF = "parent_of"
+
+
 class ProcessingStats(BaseModel):
     """Statistics about a processing run."""
 

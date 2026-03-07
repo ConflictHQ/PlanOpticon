@@ -368,6 +368,116 @@ def batch(
     click.echo(f"  Results: {output}/batch_manifest.json")
 
 
+@cli.command()
+@click.argument("input_path", type=click.Path(exists=True))
+@click.option(
+    "--output", "-o", type=click.Path(), default=None, help="Output directory for knowledge graph"
+)
+@click.option(
+    "--db-path", type=click.Path(), default=None, help="Existing knowledge_graph.db to add to"
+)
+@click.option("--recursive/--no-recursive", "-r", default=True, help="Recurse into subdirectories")
+@click.option(
+    "--provider",
+    "-p",
+    type=click.Choice(
+        [
+            "auto",
+            "openai",
+            "anthropic",
+            "gemini",
+            "ollama",
+            "azure",
+            "together",
+            "fireworks",
+            "cerebras",
+            "xai",
+        ]
+    ),
+    default="auto",
+    help="API provider",
+)
+@click.option("--chat-model", type=str, default=None, help="Override model for LLM/chat tasks")
+@click.pass_context
+def ingest(ctx, input_path, output, db_path, recursive, provider, chat_model):
+    """Ingest documents into a knowledge graph.
+
+    Supports: .md, .txt, .pdf (with pymupdf or pdfplumber installed)
+
+    Examples:
+
+        planopticon ingest spec.md
+
+        planopticon ingest ./docs/ -o ./output
+
+        planopticon ingest report.pdf --db-path existing.db
+    """
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+    from video_processor.processors import list_supported_extensions
+    from video_processor.processors.ingest import ingest_directory, ingest_file
+    from video_processor.providers.manager import ProviderManager
+
+    input_path = Path(input_path)
+    prov = None if provider == "auto" else provider
+    pm = ProviderManager(chat_model=chat_model, provider=prov)
+
+    # Determine DB path
+    if db_path:
+        kg_path = Path(db_path)
+    elif output:
+        out_dir = Path(output)
+        out_dir.mkdir(parents=True, exist_ok=True)
+        kg_path = out_dir / "knowledge_graph.db"
+    else:
+        kg_path = Path.cwd() / "knowledge_graph.db"
+
+    kg_path.parent.mkdir(parents=True, exist_ok=True)
+
+    click.echo(f"Knowledge graph: {kg_path}")
+    kg = KnowledgeGraph(provider_manager=pm, db_path=kg_path)
+
+    total_files = 0
+    total_chunks = 0
+
+    try:
+        if input_path.is_file():
+            count = ingest_file(input_path, kg)
+            total_files = 1
+            total_chunks = count
+            click.echo(f"  {input_path.name}: {count} chunks")
+        elif input_path.is_dir():
+            results = ingest_directory(input_path, kg, recursive=recursive)
+            total_files = len(results)
+            total_chunks = sum(results.values())
+            for fpath, count in results.items():
+                click.echo(f"  {Path(fpath).name}: {count} chunks")
+        else:
+            click.echo(f"Error: {input_path} is not a file or directory", err=True)
+            sys.exit(1)
+    except ValueError as e:
+        click.echo(f"Error: {e}", err=True)
+        click.echo(f"Supported extensions: {', '.join(list_supported_extensions())}")
+        sys.exit(1)
+    except ImportError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+    # Save both .db and .json
+    kg.save(kg_path)
+    json_path = kg_path.with_suffix(".json")
+    kg.save(json_path)
+
+    entity_count = kg._store.get_entity_count()
+    rel_count = kg._store.get_relationship_count()
+
+    click.echo("\nIngestion complete:")
+    click.echo(f"  Files processed: {total_files}")
+    click.echo(f"  Total chunks: {total_chunks}")
+    click.echo(f"  Entities extracted: {entity_count}")
+    click.echo(f"  Relationships: {rel_count}")
+    click.echo(f"  Knowledge graph: {kg_path}")
+
+
 @cli.command("list-models")
 @click.pass_context
 def list_models(ctx):
@@ -881,6 +991,69 @@ def inspect(path):
         click.echo("Entity types:")
         for t, count in sorted(info["entity_types"].items(), key=lambda x: -x[1]):
             click.echo(f"  {t}: {count}")
+
+
+@kg.command()
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option("--provider", "-p", type=str, default="auto")
+@click.option("--chat-model", type=str, default=None)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["text", "json"]),
+    default="text",
+)
+@click.pass_context
+def classify(ctx, db_path, provider, chat_model, output_format):
+    """Classify knowledge graph entities into planning taxonomy types.
+
+    Examples:\n
+        planopticon kg classify results/knowledge_graph.db\n
+        planopticon kg classify results/knowledge_graph.db --format json
+    """
+    from video_processor.integrators.graph_store import create_store
+    from video_processor.integrators.taxonomy import TaxonomyClassifier
+
+    db_path = Path(db_path)
+    store = create_store(db_path)
+    entities = store.get_all_entities()
+    relationships = store.get_all_relationships()
+
+    pm = None
+    if provider != "none":
+        try:
+            from video_processor.providers.manager import ProviderManager
+
+            pm = ProviderManager(provider=provider if provider != "auto" else None)
+            if chat_model:
+                pm.chat_model = chat_model
+        except Exception:
+            pm = None  # fall back to heuristic-only
+
+    classifier = TaxonomyClassifier(provider_manager=pm)
+    planning_entities = classifier.classify_entities(entities, relationships)
+
+    if output_format == "json":
+        click.echo(
+            json.dumps(
+                [pe.model_dump() for pe in planning_entities],
+                indent=2,
+            )
+        )
+    else:
+        if not planning_entities:
+            click.echo("No entities matched planning taxonomy types.")
+            return
+        workstreams = classifier.organize_by_workstream(planning_entities)
+        for group_name, items in sorted(workstreams.items()):
+            click.echo(f"\n{group_name.upper()} ({len(items)})")
+            for pe in items:
+                priority_str = f" [{pe.priority}]" if pe.priority else ""
+                click.echo(f"  - {pe.name}{priority_str}")
+                if pe.description:
+                    click.echo(f"    {pe.description}")
+
+    store.close()
 
 
 def _interactive_menu(ctx):

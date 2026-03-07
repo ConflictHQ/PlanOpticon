@@ -350,6 +350,15 @@ class KnowledgeGraph:
                 timestamp=rel.get("timestamp"),
             )
 
+    def classify_for_planning(self):
+        """Classify entities in this knowledge graph into planning taxonomy types."""
+        from video_processor.integrators.taxonomy import TaxonomyClassifier
+
+        classifier = TaxonomyClassifier(provider_manager=self.pm)
+        entities = self._store.get_all_entities()
+        relationships = self._store.get_all_relationships()
+        return classifier.classify_entities(entities, relationships)
+
     def generate_mermaid(self, max_nodes: int = 30) -> str:
         """Generate Mermaid visualization code."""
         nodes = self.nodes
