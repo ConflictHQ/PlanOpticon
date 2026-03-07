@@ -991,29 +991,56 @@ def _query_repl(engine, output_format):
 
 
 @cli.command()
-@click.argument("service", type=click.Choice(["google", "dropbox"]))
+@click.argument(
+    "service",
+    type=click.Choice(
+        [
+            "google",
+            "dropbox",
+            "zoom",
+            "notion",
+            "github",
+            "microsoft",
+        ]
+    ),
+)
+@click.option("--logout", is_flag=True, help="Clear saved token")
 @click.pass_context
-def auth(ctx, service):
-    """Authenticate with a cloud service (google or dropbox)."""
-    if service == "google":
-        from video_processor.sources.google_drive import GoogleDriveSource
+def auth(ctx, service, logout):
+    """Authenticate with a cloud service via OAuth or API key.
 
-        source = GoogleDriveSource(use_service_account=False)
-        if source.authenticate():
-            click.echo("Google Drive authentication successful.")
-        else:
-            click.echo("Google Drive authentication failed.", err=True)
-            sys.exit(1)
+    Uses OAuth when available, falls back to API keys.
+    Tokens are saved to ~/.planopticon/ for reuse.
 
-    elif service == "dropbox":
-        from video_processor.sources.dropbox_source import DropboxSource
+    Examples:
 
-        source = DropboxSource()
-        if source.authenticate():
-            click.echo("Dropbox authentication successful.")
-        else:
-            click.echo("Dropbox authentication failed.", err=True)
-            sys.exit(1)
+        planopticon auth google
+
+        planopticon auth zoom
+
+        planopticon auth github --logout
+    """
+    from video_processor.auth import get_auth_manager
+
+    manager = get_auth_manager(service)
+    if not manager:
+        click.echo(f"Unknown service: {service}", err=True)
+        sys.exit(1)
+
+    if logout:
+        manager.clear_token()
+        click.echo(f"Cleared saved {service} token.")
+        return
+
+    result = manager.authenticate()
+    if result.success:
+        click.echo(f"{service.title()} authentication successful ({result.method}).")
+    else:
+        click.echo(
+            f"{service.title()} authentication failed: {result.error}",
+            err=True,
+        )
+        sys.exit(1)
 
 
 @cli.group()

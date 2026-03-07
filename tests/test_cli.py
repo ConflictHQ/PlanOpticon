@@ -232,6 +232,11 @@ class TestAuthHelp:
         assert result.exit_code == 0
         assert "google" in result.output
         assert "dropbox" in result.output
+        assert "zoom" in result.output
+        assert "notion" in result.output
+        assert "github" in result.output
+        assert "microsoft" in result.output
+        assert "--logout" in result.output
 
 
 class TestCompanionHelp:

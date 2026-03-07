@@ -160,6 +160,7 @@ class CompanionREPL:
             "  /export FORMAT         Export KG (markdown, obsidian, notion, csv)",
             "  /analyze PATH          Analyze a video/doc",
             "  /ingest PATH           Ingest a file into the KG",
+            "  /auth SERVICE          Authenticate with a cloud service",
             "  /provider [NAME]       List or switch LLM provider",
             "  /model [NAME]          Show or switch chat model",
             "  /run SKILL             Run a skill by name",
@@ -289,6 +290,26 @@ class CompanionREPL:
         except Exception as exc:
             return f"Skill execution failed: {exc}"
 
+    def _cmd_auth(self, args: str) -> str:
+        """Authenticate with a cloud service."""
+        service = args.strip().lower()
+        if not service:
+            from video_processor.auth import KNOWN_CONFIGS
+
+            services = ", ".join(sorted(KNOWN_CONFIGS.keys()))
+            return f"Usage: /auth SERVICE\nAvailable: {services}"
+
+        from video_processor.auth import get_auth_manager
+
+        manager = get_auth_manager(service)
+        if not manager:
+            return f"Unknown service: {service}"
+
+        result = manager.authenticate()
+        if result.success:
+            return f"{service.title()} authenticated ({result.method})"
+        return f"{service.title()} auth failed: {result.error}"
+
     def _cmd_provider(self, args: str) -> str:
         """List available providers or switch to a specific one."""
         args = args.strip().lower()
@@ -403,6 +424,8 @@ class CompanionREPL:
             return self._cmd_analyze(args)
         if cmd == "/ingest":
             return self._cmd_ingest(args)
+        if cmd == "/auth":
+            return self._cmd_auth(args)
         if cmd == "/provider":
             return self._cmd_provider(args)
         if cmd == "/model":
