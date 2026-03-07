@@ -397,6 +397,10 @@ class CompanionREPL:
         if not line:
             return ""
 
+        # Bare quit/exit/bye without slash
+        if line.lower() in ("quit", "exit", "bye", "q"):
+            return "__QUIT__"
+
         if not line.startswith("/"):
             return self._cmd_chat(line)
 

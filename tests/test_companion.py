@@ -80,6 +80,22 @@ class TestHandleQuit:
         repl = CompanionREPL()
         assert repl.handle_input("/exit") == "__QUIT__"
 
+    def test_bare_quit(self):
+        repl = CompanionREPL()
+        assert repl.handle_input("quit") == "__QUIT__"
+
+    def test_bare_exit(self):
+        repl = CompanionREPL()
+        assert repl.handle_input("exit") == "__QUIT__"
+
+    def test_bare_bye(self):
+        repl = CompanionREPL()
+        assert repl.handle_input("bye") == "__QUIT__"
+
+    def test_bare_q(self):
+        repl = CompanionREPL()
+        assert repl.handle_input("q") == "__QUIT__"
+
 
 class TestHandleUnknownSlash:
     def test_unknown_command(self):
