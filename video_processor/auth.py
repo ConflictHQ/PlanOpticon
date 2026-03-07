@@ -165,9 +165,19 @@ class OAuthManager:
                 method="api_key",
             )
 
+        # Build a helpful error message
+        hints = []
+        if self.config.supports_oauth and self.config.client_id_env:
+            hints.append(f"Set {self.config.client_id_env} for OAuth")
+            if self.config.client_secret_env:
+                hints.append(f"and {self.config.client_secret_env}")
+        if self.config.api_key_env:
+            hints.append(f"or set {self.config.api_key_env} for API key access")
+        hint_str = (" (" + " ".join(hints) + ")") if hints else ""
+
         return AuthResult(
             success=False,
-            error=f"No auth method available for {self.config.service}",
+            error=f"No auth method available for {self.config.service}.{hint_str}",
         )
 
     def get_token(self) -> Optional[str]:

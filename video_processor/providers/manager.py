@@ -33,13 +33,13 @@ def _ensure_providers_registered() -> None:
 # Default model preference rankings (tried in order)
 _VISION_PREFERENCES = [
     ("gemini", "gemini-2.5-flash"),
-    ("openai", "gpt-4o"),
-    ("anthropic", "claude-sonnet-4-5-20250929"),
+    ("openai", "gpt-4o-mini"),
+    ("anthropic", "claude-haiku-4-5-20251001"),
 ]
 
 _CHAT_PREFERENCES = [
-    ("anthropic", "claude-sonnet-4-5-20250929"),
-    ("openai", "gpt-4o"),
+    ("anthropic", "claude-haiku-4-5-20251001"),
+    ("openai", "gpt-4o-mini"),
     ("gemini", "gemini-2.5-flash"),
 ]
 
