@@ -1416,6 +1416,115 @@ def m365_ingest(ctx, web_url, folder_url, file_id, output, db_path, provider, ch
 
 
 @cli.group()
+def export():
+    """Export knowledge graphs as markdown docs, notes, or CSV."""
+    pass
+
+
+@export.command("markdown")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output directory")
+@click.option(
+    "--type",
+    "doc_types",
+    type=click.Choice(
+        [
+            "summary",
+            "meeting-notes",
+            "glossary",
+            "relationship-map",
+            "status-report",
+            "entity-index",
+            "csv",
+            "all",
+        ]
+    ),
+    multiple=True,
+    default=("all",),
+    help="Document types to generate (repeatable)",
+)
+def export_markdown(db_path, output, doc_types):
+    """Generate markdown documents from a knowledge graph.
+
+    No API key needed — pure template-based generation.
+
+    Examples:
+
+        planopticon export markdown knowledge_graph.db
+
+        planopticon export markdown kg.db -o ./docs --type summary --type glossary
+
+        planopticon export markdown kg.db --type meeting-notes --type csv
+    """
+    from video_processor.exporters.markdown import generate_all
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    db_path = Path(db_path)
+    out_dir = Path(output) if output else Path.cwd() / "export"
+
+    kg = KnowledgeGraph(db_path=db_path)
+    kg_data = kg.to_dict()
+
+    types = None if "all" in doc_types else list(doc_types)
+    created = generate_all(kg_data, out_dir, doc_types=types)
+
+    click.echo(f"Generated {len(created)} files in {out_dir}/")
+    # Show top-level files (not entity briefs)
+    for p in sorted(created):
+        if p.parent == out_dir:
+            click.echo(f"  {p.name}")
+    entity_count = len([p for p in created if p.parent != out_dir])
+    if entity_count:
+        click.echo(f"  entities/ ({entity_count} entity briefs)")
+
+
+@export.command("obsidian")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output vault directory")
+def export_obsidian(db_path, output):
+    """Export knowledge graph as an Obsidian vault with frontmatter and wiki-links.
+
+    Examples:
+
+        planopticon export obsidian knowledge_graph.db -o ./my-vault
+    """
+    from video_processor.agent.skills.notes_export import export_to_obsidian
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    db_path = Path(db_path)
+    out_dir = Path(output) if output else Path.cwd() / "obsidian-vault"
+
+    kg = KnowledgeGraph(db_path=db_path)
+    kg_data = kg.to_dict()
+    created = export_to_obsidian(kg_data, out_dir)
+
+    click.echo(f"Exported Obsidian vault: {len(created)} notes in {out_dir}/")
+
+
+@export.command("notion")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output directory")
+def export_notion(db_path, output):
+    """Export knowledge graph as Notion-compatible markdown + CSV database.
+
+    Examples:
+
+        planopticon export notion knowledge_graph.db -o ./notion-export
+    """
+    from video_processor.agent.skills.notes_export import export_to_notion_md
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    db_path = Path(db_path)
+    out_dir = Path(output) if output else Path.cwd() / "notion-export"
+
+    kg = KnowledgeGraph(db_path=db_path)
+    kg_data = kg.to_dict()
+    created = export_to_notion_md(kg_data, out_dir)
+
+    click.echo(f"Exported Notion markdown: {len(created)} files in {out_dir}/")
+
+
+@cli.group()
 def wiki():
     """Generate and push GitHub wikis from knowledge graphs."""
     pass
