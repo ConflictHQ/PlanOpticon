@@ -6,11 +6,13 @@ from video_processor.agent.skills import (  # noqa: F401
     cli_adapter,
     doc_generator,
     github_integration,
+    notes_export,
     prd,
     project_plan,
     requirements_chat,
     roadmap,
     task_breakdown,
+    wiki_generator,
 )
 from video_processor.agent.skills.base import (
     AgentContext,

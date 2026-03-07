@@ -403,3 +403,225 @@ class TestSkillMetadata:
         ctx = _make_context()
         ctx.provider_manager = None
         assert skill.can_execute(ctx) is False
+
+
+# ---------------------------------------------------------------------------
+# WikiGeneratorSkill
+# ---------------------------------------------------------------------------
+
+
+class TestWikiGeneratorSkill:
+    def _sample_kg_data(self):
+        return {
+            "nodes": [
+                {
+                    "name": "Python",
+                    "type": "technology",
+                    "descriptions": ["A programming language"],
+                },
+                {
+                    "name": "Alice",
+                    "type": "person",
+                    "descriptions": ["Lead developer"],
+                },
+                {
+                    "name": "FastAPI",
+                    "type": "technology",
+                    "descriptions": ["Web framework"],
+                },
+            ],
+            "relationships": [
+                {"source": "Alice", "target": "Python", "type": "uses"},
+                {"source": "FastAPI", "target": "Python", "type": "built_with"},
+            ],
+        }
+
+    def test_generate_wiki(self):
+        from video_processor.agent.skills.wiki_generator import generate_wiki
+
+        pages = generate_wiki(self._sample_kg_data(), title="Test Wiki")
+
+        assert "Home" in pages
+        assert "_Sidebar" in pages
+        assert "Test Wiki" in pages["Home"]
+        assert "3" in pages["Home"]  # 3 entities
+        assert "2" in pages["Home"]  # 2 relationships
+
+        # Entity pages should exist
+        assert "Python" in pages
+        assert "Alice" in pages
+        assert "FastAPI" in pages
+
+        # Type index pages should exist
+        assert "Technology" in pages
+        assert "Person" in pages
+
+        # Alice's page should reference Python
+        assert "Python" in pages["Alice"]
+        assert "uses" in pages["Alice"]
+
+    def test_generate_wiki_with_artifacts(self):
+        from video_processor.agent.skills.wiki_generator import generate_wiki
+
+        art = Artifact(
+            name="Project Plan",
+            content="# Plan\n\nDo the thing.",
+            artifact_type="project_plan",
+            format="markdown",
+        )
+        pages = generate_wiki(self._sample_kg_data(), artifacts=[art])
+
+        assert "Project-Plan" in pages
+        assert "Do the thing." in pages["Project-Plan"]
+        assert "Planning Artifacts" in pages["Home"]
+
+    def test_write_wiki(self, tmp_path):
+        from video_processor.agent.skills.wiki_generator import write_wiki
+
+        pages = {
+            "Home": "# Home\n\nWelcome.",
+            "Page-One": "# Page One\n\nContent.",
+        }
+        paths = write_wiki(pages, tmp_path / "wiki")
+
+        assert len(paths) == 2
+        assert (tmp_path / "wiki" / "Home.md").exists()
+        assert (tmp_path / "wiki" / "Page-One.md").exists()
+        assert "Welcome." in (tmp_path / "wiki" / "Home.md").read_text()
+
+    def test_sanitize_filename(self):
+        from video_processor.agent.skills.wiki_generator import _sanitize_filename
+
+        assert _sanitize_filename("Hello World") == "Hello-World"
+        assert _sanitize_filename("path/to\\file") == "path-to-file"
+        assert _sanitize_filename("version.2") == "version-2"
+
+    def test_wiki_link(self):
+        from video_processor.agent.skills.wiki_generator import _wiki_link
+
+        result = _wiki_link("My Page")
+        assert result == "[My Page](My-Page)"
+
+        result = _wiki_link("Simple")
+        assert result == "[Simple](Simple)"
+
+
+# ---------------------------------------------------------------------------
+# NotesExportSkill
+# ---------------------------------------------------------------------------
+
+
+class TestNotesExportSkill:
+    def _sample_kg_data(self):
+        return {
+            "nodes": [
+                {
+                    "name": "Python",
+                    "type": "technology",
+                    "descriptions": ["A programming language"],
+                },
+                {
+                    "name": "Alice",
+                    "type": "person",
+                    "descriptions": ["Lead developer"],
+                },
+            ],
+            "relationships": [
+                {"source": "Alice", "target": "Python", "type": "uses"},
+            ],
+        }
+
+    def test_export_to_obsidian(self, tmp_path):
+        from video_processor.agent.skills.notes_export import export_to_obsidian
+
+        output_dir = tmp_path / "obsidian_vault"
+        export_to_obsidian(self._sample_kg_data(), output_dir)
+
+        assert output_dir.is_dir()
+
+        # Check entity files exist
+        python_file = output_dir / "Python.md"
+        alice_file = output_dir / "Alice.md"
+        assert python_file.exists()
+        assert alice_file.exists()
+
+        # Check frontmatter in entity file
+        python_content = python_file.read_text()
+        assert "---" in python_content
+        assert "type: technology" in python_content
+        assert "# Python" in python_content
+
+        # Check wiki-links in Alice file
+        alice_content = alice_file.read_text()
+        assert "[[Python]]" in alice_content
+        assert "uses" in alice_content
+
+        # Check index file
+        index_file = output_dir / "_Index.md"
+        assert index_file.exists()
+        index_content = index_file.read_text()
+        assert "[[Python]]" in index_content
+        assert "[[Alice]]" in index_content
+
+    def test_export_to_obsidian_with_artifacts(self, tmp_path):
+        from video_processor.agent.skills.notes_export import export_to_obsidian
+
+        art = Artifact(
+            name="Test Plan",
+            content="# Plan\n\nSteps here.",
+            artifact_type="project_plan",
+            format="markdown",
+        )
+        output_dir = tmp_path / "obsidian_arts"
+        export_to_obsidian(self._sample_kg_data(), output_dir, artifacts=[art])
+
+        art_file = output_dir / "Test Plan.md"
+        assert art_file.exists()
+        art_content = art_file.read_text()
+        assert "artifact" in art_content
+        assert "Steps here." in art_content
+
+    def test_export_to_notion_md(self, tmp_path):
+        from video_processor.agent.skills.notes_export import export_to_notion_md
+
+        output_dir = tmp_path / "notion_export"
+        export_to_notion_md(self._sample_kg_data(), output_dir)
+
+        assert output_dir.is_dir()
+
+        # Check CSV database file
+        csv_file = output_dir / "entities_database.csv"
+        assert csv_file.exists()
+        csv_content = csv_file.read_text()
+        assert "Name" in csv_content
+        assert "Type" in csv_content
+        assert "Python" in csv_content
+        assert "Alice" in csv_content
+
+        # Check entity markdown files
+        python_file = output_dir / "Python.md"
+        assert python_file.exists()
+        python_content = python_file.read_text()
+        assert "# Python" in python_content
+        assert "technology" in python_content
+
+        # Check overview file
+        overview_file = output_dir / "Overview.md"
+        assert overview_file.exists()
+
+    def test_export_to_notion_md_with_artifacts(self, tmp_path):
+        from video_processor.agent.skills.notes_export import export_to_notion_md
+
+        art = Artifact(
+            name="Roadmap",
+            content="# Roadmap\n\nQ1 goals.",
+            artifact_type="roadmap",
+            format="markdown",
+        )
+        output_dir = tmp_path / "notion_arts"
+        export_to_notion_md(self._sample_kg_data(), output_dir, artifacts=[art])
+
+        art_file = output_dir / "Roadmap.md"
+        assert art_file.exists()
+        art_content = art_file.read_text()
+        assert "Q1 goals." in art_content

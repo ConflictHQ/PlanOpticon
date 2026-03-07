@@ -860,3 +860,485 @@ class TestM365Source:
         src = M365Source(web_url="https://contoso.sharepoint.com")
         files = src.list_videos()
         assert files == []
+
+
+# ---------------------------------------------------------------------------
+# ObsidianSource
+# ---------------------------------------------------------------------------
+
+
+class TestObsidianSource:
+    def test_import(self):
+        from video_processor.sources.obsidian_source import ObsidianSource
+
+        assert ObsidianSource is not None
+
+    def test_constructor(self, tmp_path):
+        from video_processor.sources.obsidian_source import ObsidianSource
+
+        src = ObsidianSource(vault_path=str(tmp_path))
+        assert src.vault_path == tmp_path
+
+    def test_authenticate_with_vault(self, tmp_path):
+        from video_processor.sources.obsidian_source import ObsidianSource
+
+        (tmp_path / "note.md").write_text("# Hello")
+        src = ObsidianSource(vault_path=str(tmp_path))
+        assert src.authenticate() is True
+
+    def test_authenticate_empty_dir(self, tmp_path):
+        from video_processor.sources.obsidian_source import ObsidianSource
+
+        src = ObsidianSource(vault_path=str(tmp_path))
+        assert src.authenticate() is False
+
+    def test_authenticate_nonexistent(self, tmp_path):
+        from video_processor.sources.obsidian_source import ObsidianSource
+
+        src = ObsidianSource(vault_path=str(tmp_path / "nonexistent"))
+        assert src.authenticate() is False
+
+    def test_parse_note(self, tmp_path):
+        from video_processor.sources.obsidian_source import parse_note
+
+        note_content = (
+            "---\n"
+            "title: Test Note\n"
+            "tags: [python, testing]\n"
+            "---\n"
+            "# Heading One\n\n"
+            "Some text with a [[Wiki Link]] and [[Another Page|alias]].\n\n"
+            "Also has #tag1 and #tag2 inline tags.\n\n"
+            "## Sub Heading\n\n"
+            "More content here.\n"
+        )
+        note_file = tmp_path / "test_note.md"
+        note_file.write_text(note_content)
+
+        result = parse_note(note_file)
+
+        assert result["frontmatter"]["title"] == "Test Note"
+        assert isinstance(result["frontmatter"]["tags"], list)
+        assert "python" in result["frontmatter"]["tags"]
+        assert "Wiki Link" in result["links"]
+        assert "Another Page" in result["links"]
+        assert "tag1" in result["tags"]
+        assert "tag2" in result["tags"]
+        assert len(result["headings"]) == 2
+        assert result["headings"][0]["level"] == 1
+        assert result["headings"][0]["text"] == "Heading One"
+        assert "Some text" in result["body"]
+
+    def test_ingest_vault(self, tmp_path):
+        from video_processor.sources.obsidian_source import ingest_vault
+
+        (tmp_path / "note_a.md").write_text("# A\n\nLinks to [[B]].\n")
+        (tmp_path / "note_b.md").write_text("# B\n\nLinks to [[A]] and [[C]].\n")
+
+        result = ingest_vault(tmp_path)
+
+        assert len(result["notes"]) == 2
+        names = [n["name"] for n in result["notes"]]
+        assert "note_a" in names
+        assert "note_b" in names
+        # note_a links to B, note_b links to A and C => 3 links
+        assert len(result["links"]) == 3
+
+    def test_list_videos(self, tmp_path):
+        from video_processor.sources.obsidian_source import ObsidianSource
+
+        (tmp_path / "note1.md").write_text("# Note 1")
+        sub = tmp_path / "subdir"
+        sub.mkdir()
+        (sub / "note2.md").write_text("# Note 2")
+
+        src = ObsidianSource(vault_path=str(tmp_path))
+        files = src.list_videos()
+        assert len(files) == 2
+        assert all(f.mime_type == "text/markdown" for f in files)
+
+
+# ---------------------------------------------------------------------------
+# LogseqSource
+# ---------------------------------------------------------------------------
+
+
+class TestLogseqSource:
+    def test_import(self):
+        from video_processor.sources.logseq_source import LogseqSource
+
+        assert LogseqSource is not None
+
+    def test_constructor(self, tmp_path):
+        from video_processor.sources.logseq_source import LogseqSource
+
+        src = LogseqSource(graph_path=str(tmp_path))
+        assert src.graph_path == tmp_path
+
+    def test_authenticate_with_pages(self, tmp_path):
+        from video_processor.sources.logseq_source import LogseqSource
+
+        (tmp_path / "pages").mkdir()
+        src = LogseqSource(graph_path=str(tmp_path))
+        assert src.authenticate() is True
+
+    def test_authenticate_no_pages_or_journals(self, tmp_path):
+        from video_processor.sources.logseq_source import LogseqSource
+
+        src = LogseqSource(graph_path=str(tmp_path))
+        assert src.authenticate() is False
+
+    def test_authenticate_nonexistent(self, tmp_path):
+        from video_processor.sources.logseq_source import LogseqSource
+
+        src = LogseqSource(graph_path=str(tmp_path / "nonexistent"))
+        assert src.authenticate() is False
+
+    def test_parse_page(self, tmp_path):
+        from video_processor.sources.logseq_source import parse_page
+
+        page_content = (
+            "title:: My Page\n"
+            "tags:: #project #important\n"
+            "- Some block content\n"
+            "  - Nested with [[Another Page]] link\n"
+            "  - And a #todo tag\n"
+            "  - Block ref ((abc12345-6789-0abc-def0-123456789abc))\n"
+        )
+        page_file = tmp_path / "my_page.md"
+        page_file.write_text(page_content)
+
+        result = parse_page(page_file)
+
+        assert result["properties"]["title"] == "My Page"
+        assert "Another Page" in result["links"]
+        assert "todo" in result["tags"]
+        assert "abc12345-6789-0abc-def0-123456789abc" in result["block_refs"]
+        assert "Some block content" in result["body"]
+
+    def test_ingest_graph(self, tmp_path):
+        from video_processor.sources.logseq_source import ingest_graph
+
+        pages_dir = tmp_path / "pages"
+        pages_dir.mkdir()
+        (pages_dir / "page_a.md").write_text("- Content linking [[Page B]]\n")
+        (pages_dir / "page_b.md").write_text("- Content linking [[Page A]]\n")
+
+        journals_dir = tmp_path / "journals"
+        journals_dir.mkdir()
+        (journals_dir / "2026_03_07.md").write_text("- Journal entry\n")
+
+        result = ingest_graph(tmp_path)
+
+        assert len(result["notes"]) == 3
+        assert len(result["links"]) == 2
+
+    def test_list_videos(self, tmp_path):
+        from video_processor.sources.logseq_source import LogseqSource
+
+        pages_dir = tmp_path / "pages"
+        pages_dir.mkdir()
+        (pages_dir / "page1.md").write_text("- content")
+
+        src = LogseqSource(graph_path=str(tmp_path))
+        files = src.list_videos()
+        assert len(files) == 1
+        assert files[0].mime_type == "text/markdown"
+
+
+# ---------------------------------------------------------------------------
+# NotionSource
+# ---------------------------------------------------------------------------
+
+
+class TestNotionSource:
+    def test_import(self):
+        from video_processor.sources.notion_source import NotionSource
+
+        assert NotionSource is not None
+
+    def test_constructor(self):
+        from video_processor.sources.notion_source import NotionSource
+
+        src = NotionSource(token="ntn_test123", database_id="db-1")
+        assert src.token == "ntn_test123"
+        assert src.database_id == "db-1"
+        assert src.page_ids == []
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_authenticate_no_token(self):
+        from video_processor.sources.notion_source import NotionSource
+
+        src = NotionSource(token="")
+        assert src.authenticate() is False
+
+    @patch("requests.get")
+    def test_authenticate_with_mock(self, mock_get):
+        from video_processor.sources.notion_source import NotionSource
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.json.return_value = {"name": "Test Bot"}
+        mock_get.return_value = mock_resp
+
+        src = NotionSource(token="ntn_test123")
+        assert src.authenticate() is True
+
+    @patch("requests.post")
+    def test_list_videos_database(self, mock_post):
+        from video_processor.sources.notion_source import NotionSource
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.json.return_value = {
+            "results": [
+                {
+                    "id": "page-1",
+                    "last_edited_time": "2026-03-01T00:00:00Z",
+                    "properties": {
+                        "Name": {
+                            "type": "title",
+                            "title": [{"plain_text": "Meeting Notes"}],
+                        }
+                    },
+                },
+            ],
+            "has_more": False,
+        }
+        mock_post.return_value = mock_resp
+
+        src = NotionSource(token="ntn_test", database_id="db-1")
+        files = src.list_videos()
+        assert len(files) == 1
+        assert files[0].name == "Meeting Notes"
+        assert files[0].id == "page-1"
+
+    def test_blocks_to_text(self):
+        from video_processor.sources.notion_source import NotionSource
+
+        src = NotionSource(token="test")
+        blocks = [
+            {
+                "type": "heading_1",
+                "heading_1": {
+                    "rich_text": [{"plain_text": "Title"}],
+                },
+            },
+            {
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{"plain_text": "Some paragraph text."}],
+                },
+            },
+            {
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {
+                    "rich_text": [{"plain_text": "A bullet point"}],
+                },
+            },
+            {
+                "type": "divider",
+                "divider": {},
+            },
+        ]
+        result = src._blocks_to_text(blocks)
+        assert "# Title" in result
+        assert "Some paragraph text." in result
+        assert "- A bullet point" in result
+        assert "---" in result
+
+
+# ---------------------------------------------------------------------------
+# AppleNotesSource
+# ---------------------------------------------------------------------------
+
+
+class TestAppleNotesSource:
+    def test_import(self):
+        from video_processor.sources.apple_notes_source import AppleNotesSource
+
+        assert AppleNotesSource is not None
+
+    def test_constructor(self):
+        from video_processor.sources.apple_notes_source import AppleNotesSource
+
+        src = AppleNotesSource(folder="Work")
+        assert src.folder == "Work"
+
+    def test_constructor_default(self):
+        from video_processor.sources.apple_notes_source import AppleNotesSource
+
+        src = AppleNotesSource()
+        assert src.folder is None
+
+    def test_authenticate_platform(self):
+        import sys
+
+        from video_processor.sources.apple_notes_source import AppleNotesSource
+
+        src = AppleNotesSource()
+        result = src.authenticate()
+        if sys.platform == "darwin":
+            assert result is True
+        else:
+            assert result is False
+
+    def test_html_to_text(self):
+        from video_processor.sources.apple_notes_source import AppleNotesSource
+
+        html = (
+            "<div>Hello <b>World</b></div>"
+            "<p>Paragraph one.</p>"
+            "<p>Paragraph two with &amp; entity.</p>"
+            "<br/>"
+            "<ul><li>Item 1</li><li>Item 2</li></ul>"
+        )
+        result = AppleNotesSource._html_to_text(html)
+        assert "Hello World" in result
+        assert "Paragraph one." in result
+        assert "Paragraph two with & entity." in result
+        assert "Item 1" in result
+
+    def test_html_to_text_empty(self):
+        from video_processor.sources.apple_notes_source import AppleNotesSource
+
+        assert AppleNotesSource._html_to_text("") == ""
+
+    def test_html_to_text_entities(self):
+        from video_processor.sources.apple_notes_source import AppleNotesSource
+
+        html = "&lt;code&gt; &quot;test&quot; &#39;single&#39; &nbsp;space"
+        result = AppleNotesSource._html_to_text(html)
+        assert "<code>" in result
+        assert '"test"' in result
+        assert "'single'" in result
+
+
+# ---------------------------------------------------------------------------
+# GoogleKeepSource
+# ---------------------------------------------------------------------------
+
+
+class TestGoogleKeepSource:
+    def test_import(self):
+        from video_processor.sources.google_keep_source import GoogleKeepSource
+
+        assert GoogleKeepSource is not None
+
+    def test_constructor(self):
+        from video_processor.sources.google_keep_source import GoogleKeepSource
+
+        src = GoogleKeepSource(label="meetings")
+        assert src.label == "meetings"
+
+    def test_constructor_default(self):
+        from video_processor.sources.google_keep_source import GoogleKeepSource
+
+        src = GoogleKeepSource()
+        assert src.label is None
+
+    @patch("shutil.which", return_value=None)
+    def test_authenticate_no_gws(self, _mock_which):
+        from video_processor.sources.google_keep_source import GoogleKeepSource
+
+        src = GoogleKeepSource()
+        assert src.authenticate() is False
+
+    def test_note_to_text(self):
+        from video_processor.sources.google_keep_source import _note_to_text
+
+        note = {
+            "title": "Shopping List",
+            "body": "Remember to buy groceries",
+            "listContent": [
+                {"text": "Milk", "checked": True},
+                {"text": "Bread", "checked": False},
+                {"text": "", "checked": False},
+            ],
+        }
+        result = _note_to_text(note)
+        assert "Shopping List" in result
+        assert "Remember to buy groceries" in result
+        assert "- [x] Milk" in result
+        assert "- [ ] Bread" in result
+
+    def test_note_to_text_empty(self):
+        from video_processor.sources.google_keep_source import _note_to_text
+
+        assert _note_to_text({}) == ""
+
+    def test_note_to_text_text_content(self):
+        from video_processor.sources.google_keep_source import _note_to_text
+
+        note = {"title": "Simple", "textContent": "Just a plain note"}
+        result = _note_to_text(note)
+        assert "Simple" in result
+        assert "Just a plain note" in result
+
+
+# ---------------------------------------------------------------------------
+# OneNoteSource
+# ---------------------------------------------------------------------------
+
+
+class TestOneNoteSource:
+    def test_import(self):
+        from video_processor.sources.onenote_source import OneNoteSource
+
+        assert OneNoteSource is not None
+
+    def test_constructor(self):
+        from video_processor.sources.onenote_source import OneNoteSource
+
+        src = OneNoteSource(notebook_name="Work Notes", section_name="Meetings")
+        assert src.notebook_name == "Work Notes"
+        assert src.section_name == "Meetings"
+
+    def test_constructor_default(self):
+        from video_processor.sources.onenote_source import OneNoteSource
+
+        src = OneNoteSource()
+        assert src.notebook_name is None
+        assert src.section_name is None
+
+    @patch("shutil.which", return_value=None)
+    def test_authenticate_no_m365(self, _mock_which):
+        from video_processor.sources.onenote_source import OneNoteSource
+
+        src = OneNoteSource()
+        assert src.authenticate() is False
+
+    def test_html_to_text(self):
+        from video_processor.sources.onenote_source import _html_to_text
+
+        html = (
+            "<html><body>"
+            "<h1>Meeting Notes</h1>"
+            "<p>Discussed the &amp; project.</p>"
+            "<script>var x = 1;</script>"
+            "<style>.foo { color: red; }</style>"
+            "<ul><li>Action item 1</li><li>Action item 2</li></ul>"
+            "<p>Entity &#x41; and &#65; decoded.</p>"
+            "</body></html>"
+        )
+        result = _html_to_text(html)
+        assert "Meeting Notes" in result
+        assert "Discussed the & project." in result
+        assert "var x" not in result
+        assert ".foo" not in result
+        assert "Action item 1" in result
+        assert "Entity A and A decoded." in result
+
+    def test_html_to_text_empty(self):
+        from video_processor.sources.onenote_source import _html_to_text
+
+        assert _html_to_text("") == ""
+
+    def test_html_to_text_entities(self):
+        from video_processor.sources.onenote_source import _html_to_text
+
+        html = "&lt;tag&gt; &quot;quoted&quot; &apos;apos&apos; &nbsp;space"
+        result = _html_to_text(html)
+        assert "<tag>" in result
+        assert '"quoted"' in result
+        assert "'apos'" in result

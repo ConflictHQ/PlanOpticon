@@ -1416,6 +1416,67 @@ def m365_ingest(ctx, web_url, folder_url, file_id, output, db_path, provider, ch
 
 
 @cli.group()
+def wiki():
+    """Generate and push GitHub wikis from knowledge graphs."""
+    pass
+
+
+@wiki.command("generate")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output directory for wiki")
+@click.option("--title", type=str, default="Knowledge Base", help="Wiki title")
+def wiki_generate(db_path, output, title):
+    """Generate a GitHub wiki from a knowledge graph.
+
+    Examples:
+
+        planopticon wiki generate knowledge_graph.db -o ./wiki
+
+        planopticon wiki generate results/kg.db --title "Project Wiki"
+    """
+    from video_processor.agent.skills.wiki_generator import generate_wiki, write_wiki
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    db_path = Path(db_path)
+    out_dir = Path(output) if output else Path.cwd() / "wiki"
+
+    kg = KnowledgeGraph(db_path=db_path)
+    kg_data = kg.to_dict()
+    pages = generate_wiki(kg_data, title=title)
+    written = write_wiki(pages, out_dir)
+
+    click.echo(f"Generated {len(written)} wiki pages in {out_dir}")
+    for p in sorted(written):
+        click.echo(f"  {p.name}")
+
+
+@wiki.command("push")
+@click.argument("wiki_dir", type=click.Path(exists=True))
+@click.argument("repo", type=str)
+@click.option("--message", "-m", type=str, default="Update wiki", help="Commit message")
+def wiki_push(wiki_dir, repo, message):
+    """Push generated wiki pages to a GitHub wiki repo.
+
+    REPO should be in 'owner/repo' format.
+
+    Examples:
+
+        planopticon wiki push ./wiki ConflictHQ/PlanOpticon
+
+        planopticon wiki push ./wiki owner/repo -m "Add entity pages"
+    """
+    from video_processor.agent.skills.wiki_generator import push_wiki
+
+    wiki_dir = Path(wiki_dir)
+    success = push_wiki(wiki_dir, repo, message=message)
+    if success:
+        click.echo(f"Wiki pushed to https://github.com/{repo}/wiki")
+    else:
+        click.echo("Wiki push failed. Check auth and repo permissions.", err=True)
+        sys.exit(1)
+
+
+@cli.group()
 def kg():
     """Knowledge graph utilities: convert, sync, and inspect."""
     pass
