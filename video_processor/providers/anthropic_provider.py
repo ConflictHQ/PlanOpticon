@@ -34,12 +34,26 @@ class AnthropicProvider(BaseProvider):
         model: Optional[str] = None,
     ) -> str:
         model = model or "claude-sonnet-4-5-20250929"
-        response = self.client.messages.create(
-            model=model,
-            messages=messages,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
+
+        # Anthropic requires system messages as a top-level parameter
+        system_parts = []
+        chat_messages = []
+        for msg in messages:
+            if msg.get("role") == "system":
+                system_parts.append(msg["content"])
+            else:
+                chat_messages.append(msg)
+
+        kwargs = {
+            "model": model,
+            "messages": chat_messages,
+            "max_tokens": max_tokens,
+            "temperature": temperature,
+        }
+        if system_parts:
+            kwargs["system"] = "\n\n".join(system_parts)
+
+        response = self.client.messages.create(**kwargs)
         self._last_usage = {
             "input_tokens": getattr(response.usage, "input_tokens", 0),
             "output_tokens": getattr(response.usage, "output_tokens", 0),
