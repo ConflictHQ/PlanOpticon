@@ -1,7 +1,9 @@
 """Core video processing pipeline — the reusable function both CLI commands call."""
 
+import hashlib
 import json
 import logging
+import mimetypes
 import time
 from datetime import datetime
 from pathlib import Path
@@ -194,12 +196,27 @@ def process_single_video(
     pipeline_bar.set_description("Pipeline: building knowledge graph")
     kg_db_path = dirs["results"] / "knowledge_graph.db"
     kg_json_path = dirs["results"] / "knowledge_graph.json"
+    # Generate a stable source ID from the input path
+    source_id = hashlib.sha256(str(input_path).encode()).hexdigest()[:12]
+    mime_type = mimetypes.guess_type(str(input_path))[0] or "video/mp4"
+
     if kg_db_path.exists():
         logger.info("Resuming: found knowledge graph on disk, loading")
         kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
     else:
         logger.info("Building knowledge graph...")
         kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
+        kg.register_source(
+            {
+                "source_id": source_id,
+                "source_type": "video",
+                "title": title,
+                "path": str(input_path),
+                "mime_type": mime_type,
+                "ingested_at": datetime.now().isoformat(),
+                "metadata": {"duration_seconds": audio_props.get("duration")},
+            }
+        )
         kg.process_transcript(transcript_data)
         if diagrams:
             diagram_dicts = [d.model_dump() for d in diagrams]

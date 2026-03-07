@@ -503,7 +503,7 @@ def query(ctx, question, db_path, mode, output_format, interactive, provider, ch
     """Query a knowledge graph. Runs stats if no question given.
 
     Direct commands recognized in QUESTION: stats, entities, relationships,
-    neighbors, sql. Natural language questions use agentic mode.
+    neighbors, sources, provenance, sql. Natural language questions use agentic mode.
 
     Examples:
 
@@ -511,6 +511,8 @@ def query(ctx, question, db_path, mode, output_format, interactive, provider, ch
         planopticon query stats
         planopticon query "entities --type technology"
         planopticon query "neighbors Alice"
+        planopticon query sources
+        planopticon query "provenance Alice"
         planopticon query "What was discussed?"
         planopticon query -I
     """
@@ -592,6 +594,13 @@ def _execute_query(engine, question, mode):
     if cmd == "neighbors":
         entity_name = " ".join(parts[1:]) if len(parts) > 1 else ""
         return engine.neighbors(entity_name)
+
+    if cmd == "sources":
+        return engine.sources()
+
+    if cmd == "provenance":
+        entity_name = " ".join(parts[1:]) if len(parts) > 1 else ""
+        return engine.provenance(entity_name)
 
     if cmd == "sql":
         sql_query = " ".join(parts[1:])

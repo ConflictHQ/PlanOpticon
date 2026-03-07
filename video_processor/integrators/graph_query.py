@@ -286,6 +286,33 @@ class GraphQueryEngine:
             explanation="Knowledge graph statistics",
         )
 
+    def sources(self) -> QueryResult:
+        """Return all registered content sources."""
+        all_sources = self.store.get_sources()
+        return QueryResult(
+            data=all_sources,
+            query_type="filter",
+            raw_query="sources()",
+            explanation=f"Found {len(all_sources)} registered sources",
+        )
+
+    def provenance(self, entity_name: str) -> QueryResult:
+        """Return source locations for a given entity."""
+        locations = self.store.get_entity_provenance(entity_name)
+        if not locations:
+            return QueryResult(
+                data=[],
+                query_type="filter",
+                raw_query=f"provenance({entity_name!r})",
+                explanation=f"No provenance records found for '{entity_name}'",
+            )
+        return QueryResult(
+            data=locations,
+            query_type="filter",
+            raw_query=f"provenance({entity_name!r})",
+            explanation=f"Found {len(locations)} provenance records for '{entity_name}'",
+        )
+
     def sql(self, query: str) -> QueryResult:
         """Execute a raw SQL query (SQLite only)."""
         result = self.store.raw_query(query)

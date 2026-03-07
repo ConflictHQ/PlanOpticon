@@ -113,6 +113,32 @@ class GraphStore(ABC):
         """
         ...
 
+    def register_source(self, source: Dict[str, Any]) -> None:
+        """Register a content source. Default no-op for backends that don't support it."""
+        pass
+
+    def get_sources(self) -> List[Dict[str, Any]]:
+        """Return all registered sources."""
+        return []
+
+    def get_source(self, source_id: str) -> Optional[Dict[str, Any]]:
+        """Get a source by ID."""
+        return None
+
+    def add_source_location(
+        self,
+        source_id: str,
+        entity_name_lower: Optional[str] = None,
+        relationship_id: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        """Link a source to an entity or relationship with location details."""
+        pass
+
+    def get_entity_provenance(self, name: str) -> List[Dict[str, Any]]:
+        """Get all source locations for an entity."""
+        return []
+
     def raw_query(self, query_string: str) -> Any:
         """Execute a raw query against the backend (e.g. SQL for SQLite).
 
@@ -137,7 +163,11 @@ class GraphStore(ABC):
                     "occurrences": e.get("occurrences", []),
                 }
             )
-        return {"nodes": nodes, "relationships": self.get_all_relationships()}
+        result = {"nodes": nodes, "relationships": self.get_all_relationships()}
+        sources = self.get_sources()
+        if sources:
+            result["sources"] = sources
+        return result
 
 
 class InMemoryStore(GraphStore):
@@ -146,6 +176,8 @@ class InMemoryStore(GraphStore):
     def __init__(self) -> None:
         self._nodes: Dict[str, Dict[str, Any]] = {}  # keyed by name.lower()
         self._relationships: List[Dict[str, Any]] = []
+        self._sources: Dict[str, Dict[str, Any]] = {}  # keyed by source_id
+        self._source_locations: List[Dict[str, Any]] = []
 
     def merge_entity(
         self,
@@ -244,6 +276,43 @@ class InMemoryStore(GraphStore):
         self._nodes[key].update(properties)
         return True
 
+    def register_source(self, source: Dict[str, Any]) -> None:
+        source_id = source.get("source_id", "")
+        self._sources[source_id] = dict(source)
+
+    def get_sources(self) -> List[Dict[str, Any]]:
+        return list(self._sources.values())
+
+    def get_source(self, source_id: str) -> Optional[Dict[str, Any]]:
+        return self._sources.get(source_id)
+
+    def add_source_location(
+        self,
+        source_id: str,
+        entity_name_lower: Optional[str] = None,
+        relationship_id: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        entry: Dict[str, Any] = {
+            "source_id": source_id,
+            "entity_name_lower": entity_name_lower,
+            "relationship_id": relationship_id,
+        }
+        entry.update(kwargs)
+        self._source_locations.append(entry)
+
+    def get_entity_provenance(self, name: str) -> List[Dict[str, Any]]:
+        name_lower = name.lower()
+        results = []
+        for loc in self._source_locations:
+            if loc.get("entity_name_lower") == name_lower:
+                entry = dict(loc)
+                src = self._sources.get(loc.get("source_id", ""))
+                if src:
+                    entry["source"] = src
+                results.append(entry)
+        return results
+
     def has_relationship(
         self,
         source: str,
@@ -291,6 +360,32 @@ class SQLiteStore(GraphStore):
         CREATE INDEX IF NOT EXISTS idx_occurrences_entity ON occurrences(entity_name_lower);
         CREATE INDEX IF NOT EXISTS idx_relationships_source ON relationships(source);
         CREATE INDEX IF NOT EXISTS idx_relationships_target ON relationships(target);
+
+        CREATE TABLE IF NOT EXISTS sources (
+            source_id TEXT PRIMARY KEY,
+            source_type TEXT NOT NULL,
+            title TEXT NOT NULL,
+            path TEXT,
+            url TEXT,
+            mime_type TEXT,
+            ingested_at TEXT NOT NULL,
+            metadata TEXT NOT NULL DEFAULT '{}'
+        );
+        CREATE TABLE IF NOT EXISTS source_locations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            source_id TEXT NOT NULL REFERENCES sources(source_id),
+            entity_name_lower TEXT,
+            relationship_id INTEGER,
+            timestamp REAL,
+            page INTEGER,
+            section TEXT,
+            line_start INTEGER,
+            line_end INTEGER,
+            text_snippet TEXT
+        );
+        CREATE INDEX IF NOT EXISTS idx_source_locations_source ON source_locations(source_id);
+        CREATE INDEX IF NOT EXISTS idx_source_locations_entity
+            ON source_locations(entity_name_lower);
     """
 
     def __init__(self, db_path: Union[str, Path]) -> None:
@@ -499,6 +594,145 @@ class SQLiteStore(GraphStore):
                 (source.lower(), target.lower()),
             ).fetchone()
         return row is not None
+
+    def register_source(self, source: Dict[str, Any]) -> None:
+        source_id = source.get("source_id", "")
+        existing = self._conn.execute(
+            "SELECT 1 FROM sources WHERE source_id = ?", (source_id,)
+        ).fetchone()
+        if existing:
+            self._conn.execute(
+                "UPDATE sources SET source_type = ?, title = ?, path = ?, url = ?, "
+                "mime_type = ?, ingested_at = ?, metadata = ? WHERE source_id = ?",
+                (
+                    source.get("source_type", ""),
+                    source.get("title", ""),
+                    source.get("path"),
+                    source.get("url"),
+                    source.get("mime_type"),
+                    source.get("ingested_at", ""),
+                    json.dumps(source.get("metadata", {})),
+                    source_id,
+                ),
+            )
+        else:
+            self._conn.execute(
+                "INSERT INTO sources (source_id, source_type, title, path, url, "
+                "mime_type, ingested_at, metadata) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                (
+                    source_id,
+                    source.get("source_type", ""),
+                    source.get("title", ""),
+                    source.get("path"),
+                    source.get("url"),
+                    source.get("mime_type"),
+                    source.get("ingested_at", ""),
+                    json.dumps(source.get("metadata", {})),
+                ),
+            )
+        self._conn.commit()
+
+    def get_sources(self) -> List[Dict[str, Any]]:
+        rows = self._conn.execute(
+            "SELECT source_id, source_type, title, path, url, mime_type, "
+            "ingested_at, metadata FROM sources"
+        ).fetchall()
+        return [
+            {
+                "source_id": r[0],
+                "source_type": r[1],
+                "title": r[2],
+                "path": r[3],
+                "url": r[4],
+                "mime_type": r[5],
+                "ingested_at": r[6],
+                "metadata": json.loads(r[7]) if r[7] else {},
+            }
+            for r in rows
+        ]
+
+    def get_source(self, source_id: str) -> Optional[Dict[str, Any]]:
+        row = self._conn.execute(
+            "SELECT source_id, source_type, title, path, url, mime_type, "
+            "ingested_at, metadata FROM sources WHERE source_id = ?",
+            (source_id,),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "source_id": row[0],
+            "source_type": row[1],
+            "title": row[2],
+            "path": row[3],
+            "url": row[4],
+            "mime_type": row[5],
+            "ingested_at": row[6],
+            "metadata": json.loads(row[7]) if row[7] else {},
+        }
+
+    def add_source_location(
+        self,
+        source_id: str,
+        entity_name_lower: Optional[str] = None,
+        relationship_id: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        self._conn.execute(
+            "INSERT INTO source_locations (source_id, entity_name_lower, relationship_id, "
+            "timestamp, page, section, line_start, line_end, text_snippet) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                source_id,
+                entity_name_lower,
+                relationship_id,
+                kwargs.get("timestamp"),
+                kwargs.get("page"),
+                kwargs.get("section"),
+                kwargs.get("line_start"),
+                kwargs.get("line_end"),
+                kwargs.get("text_snippet"),
+            ),
+        )
+        self._conn.commit()
+
+    def get_entity_provenance(self, name: str) -> List[Dict[str, Any]]:
+        name_lower = name.lower()
+        rows = self._conn.execute(
+            "SELECT sl.source_id, sl.entity_name_lower, sl.relationship_id, "
+            "sl.timestamp, sl.page, sl.section, sl.line_start, sl.line_end, "
+            "sl.text_snippet, s.source_type, s.title, s.path, s.url, s.mime_type, "
+            "s.ingested_at, s.metadata "
+            "FROM source_locations sl "
+            "JOIN sources s ON sl.source_id = s.source_id "
+            "WHERE sl.entity_name_lower = ?",
+            (name_lower,),
+        ).fetchall()
+        results = []
+        for r in rows:
+            results.append(
+                {
+                    "source_id": r[0],
+                    "entity_name_lower": r[1],
+                    "relationship_id": r[2],
+                    "timestamp": r[3],
+                    "page": r[4],
+                    "section": r[5],
+                    "line_start": r[6],
+                    "line_end": r[7],
+                    "text_snippet": r[8],
+                    "source": {
+                        "source_id": r[0],
+                        "source_type": r[9],
+                        "title": r[10],
+                        "path": r[11],
+                        "url": r[12],
+                        "mime_type": r[13],
+                        "ingested_at": r[14],
+                        "metadata": json.loads(r[15]) if r[15] else {},
+                    },
+                }
+            )
+        return results
 
     def close(self) -> None:
         """Close the SQLite connection."""

@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Union
 from tqdm import tqdm
 
 from video_processor.integrators.graph_store import GraphStore, create_store
-from video_processor.models import Entity, KnowledgeGraphData, Relationship
+from video_processor.models import Entity, KnowledgeGraphData, Relationship, SourceRecord
 from video_processor.providers.manager import ProviderManager
 from video_processor.utils.json_parsing import parse_json_from_response
 
@@ -25,6 +25,10 @@ class KnowledgeGraph:
     ):
         self.pm = provider_manager
         self._store = store or create_store(db_path)
+
+    def register_source(self, source: Dict) -> None:
+        """Register a content source for provenance tracking."""
+        self._store.register_source(source)
 
     @property
     def nodes(self) -> Dict[str, dict]:
@@ -113,7 +117,13 @@ class KnowledgeGraph:
 
         return entities, rels
 
-    def add_content(self, text: str, source: str, timestamp: Optional[float] = None) -> None:
+    def add_content(
+        self,
+        text: str,
+        source: str,
+        timestamp: Optional[float] = None,
+        source_id: Optional[str] = None,
+    ) -> None:
         """Add content to knowledge graph by extracting entities and relationships."""
         entities, relationships = self.extract_entities_and_relationships(text)
 
@@ -122,6 +132,13 @@ class KnowledgeGraph:
         for entity in entities:
             self._store.merge_entity(entity.name, entity.type, entity.descriptions, source=source)
             self._store.add_occurrence(entity.name, source, timestamp, snippet)
+            if source_id:
+                self._store.add_source_location(
+                    source_id,
+                    entity_name_lower=entity.name.lower(),
+                    timestamp=timestamp,
+                    text_snippet=snippet,
+                )
 
         for rel in relationships:
             if self._store.has_entity(rel.source) and self._store.has_entity(rel.target):
@@ -208,7 +225,10 @@ class KnowledgeGraph:
             )
             for r in self._store.get_all_relationships()
         ]
-        return KnowledgeGraphData(nodes=nodes, relationships=rels)
+
+        sources = [SourceRecord(**s) for s in self._store.get_sources()]
+
+        return KnowledgeGraphData(nodes=nodes, relationships=rels, sources=sources)
 
     def to_dict(self) -> Dict:
         """Convert knowledge graph to dictionary (backward-compatible)."""
@@ -231,6 +251,8 @@ class KnowledgeGraph:
 
             if not isinstance(self._store, SQLiteStore) or self._store._db_path != str(output_path):
                 target = SQLiteStore(output_path)
+                for source in self._store.get_sources():
+                    target.register_source(source)
                 for entity in self._store.get_all_entities():
                     descs = entity.get("descriptions", [])
                     if isinstance(descs, set):
@@ -272,6 +294,8 @@ class KnowledgeGraph:
     def from_dict(cls, data: Dict, db_path: Optional[Path] = None) -> "KnowledgeGraph":
         """Reconstruct a KnowledgeGraph from saved JSON dict."""
         kg = cls(db_path=db_path)
+        for source in data.get("sources", []):
+            kg._store.register_source(source)
         for node in data.get("nodes", []):
             name = node.get("name", node.get("id", ""))
             descs = node.get("descriptions", [])
@@ -299,6 +323,8 @@ class KnowledgeGraph:
 
     def merge(self, other: "KnowledgeGraph") -> None:
         """Merge another KnowledgeGraph into this one."""
+        for source in other._store.get_sources():
+            self._store.register_source(source)
         for entity in other._store.get_all_entities():
             name = entity["name"]
             descs = entity.get("descriptions", [])
