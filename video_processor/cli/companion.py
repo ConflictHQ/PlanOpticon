@@ -135,8 +135,12 @@ class CompanionREPL:
             suffix = f" (+{len(self._docs) - 3} more)" if len(self._docs) > 3 else ""
             lines.append(f"  Docs: {names}{suffix}")
 
-        provider_label = "active" if self.provider_manager else "none"
-        lines.append(f"  LLM provider: {provider_label}")
+        if self.provider_manager:
+            prov = getattr(self.provider_manager, "provider", self._provider_name)
+            model = self._chat_model or "default"
+            lines.append(f"  LLM provider: {prov} (model: {model})")
+        else:
+            lines.append("  LLM provider: none")
         lines.append("")
         lines.append("  Type /help for commands, or ask a question.")
         lines.append("")
@@ -156,6 +160,8 @@ class CompanionREPL:
             "  /export FORMAT         Export KG (markdown, obsidian, notion, csv)",
             "  /analyze PATH          Analyze a video/doc",
             "  /ingest PATH           Ingest a file into the KG",
+            "  /provider [NAME]       List or switch LLM provider",
+            "  /model [NAME]          Show or switch chat model",
             "  /run SKILL             Run a skill by name",
             "  /plan                  Run project_plan skill",
             "  /prd                   Run PRD skill",
@@ -283,6 +289,71 @@ class CompanionREPL:
         except Exception as exc:
             return f"Skill execution failed: {exc}"
 
+    def _cmd_provider(self, args: str) -> str:
+        """List available providers or switch to a specific one."""
+        args = args.strip().lower()
+        if not args or args == "list":
+            lines = ["Available providers:"]
+            known = [
+                "openai",
+                "anthropic",
+                "gemini",
+                "ollama",
+                "azure",
+                "together",
+                "fireworks",
+                "cerebras",
+                "xai",
+            ]
+            import os
+
+            key_map = {
+                "openai": "OPENAI_API_KEY",
+                "anthropic": "ANTHROPIC_API_KEY",
+                "gemini": "GEMINI_API_KEY",
+                "azure": "AZURE_OPENAI_API_KEY",
+                "together": "TOGETHER_API_KEY",
+                "fireworks": "FIREWORKS_API_KEY",
+                "cerebras": "CEREBRAS_API_KEY",
+                "xai": "XAI_API_KEY",
+            }
+            current = getattr(self.provider_manager, "provider", self._provider_name)
+            for name in known:
+                env = key_map.get(name)
+                has_key = bool(os.environ.get(env, "")) if env else None
+                if name == "ollama":
+                    status = "local"
+                elif has_key:
+                    status = "ready"
+                else:
+                    status = "no key"
+                active = " (active)" if name == current else ""
+                lines.append(f"  {name}: {status}{active}")
+            lines.append(f"\nCurrent: {current or 'none'}")
+            return "\n".join(lines)
+
+        # Switch provider
+        self._provider_name = args
+        self._chat_model = None
+        self._init_provider()
+        self._init_agent()
+        if self.provider_manager:
+            return f"Switched to provider: {args}"
+        return f"Failed to initialise provider: {args}"
+
+    def _cmd_model(self, args: str) -> str:
+        """Switch the chat model."""
+        args = args.strip()
+        if not args:
+            current = self._chat_model or "default"
+            return f"Current model: {current}\nUsage: /model MODEL_NAME"
+        self._chat_model = args
+        self._init_provider()
+        self._init_agent()
+        if self.provider_manager:
+            return f"Switched to model: {args}"
+        return f"Failed to initialise with model: {args}"
+
     def _cmd_chat(self, message: str) -> str:
         if not self.provider_manager or not self.agent:
             return (
@@ -332,6 +403,10 @@ class CompanionREPL:
             return self._cmd_analyze(args)
         if cmd == "/ingest":
             return self._cmd_ingest(args)
+        if cmd == "/provider":
+            return self._cmd_provider(args)
+        if cmd == "/model":
+            return self._cmd_model(args)
         if cmd == "/run":
             return self._cmd_run_skill(args)
         if cmd == "/plan":

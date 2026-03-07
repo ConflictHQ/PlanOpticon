@@ -112,3 +112,35 @@ class TestHandleEntitiesNoKG:
         repl = CompanionREPL()
         output = repl.handle_input("/neighbors Alice")
         assert "No knowledge graph loaded" in output
+
+
+class TestProviderCommand:
+    def test_provider_list(self):
+        repl = CompanionREPL()
+        output = repl.handle_input("/provider")
+        assert "Available providers" in output
+        assert "openai" in output
+        assert "anthropic" in output
+
+    def test_provider_switch(self):
+        repl = CompanionREPL()
+        output = repl.handle_input("/provider openai")
+        # Will fail to init without key, but shouldn't crash
+        assert "openai" in output.lower()
+
+    def test_model_show(self):
+        repl = CompanionREPL()
+        output = repl.handle_input("/model")
+        assert "Current model" in output
+
+    def test_model_switch(self):
+        repl = CompanionREPL()
+        output = repl.handle_input("/model gpt-4o")
+        # Will fail without provider, but shouldn't crash
+        assert "gpt-4o" in output
+
+    def test_help_includes_provider(self):
+        repl = CompanionREPL()
+        output = repl.handle_input("/help")
+        assert "/provider" in output
+        assert "/model" in output
