@@ -232,3 +232,21 @@ class TestAuthHelp:
         assert result.exit_code == 0
         assert "google" in result.output
         assert "dropbox" in result.output
+
+
+class TestCompanionHelp:
+    def test_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["companion", "--help"])
+        assert result.exit_code == 0
+        assert "--kb" in result.output
+        assert "--provider" in result.output
+        assert "--chat-model" in result.output
+        assert "--interactive" in result.output
+        assert "--chat" in result.output
+
+    def test_no_flag_shows_usage(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["companion"])
+        assert result.exit_code == 0
+        assert "--interactive" in result.output

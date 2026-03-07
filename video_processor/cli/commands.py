@@ -1524,6 +1524,61 @@ def export_notion(db_path, output):
     click.echo(f"Exported Notion markdown: {len(created)} files in {out_dir}/")
 
 
+@export.command("exchange")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(),
+    default=None,
+    help="Output JSON file path",
+)
+@click.option(
+    "--name",
+    "project_name",
+    type=str,
+    default="Untitled",
+    help="Project name for the exchange payload",
+)
+@click.option(
+    "--description",
+    "project_desc",
+    type=str,
+    default="",
+    help="Project description",
+)
+def export_exchange(db_path, output, project_name, project_desc):
+    """Export a knowledge graph as a PlanOpticonExchange JSON file.
+
+    Examples:
+
+        planopticon export exchange knowledge_graph.db
+
+        planopticon export exchange kg.db -o exchange.json --name "My Project"
+    """
+    from video_processor.exchange import PlanOpticonExchange
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    db_path = Path(db_path)
+    kg = KnowledgeGraph(db_path=db_path)
+    kg_data = kg.to_dict()
+
+    ex = PlanOpticonExchange.from_knowledge_graph(
+        kg_data,
+        project_name=project_name,
+        project_description=project_desc,
+    )
+
+    out_path = Path(output) if output else Path.cwd() / "exchange.json"
+    ex.to_file(out_path)
+
+    click.echo(
+        f"Exported PlanOpticonExchange to {out_path} "
+        f"({len(ex.entities)} entities, "
+        f"{len(ex.relationships)} relationships)"
+    )
+
+
 @cli.group()
 def wiki():
     """Generate and push GitHub wikis from knowledge graphs."""
@@ -1894,6 +1949,111 @@ def classify(ctx, db_path, provider, chat_model, output_format):
                     click.echo(f"    {pe.description}")
 
     store.close()
+
+
+@kg.command("from-exchange")
+@click.argument("exchange_path", type=click.Path(exists=True))
+@click.option(
+    "-o",
+    "--output",
+    "db_path",
+    type=click.Path(),
+    default=None,
+    help="Output .db file path",
+)
+def kg_from_exchange(exchange_path, db_path):
+    """Import a PlanOpticonExchange JSON file into a knowledge graph .db.
+
+    Examples:
+
+        planopticon kg from-exchange exchange.json
+
+        planopticon kg from-exchange exchange.json -o project.db
+    """
+    from video_processor.exchange import PlanOpticonExchange
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    ex = PlanOpticonExchange.from_file(exchange_path)
+
+    kg_dict = {
+        "nodes": [e.model_dump() for e in ex.entities],
+        "relationships": [r.model_dump() for r in ex.relationships],
+        "sources": [s.model_dump() for s in ex.sources],
+    }
+
+    out = Path(db_path) if db_path else Path.cwd() / "knowledge_graph.db"
+    kg_obj = KnowledgeGraph.from_dict(kg_dict, db_path=out)
+    kg_obj.save(out)
+
+    click.echo(
+        f"Imported exchange into {out} "
+        f"({len(ex.entities)} entities, "
+        f"{len(ex.relationships)} relationships)"
+    )
+
+
+@cli.command()
+@click.option(
+    "--interactive",
+    "-I",
+    "interactive_mode",
+    is_flag=True,
+    help="Launch interactive REPL",
+)
+@click.option(
+    "--chat",
+    "-C",
+    "chat_mode",
+    is_flag=True,
+    help="Launch interactive REPL (alias for --interactive)",
+)
+@click.option(
+    "--kb",
+    multiple=True,
+    type=click.Path(exists=True),
+    help="Knowledge base paths",
+)
+@click.option(
+    "--provider",
+    "-p",
+    type=str,
+    default="auto",
+    help="LLM provider (auto, openai, anthropic, ...)",
+)
+@click.option(
+    "--chat-model",
+    type=str,
+    default=None,
+    help="Chat model override",
+)
+@click.pass_context
+def companion(ctx, interactive_mode, chat_mode, kb, provider, chat_model):
+    """Planning companion with workspace awareness.
+
+    Use --interactive or --chat to start the REPL.
+
+    Examples:
+
+        planopticon companion --interactive
+
+        planopticon companion --chat --kb ./results
+
+        planopticon companion -I -p anthropic
+    """
+    if not interactive_mode and not chat_mode:
+        click.echo("Use --interactive or --chat to start the companion REPL.")
+        click.echo("Example: planopticon companion --interactive")
+        click.echo("\nRun 'planopticon companion --help' for options.")
+        return
+
+    from video_processor.cli.companion import CompanionREPL
+
+    repl = CompanionREPL(
+        kb_paths=list(kb),
+        provider=provider,
+        chat_model=chat_model,
+    )
+    repl.run()
 
 
 def _interactive_menu(ctx):
