@@ -190,6 +190,8 @@ class InMemoryStore(GraphStore):
         if key in self._nodes:
             if descriptions:
                 self._nodes[key]["descriptions"].update(descriptions)
+            if entity_type and entity_type != self._nodes[key]["type"]:
+                self._nodes[key]["type"] = entity_type
         else:
             self._nodes[key] = {
                 "id": name,
@@ -413,8 +415,8 @@ class SQLiteStore(GraphStore):
             existing = json.loads(row[0])
             merged = list(set(existing + descriptions))
             self._conn.execute(
-                "UPDATE entities SET descriptions = ? WHERE name_lower = ?",
-                (json.dumps(merged), name_lower),
+                "UPDATE entities SET descriptions = ?, type = ? WHERE name_lower = ?",
+                (json.dumps(merged), entity_type, name_lower),
             )
         else:
             self._conn.execute(
