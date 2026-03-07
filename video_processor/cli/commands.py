@@ -36,15 +36,34 @@ def setup_logging(verbose: bool = False) -> None:
 
 @click.group(invoke_without_command=True)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
+@click.option(
+    "--chat",
+    "-C",
+    is_flag=True,
+    help="Launch interactive companion REPL",
+)
+@click.option(
+    "--interactive",
+    "-I",
+    "interactive_flag",
+    is_flag=True,
+    help="Launch interactive companion REPL",
+)
 @click.version_option("0.4.0", prog_name="PlanOpticon")
 @click.pass_context
-def cli(ctx, verbose):
+def cli(ctx, verbose, chat, interactive_flag):
     """PlanOpticon - Comprehensive Video Analysis & Knowledge Extraction Tool."""
     ctx.ensure_object(dict)
     ctx.obj["verbose"] = verbose
     setup_logging(verbose)
 
-    if ctx.invoked_subcommand is None:
+    if (chat or interactive_flag) and ctx.invoked_subcommand is None:
+        from video_processor.cli.companion import CompanionREPL
+
+        repl = CompanionREPL()
+        repl.run()
+        ctx.exit(0)
+    elif ctx.invoked_subcommand is None:
         _interactive_menu(ctx)
 
 
@@ -2021,20 +2040,6 @@ def kg_from_exchange(exchange_path, db_path):
 
 @cli.command()
 @click.option(
-    "--interactive",
-    "-I",
-    "interactive_mode",
-    is_flag=True,
-    help="Launch interactive REPL",
-)
-@click.option(
-    "--chat",
-    "-C",
-    "chat_mode",
-    is_flag=True,
-    help="Launch interactive REPL (alias for --interactive)",
-)
-@click.option(
     "--kb",
     multiple=True,
     type=click.Path(exists=True),
@@ -2054,25 +2059,17 @@ def kg_from_exchange(exchange_path, db_path):
     help="Chat model override",
 )
 @click.pass_context
-def companion(ctx, interactive_mode, chat_mode, kb, provider, chat_model):
-    """Planning companion with workspace awareness.
-
-    Use --interactive or --chat to start the REPL.
+def companion(ctx, kb, provider, chat_model):
+    """Interactive planning companion with workspace awareness.
 
     Examples:
 
-        planopticon companion --interactive
+        planopticon companion
 
-        planopticon companion --chat --kb ./results
+        planopticon companion --kb ./results
 
-        planopticon companion -I -p anthropic
+        planopticon companion -p anthropic
     """
-    if not interactive_mode and not chat_mode:
-        click.echo("Use --interactive or --chat to start the companion REPL.")
-        click.echo("Example: planopticon companion --interactive")
-        click.echo("\nRun 'planopticon companion --help' for options.")
-        return
-
     from video_processor.cli.companion import CompanionREPL
 
     repl = CompanionREPL(

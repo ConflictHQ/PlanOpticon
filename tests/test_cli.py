@@ -27,6 +27,9 @@ class TestCLIRoot:
         assert "recordings" in result.output
         assert "ingest" in result.output
         assert "batch" in result.output
+        assert "--chat" in result.output
+        assert "--interactive" in result.output
+        assert "companion" in result.output
 
 
 class TestAnalyzeHelp:
@@ -247,11 +250,3 @@ class TestCompanionHelp:
         assert "--kb" in result.output
         assert "--provider" in result.output
         assert "--chat-model" in result.output
-        assert "--interactive" in result.output
-        assert "--chat" in result.output
-
-    def test_no_flag_shows_usage(self):
-        runner = CliRunner()
-        result = runner.invoke(cli, ["companion"])
-        assert result.exit_code == 0
-        assert "--interactive" in result.output
