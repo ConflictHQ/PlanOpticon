@@ -36,7 +36,7 @@ def setup_logging(verbose: bool = False) -> None:
 
 @click.group(invoke_without_command=True)
 @click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
-@click.version_option("0.2.0", prog_name="PlanOpticon")
+@click.version_option("0.4.0", prog_name="PlanOpticon")
 @click.pass_context
 def cli(ctx, verbose):
     """PlanOpticon - Comprehensive Video Analysis & Knowledge Extraction Tool."""

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "planopticon"
-version = "0.3.0"
+version = "0.4.0"
 description = "AI-powered video analysis and knowledge extraction tool"
 readme = "README.md"
 license = "MIT"
@@ -69,10 +69,20 @@ ai21 = ["ai21>=3.0"]
 huggingface = ["huggingface_hub>=0.20"]
 qianfan = ["qianfan>=0.4"]
 litellm = ["litellm>=1.0"]
+youtube = ["yt-dlp>=2023.0"]
+s3 = ["boto3>=1.28"]
+web = ["beautifulsoup4>=4.12"]
+rss = ["feedparser>=6.0"]
 graph = []
 cloud = [
     "planopticon[gdrive]",
     "planopticon[dropbox]",
+    "planopticon[s3]",
+]
+sources = [
+    "planopticon[youtube]",
+    "planopticon[web]",
+    "planopticon[rss]",
 ]
 dev = [
     "pytest>=7.3.0",
