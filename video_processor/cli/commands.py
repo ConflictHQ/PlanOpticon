@@ -655,6 +655,8 @@ def agent(ctx, request, kb, interactive, export, provider, chat_model):
 
         planopticon agent "Generate a PRD" --export ./output
     """
+    # Ensure all skills are registered
+    import video_processor.agent.skills  # noqa: F401
     from video_processor.agent.agent_loop import PlanningAgent
     from video_processor.agent.kb_context import KBContext
     from video_processor.agent.skills.base import AgentContext
@@ -739,14 +741,12 @@ def agent(ctx, request, kb, interactive, export, provider, chat_model):
             click.echo(artifact.content)
 
         if export:
+            from video_processor.agent.skills.artifact_export import export_artifacts
+
             export_dir = Path(export)
-            export_dir.mkdir(parents=True, exist_ok=True)
-            for artifact in artifacts:
-                ext = ".md" if artifact.format == "markdown" else f".{artifact.format}"
-                safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in artifact.name)
-                fpath = export_dir / f"{safe_name}{ext}"
-                fpath.write_text(artifact.content)
-                click.echo(f"Exported: {fpath}")
+            export_artifacts(artifacts, export_dir)
+            click.echo(f"Exported {len(artifacts)} artifacts to {export_dir}/")
+            click.echo(f"Manifest: {export_dir / 'manifest.json'}")
     else:
         click.echo("Provide a request or use -I for interactive mode.")
         click.echo("Example: planopticon agent 'Create a project plan' --kb ./results")
