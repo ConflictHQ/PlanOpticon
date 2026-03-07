@@ -22,6 +22,8 @@ class TestCLIRoot:
         assert "query" in result.output
         assert "agent" in result.output
         assert "kg" in result.output
+        assert "gws" in result.output
+        assert "m365" in result.output
         assert "ingest" in result.output
         assert "batch" in result.output
 
@@ -141,6 +143,57 @@ class TestClearCacheHelp:
         assert "--cache-dir" in result.output
         assert "--older-than" in result.output
         assert "--all" in result.output
+
+
+class TestGWSHelp:
+    def test_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gws", "--help"])
+        assert result.exit_code == 0
+        assert "list" in result.output
+        assert "fetch" in result.output
+        assert "ingest" in result.output
+
+    def test_list_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gws", "list", "--help"])
+        assert result.exit_code == 0
+        assert "--folder-id" in result.output
+        assert "--query" in result.output
+
+    def test_ingest_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["gws", "ingest", "--help"])
+        assert result.exit_code == 0
+        assert "--folder-id" in result.output
+        assert "--doc-id" in result.output
+        assert "--db-path" in result.output
+
+
+class TestM365Help:
+    def test_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["m365", "--help"])
+        assert result.exit_code == 0
+        assert "list" in result.output
+        assert "fetch" in result.output
+        assert "ingest" in result.output
+
+    def test_list_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["m365", "list", "--help"])
+        assert result.exit_code == 0
+        assert "--web-url" in result.output
+        assert "--folder-url" in result.output
+        assert "--recursive" in result.output
+
+    def test_ingest_help(self):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["m365", "ingest", "--help"])
+        assert result.exit_code == 0
+        assert "--web-url" in result.output
+        assert "--file-id" in result.output
+        assert "--db-path" in result.output
 
 
 class TestAuthHelp:

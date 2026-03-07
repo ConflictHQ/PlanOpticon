@@ -536,3 +536,327 @@ class TestS3Source:
             names = [f.name for f in files]
             assert "clip.mp4" in names
             assert "movie.mkv" in names
+
+
+# ---------------------------------------------------------------------------
+# GWSSource
+# ---------------------------------------------------------------------------
+
+
+class TestGWSSource:
+    def test_import(self):
+        from video_processor.sources.gws_source import GWSSource
+
+        assert GWSSource is not None
+
+    def test_constructor_defaults(self):
+        from video_processor.sources.gws_source import GWSSource
+
+        src = GWSSource()
+        assert src.folder_id is None
+        assert src.query is None
+        assert src.doc_ids == []
+
+    def test_constructor_with_folder(self):
+        from video_processor.sources.gws_source import GWSSource
+
+        src = GWSSource(folder_id="1abc", query="name contains 'spec'")
+        assert src.folder_id == "1abc"
+        assert src.query == "name contains 'spec'"
+
+    def test_constructor_with_doc_ids(self):
+        from video_processor.sources.gws_source import GWSSource
+
+        src = GWSSource(doc_ids=["doc1", "doc2"])
+        assert src.doc_ids == ["doc1", "doc2"]
+
+    @patch("shutil.which", return_value=None)
+    def test_authenticate_no_gws(self, _mock_which):
+        from video_processor.sources.gws_source import GWSSource
+
+        src = GWSSource()
+        assert src.authenticate() is False
+
+    @patch("video_processor.sources.gws_source._run_gws")
+    @patch("shutil.which", return_value="/usr/local/bin/gws")
+    def test_authenticate_success(self, _mock_which, mock_run):
+        from video_processor.sources.gws_source import GWSSource
+
+        mock_run.return_value = {"connectedAs": "user@example.com"}
+        src = GWSSource()
+        assert src.authenticate() is True
+
+    @patch("video_processor.sources.gws_source._run_gws")
+    @patch("shutil.which", return_value="/usr/local/bin/gws")
+    def test_list_videos(self, _mock_which, mock_run):
+        from video_processor.sources.gws_source import GWSSource
+
+        mock_run.return_value = {
+            "files": [
+                {
+                    "id": "doc123",
+                    "name": "Project Spec",
+                    "mimeType": "application/vnd.google-apps.document",
+                    "modifiedTime": "2026-01-01T00:00:00Z",
+                },
+                {
+                    "id": "sheet456",
+                    "name": "Budget",
+                    "mimeType": "application/vnd.google-apps.spreadsheet",
+                },
+            ]
+        }
+        src = GWSSource(folder_id="folder1")
+        files = src.list_videos()
+        assert len(files) == 2
+        assert files[0].name == "Project Spec"
+        assert files[1].id == "sheet456"
+
+    @patch("video_processor.sources.gws_source._run_gws")
+    @patch("shutil.which", return_value="/usr/local/bin/gws")
+    def test_list_videos_with_doc_ids(self, _mock_which, mock_run):
+        from video_processor.sources.gws_source import GWSSource
+
+        mock_run.return_value = {
+            "id": "doc123",
+            "name": "My Doc",
+            "mimeType": "application/vnd.google-apps.document",
+        }
+        src = GWSSource(doc_ids=["doc123"])
+        files = src.list_videos()
+        assert len(files) == 1
+        assert files[0].name == "My Doc"
+
+    def test_result_to_source_file(self):
+        from video_processor.sources.gws_source import _result_to_source_file
+
+        sf = _result_to_source_file(
+            {
+                "id": "abc",
+                "name": "Test Doc",
+                "mimeType": "text/plain",
+                "size": "1024",
+                "modifiedTime": "2026-03-01",
+            }
+        )
+        assert sf.name == "Test Doc"
+        assert sf.id == "abc"
+        assert sf.size_bytes == 1024
+        assert sf.mime_type == "text/plain"
+
+    @patch("video_processor.sources.gws_source._run_gws")
+    def test_get_doc_text(self, mock_run):
+        from video_processor.sources.gws_source import GWSSource
+
+        mock_run.return_value = {
+            "body": {
+                "content": [
+                    {
+                        "paragraph": {
+                            "elements": [
+                                {"textRun": {"content": "Hello world\n"}},
+                            ]
+                        }
+                    },
+                    {
+                        "paragraph": {
+                            "elements": [
+                                {"textRun": {"content": "Second paragraph\n"}},
+                            ]
+                        }
+                    },
+                ]
+            }
+        }
+        src = GWSSource()
+        text = src._get_doc_text("doc123")
+        assert "Hello world" in text
+        assert "Second paragraph" in text
+
+    @patch("video_processor.sources.gws_source._run_gws")
+    def test_collate(self, mock_run):
+        from video_processor.sources.gws_source import GWSSource
+
+        # First call: list files, second+: export each
+        mock_run.side_effect = [
+            {
+                "files": [
+                    {
+                        "id": "d1",
+                        "name": "Doc A",
+                        "mimeType": "application/vnd.google-apps.document",
+                    },
+                ]
+            },
+            {"raw": "Content of Doc A"},
+        ]
+        src = GWSSource(folder_id="f1")
+        result = src.collate()
+        assert "Doc A" in result
+        assert "Content of Doc A" in result
+
+
+# ---------------------------------------------------------------------------
+# M365Source
+# ---------------------------------------------------------------------------
+
+
+class TestM365Source:
+    def test_import(self):
+        from video_processor.sources.m365_source import M365Source
+
+        assert M365Source is not None
+
+    def test_constructor(self):
+        from video_processor.sources.m365_source import M365Source
+
+        src = M365Source(
+            web_url="https://contoso.sharepoint.com/sites/proj",
+            folder_url="/sites/proj/Shared Documents",
+        )
+        assert src.web_url == "https://contoso.sharepoint.com/sites/proj"
+        assert src.folder_url == "/sites/proj/Shared Documents"
+        assert src.file_ids == []
+        assert src.recursive is False
+
+    def test_constructor_with_file_ids(self):
+        from video_processor.sources.m365_source import M365Source
+
+        src = M365Source(
+            web_url="https://contoso.sharepoint.com",
+            file_ids=["id1", "id2"],
+        )
+        assert src.file_ids == ["id1", "id2"]
+
+    @patch("shutil.which", return_value=None)
+    def test_authenticate_no_m365(self, _mock_which):
+        from video_processor.sources.m365_source import M365Source
+
+        src = M365Source(web_url="https://contoso.sharepoint.com")
+        assert src.authenticate() is False
+
+    @patch("video_processor.sources.m365_source._run_m365")
+    @patch("shutil.which", return_value="/usr/local/bin/m365")
+    def test_authenticate_logged_in(self, _mock_which, mock_run):
+        from video_processor.sources.m365_source import M365Source
+
+        mock_run.return_value = {"connectedAs": "user@contoso.com"}
+        src = M365Source(web_url="https://contoso.sharepoint.com")
+        assert src.authenticate() is True
+
+    @patch("video_processor.sources.m365_source._run_m365")
+    @patch("shutil.which", return_value="/usr/local/bin/m365")
+    def test_authenticate_not_logged_in(self, _mock_which, mock_run):
+        from video_processor.sources.m365_source import M365Source
+
+        mock_run.return_value = {}
+        src = M365Source(web_url="https://contoso.sharepoint.com")
+        assert src.authenticate() is False
+
+    @patch("video_processor.sources.m365_source._run_m365")
+    @patch("shutil.which", return_value="/usr/local/bin/m365")
+    def test_list_videos(self, _mock_which, mock_run):
+        from video_processor.sources.m365_source import M365Source
+
+        mock_run.side_effect = [
+            {"connectedAs": "user@contoso.com"},  # authenticate
+            [
+                {
+                    "Name": "spec.docx",
+                    "UniqueId": "uid-1",
+                    "Length": "20480",
+                    "ServerRelativeUrl": "/sites/proj/docs/spec.docx",
+                },
+                {
+                    "Name": "budget.xlsx",
+                    "UniqueId": "uid-2",
+                    "Length": "10240",
+                    "ServerRelativeUrl": "/sites/proj/docs/budget.xlsx",
+                },
+                {
+                    "Name": "image.png",
+                    "UniqueId": "uid-3",
+                    "Length": "5000",
+                    "ServerRelativeUrl": "/sites/proj/docs/image.png",
+                },
+            ],
+        ]
+        src = M365Source(
+            web_url="https://contoso.sharepoint.com/sites/proj",
+            folder_url="/sites/proj/docs",
+        )
+        src.authenticate()
+        files = src.list_videos()
+        # Only .docx and .xlsx match _DOC_EXTENSIONS, not .png
+        assert len(files) == 2
+        names = [f.name for f in files]
+        assert "spec.docx" in names
+        assert "budget.xlsx" in names
+
+    @patch("video_processor.sources.m365_source._run_m365")
+    def test_list_videos_with_file_ids(self, mock_run):
+        from video_processor.sources.m365_source import M365Source
+
+        mock_run.return_value = {
+            "Name": "report.pdf",
+            "UniqueId": "uid-1",
+            "Length": "50000",
+            "ServerRelativeUrl": "/sites/proj/docs/report.pdf",
+        }
+        src = M365Source(
+            web_url="https://contoso.sharepoint.com",
+            file_ids=["uid-1"],
+        )
+        files = src.list_videos()
+        assert len(files) == 1
+        assert files[0].name == "report.pdf"
+
+    def test_result_to_source_file(self):
+        from video_processor.sources.m365_source import _result_to_source_file
+
+        sf = _result_to_source_file(
+            {
+                "Name": "notes.txt",
+                "UniqueId": "abc-123",
+                "Length": "512",
+                "ServerRelativeUrl": "/sites/proj/notes.txt",
+                "TimeLastModified": "2026-03-01T12:00:00Z",
+            }
+        )
+        assert sf.name == "notes.txt"
+        assert sf.id == "abc-123"
+        assert sf.size_bytes == 512
+        assert sf.path == "/sites/proj/notes.txt"
+        assert sf.modified_at == "2026-03-01T12:00:00Z"
+
+    def test_extract_text_txt(self, tmp_path):
+        from video_processor.sources.m365_source import _extract_text
+
+        f = tmp_path / "test.txt"
+        f.write_text("Hello from a text file")
+        result = _extract_text(f)
+        assert result == "Hello from a text file"
+
+    def test_extract_text_md(self, tmp_path):
+        from video_processor.sources.m365_source import _extract_text
+
+        f = tmp_path / "readme.md"
+        f.write_text("# Title\n\nSome content")
+        result = _extract_text(f)
+        assert "Title" in result
+        assert "Some content" in result
+
+    def test_extract_text_unsupported(self, tmp_path):
+        from video_processor.sources.m365_source import _extract_text
+
+        f = tmp_path / "data.bin"
+        f.write_bytes(b"\x00\x01\x02")
+        result = _extract_text(f)
+        assert "Unsupported" in result
+
+    def test_list_no_folder_url(self):
+        from video_processor.sources.m365_source import M365Source
+
+        src = M365Source(web_url="https://contoso.sharepoint.com")
+        files = src.list_videos()
+        assert files == []

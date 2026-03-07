@@ -13,6 +13,8 @@ __all__ = [
     "RedditSource",
     "RSSSource",
     "TwitterSource",
+    "GWSSource",
+    "M365Source",
     "WebSource",
     "YouTubeSource",
 ]
@@ -24,6 +26,8 @@ def __getattr__(name: str):
         "ArxivSource": "video_processor.sources.arxiv_source",
         "GitHubSource": "video_processor.sources.github_source",
         "GoogleDriveSource": "video_processor.sources.google_drive",
+        "GWSSource": "video_processor.sources.gws_source",
+        "M365Source": "video_processor.sources.m365_source",
         "HackerNewsSource": "video_processor.sources.hackernews_source",
         "PodcastSource": "video_processor.sources.podcast_source",
         "RedditSource": "video_processor.sources.reddit_source",

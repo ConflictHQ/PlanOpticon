@@ -1017,6 +1017,405 @@ def auth(ctx, service):
 
 
 @cli.group()
+def gws():
+    """Google Workspace: fetch docs, sheets, and slides via the gws CLI."""
+    pass
+
+
+@gws.command("list")
+@click.option("--folder-id", type=str, default=None, help="Drive folder ID to list")
+@click.option("--query", "-q", type=str, default=None, help="Drive search query")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def gws_list(folder_id, query, as_json):
+    """List documents in Google Drive.
+
+    Examples:
+
+        planopticon gws list
+
+        planopticon gws list --folder-id 1abc...
+
+        planopticon gws list -q "name contains 'PRD'" --json
+    """
+    from video_processor.sources.gws_source import GWSSource
+
+    source = GWSSource(folder_id=folder_id, query=query)
+    if not source.authenticate():
+        click.echo("Error: gws CLI not available or not authenticated.", err=True)
+        click.echo("Install: npm install -g @googleworkspace/cli", err=True)
+        click.echo("Auth:    gws auth login", err=True)
+        sys.exit(1)
+
+    files = source.list_videos(folder_id=folder_id)
+    if as_json:
+        click.echo(json.dumps([f.model_dump() for f in files], indent=2, default=str))
+    else:
+        if not files:
+            click.echo("No documents found.")
+            return
+        for f in files:
+            size = f"{f.size_bytes / 1024:.0f}KB" if f.size_bytes else "—"
+            click.echo(f"  {f.id[:12]}…  {size:>8s}  {f.mime_type or ''}  {f.name}")
+
+
+@gws.command("fetch")
+@click.argument("doc_ids", nargs=-1)
+@click.option("--folder-id", type=str, default=None, help="Fetch all docs in a folder")
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output directory")
+def gws_fetch(doc_ids, folder_id, output):
+    """Fetch Google Docs/Sheets/Slides as text files.
+
+    Examples:
+
+        planopticon gws fetch DOC_ID1 DOC_ID2 -o ./docs
+
+        planopticon gws fetch --folder-id 1abc... -o ./docs
+    """
+    from video_processor.sources.gws_source import GWSSource
+
+    source = GWSSource(folder_id=folder_id, doc_ids=list(doc_ids))
+    if not source.authenticate():
+        click.echo("Error: gws CLI not available or not authenticated.", err=True)
+        sys.exit(1)
+
+    out_dir = Path(output) if output else Path.cwd() / "gws_docs"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    files = source.list_videos(folder_id=folder_id)
+    if not files:
+        click.echo("No documents found.")
+        return
+
+    for f in files:
+        safe_name = f.name.replace("/", "_").replace("\\", "_")
+        dest = out_dir / f"{safe_name}.txt"
+        try:
+            source.download(f, dest)
+            click.echo(f"  ✓ {f.name} → {dest}")
+        except Exception as e:
+            click.echo(f"  ✗ {f.name}: {e}", err=True)
+
+    click.echo(f"\nFetched {len(files)} document(s) to {out_dir}")
+
+
+@gws.command("ingest")
+@click.option("--folder-id", type=str, default=None, help="Drive folder ID")
+@click.option("--doc-id", type=str, multiple=True, help="Specific doc IDs (repeatable)")
+@click.option("--query", "-q", type=str, default=None, help="Drive search query")
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output directory")
+@click.option("--db-path", type=click.Path(), default=None, help="Existing DB to merge into")
+@click.option(
+    "-p",
+    "--provider",
+    type=click.Choice(
+        [
+            "auto",
+            "openai",
+            "anthropic",
+            "gemini",
+            "ollama",
+            "azure",
+            "together",
+            "fireworks",
+            "cerebras",
+            "xai",
+        ]
+    ),
+    default="auto",
+    help="API provider",
+)
+@click.option("--chat-model", type=str, default=None, help="Override model for LLM/chat tasks")
+@click.pass_context
+def gws_ingest(ctx, folder_id, doc_id, query, output, db_path, provider, chat_model):
+    """Fetch Google Workspace docs and ingest into a knowledge graph.
+
+    Combines gws fetch + planopticon ingest in one step.
+
+    Examples:
+
+        planopticon gws ingest --folder-id 1abc...
+
+        planopticon gws ingest --doc-id DOC1 --doc-id DOC2 -o ./results
+
+        planopticon gws ingest -q "name contains 'spec'" --db-path existing.db
+    """
+    import tempfile
+
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+    from video_processor.processors.ingest import ingest_file
+    from video_processor.providers.manager import ProviderManager
+    from video_processor.sources.gws_source import GWSSource
+
+    source = GWSSource(folder_id=folder_id, doc_ids=list(doc_id), query=query)
+    if not source.authenticate():
+        click.echo("Error: gws CLI not available or not authenticated.", err=True)
+        click.echo("Install: npm install -g @googleworkspace/cli", err=True)
+        click.echo("Auth:    gws auth login", err=True)
+        sys.exit(1)
+
+    # Fetch docs to temp dir
+    files = source.list_videos(folder_id=folder_id)
+    if not files:
+        click.echo("No documents found.")
+        return
+
+    click.echo(f"Found {len(files)} document(s), fetching...")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        local_files = []
+        for f in files:
+            safe_name = f.name.replace("/", "_").replace("\\", "_")
+            dest = tmp_path / f"{safe_name}.txt"
+            try:
+                source.download(f, dest)
+                local_files.append(dest)
+                click.echo(f"  ✓ {f.name}")
+            except Exception as e:
+                click.echo(f"  ✗ {f.name}: {e}", err=True)
+
+        if not local_files:
+            click.echo("No documents fetched successfully.", err=True)
+            sys.exit(1)
+
+        # Set up KG
+        prov = None if provider == "auto" else provider
+        pm = ProviderManager(chat_model=chat_model, provider=prov)
+
+        if db_path:
+            kg_path = Path(db_path)
+        elif output:
+            out_dir = Path(output)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            kg_path = out_dir / "knowledge_graph.db"
+        else:
+            kg_path = Path.cwd() / "knowledge_graph.db"
+
+        kg_path.parent.mkdir(parents=True, exist_ok=True)
+        kg = KnowledgeGraph(provider_manager=pm, db_path=kg_path)
+
+        total_chunks = 0
+        for lf in local_files:
+            try:
+                count = ingest_file(lf, kg)
+                total_chunks += count
+                click.echo(f"  Ingested {lf.stem}: {count} chunks")
+            except Exception as e:
+                click.echo(f"  Failed to ingest {lf.stem}: {e}", err=True)
+
+        kg.save(kg_path)
+        kg.save(kg_path.with_suffix(".json"))
+
+        entity_count = kg._store.get_entity_count()
+        rel_count = kg._store.get_relationship_count()
+
+        click.echo("\nIngestion complete:")
+        click.echo(f"  Documents: {len(local_files)}")
+        click.echo(f"  Chunks: {total_chunks}")
+        click.echo(f"  Entities: {entity_count}")
+        click.echo(f"  Relationships: {rel_count}")
+        click.echo(f"  Knowledge graph: {kg_path}")
+
+
+@cli.group()
+def m365():
+    """Microsoft 365: fetch docs from SharePoint and OneDrive via the m365 CLI."""
+    pass
+
+
+@m365.command("list")
+@click.option("--web-url", type=str, required=True, help="SharePoint site URL")
+@click.option("--folder-url", type=str, required=True, help="Server-relative folder URL")
+@click.option("--recursive", is_flag=True, help="Include subfolders")
+@click.option("--json", "as_json", is_flag=True, help="Output as JSON")
+def m365_list(web_url, folder_url, recursive, as_json):
+    """List documents in SharePoint or OneDrive.
+
+    Examples:
+
+        planopticon m365 list --web-url https://contoso.sharepoint.com/sites/proj \\
+            --folder-url /sites/proj/Shared\\ Documents
+
+        planopticon m365 list --web-url URL --folder-url FOLDER --recursive --json
+    """
+    from video_processor.sources.m365_source import M365Source
+
+    source = M365Source(web_url=web_url, folder_url=folder_url, recursive=recursive)
+    if not source.authenticate():
+        click.echo("Error: m365 CLI not available or not logged in.", err=True)
+        click.echo("Install: npm install -g @pnp/cli-microsoft365", err=True)
+        click.echo("Auth:    m365 login", err=True)
+        sys.exit(1)
+
+    files = source.list_videos()
+    if as_json:
+        click.echo(json.dumps([f.model_dump() for f in files], indent=2, default=str))
+    else:
+        if not files:
+            click.echo("No documents found.")
+            return
+        for f in files:
+            size = f"{f.size_bytes / 1024:.0f}KB" if f.size_bytes else "—"
+            click.echo(f"  {f.id[:12]}…  {size:>8s}  {f.name}")
+
+
+@m365.command("fetch")
+@click.option("--web-url", type=str, required=True, help="SharePoint site URL")
+@click.option("--folder-url", type=str, default=None, help="Server-relative folder URL")
+@click.option("--file-id", type=str, multiple=True, help="Specific file IDs (repeatable)")
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output directory")
+def m365_fetch(web_url, folder_url, file_id, output):
+    """Fetch SharePoint/OneDrive documents as local files.
+
+    Examples:
+
+        planopticon m365 fetch --web-url URL --folder-url FOLDER -o ./docs
+
+        planopticon m365 fetch --web-url URL --file-id ID1 --file-id ID2 -o ./docs
+    """
+    from video_processor.sources.m365_source import M365Source
+
+    source = M365Source(web_url=web_url, folder_url=folder_url, file_ids=list(file_id))
+    if not source.authenticate():
+        click.echo("Error: m365 CLI not available or not logged in.", err=True)
+        sys.exit(1)
+
+    out_dir = Path(output) if output else Path.cwd() / "m365_docs"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    files = source.list_videos()
+    if not files:
+        click.echo("No documents found.")
+        return
+
+    for f in files:
+        dest = out_dir / f.name
+        try:
+            source.download(f, dest)
+            click.echo(f"  fetched {f.name}")
+        except Exception as e:
+            click.echo(f"  failed {f.name}: {e}", err=True)
+
+    click.echo(f"\nFetched {len(files)} document(s) to {out_dir}")
+
+
+@m365.command("ingest")
+@click.option("--web-url", type=str, required=True, help="SharePoint site URL")
+@click.option("--folder-url", type=str, default=None, help="Server-relative folder URL")
+@click.option("--file-id", type=str, multiple=True, help="Specific file IDs (repeatable)")
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output directory")
+@click.option("--db-path", type=click.Path(), default=None, help="Existing DB to merge into")
+@click.option(
+    "-p",
+    "--provider",
+    type=click.Choice(
+        [
+            "auto",
+            "openai",
+            "anthropic",
+            "gemini",
+            "ollama",
+            "azure",
+            "together",
+            "fireworks",
+            "cerebras",
+            "xai",
+        ]
+    ),
+    default="auto",
+    help="API provider",
+)
+@click.option("--chat-model", type=str, default=None, help="Override model for LLM/chat tasks")
+@click.pass_context
+def m365_ingest(ctx, web_url, folder_url, file_id, output, db_path, provider, chat_model):
+    """Fetch SharePoint/OneDrive docs and ingest into a knowledge graph.
+
+    Examples:
+
+        planopticon m365 ingest --web-url URL --folder-url FOLDER
+
+        planopticon m365 ingest --web-url URL --file-id ID1 --file-id ID2 -o ./results
+    """
+    import tempfile
+
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+    from video_processor.processors.ingest import ingest_file
+    from video_processor.providers.manager import ProviderManager
+    from video_processor.sources.m365_source import M365Source
+
+    source = M365Source(web_url=web_url, folder_url=folder_url, file_ids=list(file_id))
+    if not source.authenticate():
+        click.echo("Error: m365 CLI not available or not logged in.", err=True)
+        click.echo("Install: npm install -g @pnp/cli-microsoft365", err=True)
+        click.echo("Auth:    m365 login", err=True)
+        sys.exit(1)
+
+    files = source.list_videos()
+    if not files:
+        click.echo("No documents found.")
+        return
+
+    click.echo(f"Found {len(files)} document(s), fetching...")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir)
+        local_files = []
+        for f in files:
+            dest = tmp_path / f.name
+            try:
+                source.download(f, dest)
+                # Extract text for non-text formats
+                text_dest = tmp_path / f"{Path(f.name).stem}.txt"
+                text = source.download_as_text(f)
+                text_dest.write_text(text, encoding="utf-8")
+                local_files.append(text_dest)
+                click.echo(f"  fetched {f.name}")
+            except Exception as e:
+                click.echo(f"  failed {f.name}: {e}", err=True)
+
+        if not local_files:
+            click.echo("No documents fetched successfully.", err=True)
+            sys.exit(1)
+
+        prov = None if provider == "auto" else provider
+        pm = ProviderManager(chat_model=chat_model, provider=prov)
+
+        if db_path:
+            kg_path = Path(db_path)
+        elif output:
+            out_dir = Path(output)
+            out_dir.mkdir(parents=True, exist_ok=True)
+            kg_path = out_dir / "knowledge_graph.db"
+        else:
+            kg_path = Path.cwd() / "knowledge_graph.db"
+
+        kg_path.parent.mkdir(parents=True, exist_ok=True)
+        kg = KnowledgeGraph(provider_manager=pm, db_path=kg_path)
+
+        total_chunks = 0
+        for lf in local_files:
+            try:
+                count = ingest_file(lf, kg)
+                total_chunks += count
+                click.echo(f"  Ingested {lf.stem}: {count} chunks")
+            except Exception as e:
+                click.echo(f"  Failed to ingest {lf.stem}: {e}", err=True)
+
+        kg.save(kg_path)
+        kg.save(kg_path.with_suffix(".json"))
+
+        entity_count = kg._store.get_entity_count()
+        rel_count = kg._store.get_relationship_count()
+
+        click.echo("\nIngestion complete:")
+        click.echo(f"  Documents: {len(local_files)}")
+        click.echo(f"  Chunks: {total_chunks}")
+        click.echo(f"  Entities: {entity_count}")
+        click.echo(f"  Relationships: {rel_count}")
+        click.echo(f"  Knowledge graph: {kg_path}")
+
+
+@cli.group()
 def kg():
     """Knowledge graph utilities: convert, sync, and inspect."""
     pass
