@@ -618,6 +618,143 @@ def agent_analyze(ctx, input, output, depth, title, provider, vision_model, chat
 
 
 @cli.command()
+@click.argument("request", required=False, default=None)
+@click.option("--kb", multiple=True, type=click.Path(exists=True), help="Knowledge base paths")
+@click.option("--interactive", "-I", is_flag=True, help="Interactive chat mode")
+@click.option("--export", type=click.Path(), default=None, help="Export artifacts to directory")
+@click.option(
+    "--provider",
+    "-p",
+    type=click.Choice(
+        [
+            "auto",
+            "openai",
+            "anthropic",
+            "gemini",
+            "ollama",
+            "azure",
+            "together",
+            "fireworks",
+            "cerebras",
+            "xai",
+        ]
+    ),
+    default="auto",
+    help="API provider",
+)
+@click.option("--chat-model", type=str, default=None, help="Override model for LLM/chat tasks")
+@click.pass_context
+def agent(ctx, request, kb, interactive, export, provider, chat_model):
+    """AI planning agent. Synthesizes knowledge into project plans and artifacts.
+
+    Examples:
+
+        planopticon agent "Create a project plan" --kb ./results
+
+        planopticon agent -I --kb ./videos --kb ./docs
+
+        planopticon agent "Generate a PRD" --export ./output
+    """
+    from video_processor.agent.agent_loop import PlanningAgent
+    from video_processor.agent.kb_context import KBContext
+    from video_processor.agent.skills.base import AgentContext
+
+    # Build provider manager
+    pm = None
+    try:
+        from video_processor.providers.manager import ProviderManager
+
+        prov = None if provider == "auto" else provider
+        pm = ProviderManager(chat_model=chat_model, provider=prov)
+    except Exception:
+        if not interactive:
+            click.echo("Warning: could not initialize LLM provider.", err=True)
+
+    # Load knowledge base
+    kb_ctx = KBContext()
+    if kb:
+        for path in kb:
+            kb_ctx.add_source(Path(path))
+        kb_ctx.load(provider_manager=pm)
+        click.echo(kb_ctx.summary())
+    else:
+        # Auto-discover
+        kb_ctx = KBContext.auto_discover(provider_manager=pm)
+        if kb_ctx.sources:
+            click.echo(kb_ctx.summary())
+        else:
+            click.echo("No knowledge base found. Use --kb to specify paths.")
+
+    agent_inst = PlanningAgent(
+        context=AgentContext(
+            knowledge_graph=kb_ctx.knowledge_graph if kb_ctx.sources else None,
+            query_engine=kb_ctx.query_engine if kb_ctx.sources else None,
+            provider_manager=pm,
+        )
+    )
+
+    if interactive:
+        click.echo("\nPlanOpticon Agent (interactive mode)")
+        click.echo("Type your request, or 'quit' to exit.\n")
+        while True:
+            try:
+                line = click.prompt("agent", prompt_suffix="> ")
+            except (KeyboardInterrupt, EOFError):
+                click.echo("\nBye.")
+                break
+            if line.strip().lower() in ("quit", "exit", "q"):
+                click.echo("Bye.")
+                break
+
+            # Check for slash commands
+            if line.strip().startswith("/"):
+                cmd = line.strip()[1:].split()[0]
+                if cmd == "plan":
+                    artifacts = agent_inst.execute("Generate a project plan")
+                elif cmd == "skills":
+                    from video_processor.agent.skills.base import list_skills
+
+                    for s in list_skills():
+                        click.echo(f"  {s.name}: {s.description}")
+                    continue
+                elif cmd == "summary":
+                    if kb_ctx.sources:
+                        click.echo(kb_ctx.summary())
+                    continue
+                else:
+                    artifacts = agent_inst.execute(line.strip()[1:])
+
+                for a in artifacts:
+                    click.echo(f"\n--- {a.name} ({a.artifact_type}) ---\n")
+                    click.echo(a.content)
+            else:
+                response = agent_inst.chat(line)
+                click.echo(f"\n{response}\n")
+    elif request:
+        artifacts = agent_inst.execute(request)
+        if not artifacts:
+            click.echo("No artifacts generated. Try a more specific request.")
+        for artifact in artifacts:
+            click.echo(f"\n--- {artifact.name} ({artifact.artifact_type}) ---\n")
+            click.echo(artifact.content)
+
+        if export:
+            export_dir = Path(export)
+            export_dir.mkdir(parents=True, exist_ok=True)
+            for artifact in artifacts:
+                ext = ".md" if artifact.format == "markdown" else f".{artifact.format}"
+                safe_name = "".join(
+                    c if c.isalnum() or c in "-_" else "_" for c in artifact.name
+                )
+                fpath = export_dir / f"{safe_name}{ext}"
+                fpath.write_text(artifact.content)
+                click.echo(f"Exported: {fpath}")
+    else:
+        click.echo("Provide a request or use -I for interactive mode.")
+        click.echo("Example: planopticon agent 'Create a project plan' --kb ./results")
+
+
+@cli.command()
 @click.argument("question", required=False, default=None)
 @click.option(
     "--db-path",
