@@ -321,21 +321,89 @@ class KnowledgeGraph:
             )
         return kg
 
+    # Type specificity ranking for conflict resolution during merge.
+    # Higher rank = more specific type wins when two entities match.
+    _TYPE_SPECIFICITY = {
+        "concept": 0,
+        "time": 1,
+        "diagram": 1,
+        "organization": 2,
+        "person": 3,
+        "technology": 3,
+    }
+
+    @staticmethod
+    def _fuzzy_match(name_a: str, name_b: str, threshold: float = 0.85) -> bool:
+        """Return True if two names are similar enough to be considered the same entity."""
+        from difflib import SequenceMatcher
+
+        return SequenceMatcher(None, name_a.lower(), name_b.lower()).ratio() >= threshold
+
+    def _more_specific_type(self, type_a: str, type_b: str) -> str:
+        """Return the more specific of two entity types."""
+        rank_a = self._TYPE_SPECIFICITY.get(type_a, 1)
+        rank_b = self._TYPE_SPECIFICITY.get(type_b, 1)
+        return type_a if rank_a >= rank_b else type_b
+
     def merge(self, other: "KnowledgeGraph") -> None:
-        """Merge another KnowledgeGraph into this one."""
+        """Merge another KnowledgeGraph into this one.
+
+        Improvements over naive merge:
+        - Fuzzy name matching (SequenceMatcher >= 0.85) to unify near-duplicate entities
+        - Type conflict resolution: prefer more specific types (e.g. technology > concept)
+        - Provenance: merged entities get a ``merged_from`` description entry
+        """
         for source in other._store.get_sources():
             self._store.register_source(source)
+
+        # Build a lookup of existing entity names for fuzzy matching
+        existing_entities = self._store.get_all_entities()
+        existing_names = {e["name"]: e for e in existing_entities}
+        # Cache lowercase -> canonical name for fast lookup
+        name_index: dict[str, str] = {n.lower(): n for n in existing_names}
+
         for entity in other._store.get_all_entities():
-            name = entity["name"]
+            incoming_name = entity["name"]
             descs = entity.get("descriptions", [])
             if isinstance(descs, set):
                 descs = list(descs)
-            self._store.merge_entity(
-                name, entity.get("type", "concept"), descs, source=entity.get("source")
-            )
+            incoming_type = entity.get("type", "concept")
+
+            # Try exact match first (case-insensitive), then fuzzy
+            matched_name: Optional[str] = None
+            if incoming_name.lower() in name_index:
+                matched_name = name_index[incoming_name.lower()]
+            else:
+                for existing_name in existing_names:
+                    if self._fuzzy_match(incoming_name, existing_name):
+                        matched_name = existing_name
+                        break
+
+            if matched_name is not None:
+                # Resolve type conflict
+                existing_type = existing_names[matched_name].get("type", "concept")
+                resolved_type = self._more_specific_type(existing_type, incoming_type)
+
+                # Add merge provenance
+                merge_note = f"merged_from:{incoming_name}"
+                merged_descs = descs if incoming_name == matched_name else descs + [merge_note]
+
+                self._store.merge_entity(
+                    matched_name, resolved_type, merged_descs, source=entity.get("source")
+                )
+                target_name = matched_name
+            else:
+                self._store.merge_entity(
+                    incoming_name, incoming_type, descs, source=entity.get("source")
+                )
+                # Update indexes for subsequent fuzzy matches within this merge
+                existing_names[incoming_name] = entity
+                name_index[incoming_name.lower()] = incoming_name
+                target_name = incoming_name
+
             for occ in entity.get("occurrences", []):
                 self._store.add_occurrence(
-                    name,
+                    target_name,
                     occ.get("source", ""),
                     occ.get("timestamp"),
                     occ.get("text"),
