@@ -2,9 +2,18 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
+
+
+@runtime_checkable
+class ProgressCallback(Protocol):
+    """Optional callback for pipeline progress updates."""
+
+    def on_step_start(self, step: str, index: int, total: int) -> None: ...
+    def on_step_complete(self, step: str, index: int, total: int) -> None: ...
+    def on_progress(self, step: str, percent: float, message: str = "") -> None: ...
 
 
 class DiagramType(str, Enum):
