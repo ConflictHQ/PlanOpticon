@@ -743,9 +743,7 @@ def agent(ctx, request, kb, interactive, export, provider, chat_model):
             export_dir.mkdir(parents=True, exist_ok=True)
             for artifact in artifacts:
                 ext = ".md" if artifact.format == "markdown" else f".{artifact.format}"
-                safe_name = "".join(
-                    c if c.isalnum() or c in "-_" else "_" for c in artifact.name
-                )
+                safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in artifact.name)
                 fpath = export_dir / f"{safe_name}{ext}"
                 fpath.write_text(artifact.content)
                 click.echo(f"Exported: {fpath}")
