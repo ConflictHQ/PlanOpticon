@@ -9,7 +9,7 @@ from typing import Optional
 import anthropic
 from dotenv import load_dotenv
 
-from video_processor.providers.base import BaseProvider, ModelInfo
+from video_processor.providers.base import BaseProvider, ModelInfo, ProviderRegistry
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -110,3 +110,16 @@ class AnthropicProvider(BaseProvider):
         except Exception as e:
             logger.warning(f"Failed to list Anthropic models: {e}")
         return sorted(models, key=lambda m: m.id)
+
+
+ProviderRegistry.register(
+    name="anthropic",
+    provider_class=AnthropicProvider,
+    env_var="ANTHROPIC_API_KEY",
+    model_prefixes=["claude-"],
+    default_models={
+        "chat": "claude-sonnet-4-5-20250929",
+        "vision": "claude-sonnet-4-5-20250929",
+        "audio": "",
+    },
+)

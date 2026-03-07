@@ -6,12 +6,24 @@ from typing import Optional
 
 from dotenv import load_dotenv
 
-from video_processor.providers.base import BaseProvider, ModelInfo
+from video_processor.providers.base import BaseProvider, ModelInfo, ProviderRegistry
 from video_processor.providers.discovery import discover_available_models
 from video_processor.utils.usage_tracker import UsageTracker
 
 load_dotenv()
 logger = logging.getLogger(__name__)
+
+
+def _ensure_providers_registered() -> None:
+    """Import all built-in provider modules so they register themselves."""
+    if ProviderRegistry.all_registered():
+        return
+    # Each module registers itself on import via ProviderRegistry.register()
+    import video_processor.providers.anthropic_provider  # noqa: F401
+    import video_processor.providers.gemini_provider  # noqa: F401
+    import video_processor.providers.ollama_provider  # noqa: F401
+    import video_processor.providers.openai_provider  # noqa: F401
+
 
 # Default model preference rankings (tried in order)
 _VISION_PREFERENCES = [
@@ -59,6 +71,7 @@ class ProviderManager:
         provider : force all tasks to a single provider ('openai', 'anthropic', 'gemini')
         auto : if True and no model specified, pick the best available
         """
+        _ensure_providers_registered()
         self.auto = auto
         self._providers: dict[str, BaseProvider] = {}
         self._available_models: Optional[list[ModelInfo]] = None
@@ -81,63 +94,27 @@ class ProviderManager:
     @staticmethod
     def _default_for_provider(provider: str, capability: str) -> str:
         """Return the default model for a provider/capability combo."""
-        defaults = {
-            "openai": {"chat": "gpt-4o", "vision": "gpt-4o", "audio": "whisper-1"},
-            "anthropic": {
-                "chat": "claude-sonnet-4-5-20250929",
-                "vision": "claude-sonnet-4-5-20250929",
-                "audio": "",
-            },
-            "gemini": {
-                "chat": "gemini-2.5-flash",
-                "vision": "gemini-2.5-flash",
-                "audio": "gemini-2.5-flash",
-            },
-            "ollama": {
-                "chat": "",
-                "vision": "",
-                "audio": "",
-            },
-        }
-        return defaults.get(provider, {}).get(capability, "")
+        defaults = ProviderRegistry.get_default_models(provider)
+        if defaults:
+            return defaults.get(capability, "")
+        # Fallback for unregistered providers
+        return ""
 
     def _get_provider(self, provider_name: str) -> BaseProvider:
         """Lazily initialize and cache a provider instance."""
         if provider_name not in self._providers:
-            if provider_name == "openai":
-                from video_processor.providers.openai_provider import OpenAIProvider
-
-                self._providers[provider_name] = OpenAIProvider()
-            elif provider_name == "anthropic":
-                from video_processor.providers.anthropic_provider import AnthropicProvider
-
-                self._providers[provider_name] = AnthropicProvider()
-            elif provider_name == "gemini":
-                from video_processor.providers.gemini_provider import GeminiProvider
-
-                self._providers[provider_name] = GeminiProvider()
-            elif provider_name == "ollama":
-                from video_processor.providers.ollama_provider import OllamaProvider
-
-                self._providers[provider_name] = OllamaProvider()
-            else:
-                raise ValueError(f"Unknown provider: {provider_name}")
+            _ensure_providers_registered()
+            provider_class = ProviderRegistry.get(provider_name)
+            self._providers[provider_name] = provider_class()
         return self._providers[provider_name]
 
     def _provider_for_model(self, model_id: str) -> str:
         """Infer the provider from a model id."""
-        if (
-            model_id.startswith("gpt-")
-            or model_id.startswith("o1")
-            or model_id.startswith("o3")
-            or model_id.startswith("o4")
-            or model_id.startswith("whisper")
-        ):
-            return "openai"
-        if model_id.startswith("claude-"):
-            return "anthropic"
-        if model_id.startswith("gemini-"):
-            return "gemini"
+        _ensure_providers_registered()
+        # Check registry prefix matching first
+        provider_name = ProviderRegistry.get_by_model(model_id)
+        if provider_name:
+            return provider_name
         # Try discovery (exact match, then prefix match for ollama name:tag format)
         models = self._get_available_models()
         for m in models:
