@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from video_processor.integrators.graph_query import GraphQueryEngine, QueryResult
-from video_processor.integrators.graph_store import InMemoryStore
+from video_processor.integrators.graph_store import InMemoryStore, SQLiteStore
 
 
 def _make_populated_store():
@@ -169,11 +169,11 @@ class TestDirectMode:
         assert result.data == []
         assert "not found" in result.explanation
 
-    def test_cypher_raises_on_inmemory(self):
+    def test_sql_raises_on_inmemory(self):
         store = InMemoryStore()
         engine = GraphQueryEngine(store)
         with pytest.raises(NotImplementedError):
-            engine.cypher("MATCH (n) RETURN n")
+            engine.sql("SELECT * FROM entities")
 
     def test_entities_limit(self):
         store = _make_populated_store()
@@ -201,35 +201,20 @@ class TestFromJsonPath:
         assert result.data["relationship_count"] == 1
 
 
-# Conditional FalkorDB tests
-_falkordb_available = False
-try:
-    import redislite  # noqa: F401
-
-    _falkordb_available = True
-except ImportError:
-    pass
-
-
-@pytest.mark.skipif(not _falkordb_available, reason="falkordblite not installed")
-class TestFalkorDBQuery:
-    def test_cypher_passthrough(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
-
-        store = FalkorDBStore(tmp_path / "test.db")
+class TestSQLiteQuery:
+    def test_sql_passthrough(self, tmp_path):
+        store = SQLiteStore(tmp_path / "test.db")
         store.merge_entity("Python", "technology", ["A language"])
         engine = GraphQueryEngine(store)
-        result = engine.cypher("MATCH (e:Entity) RETURN e.name")
+        result = engine.sql("SELECT name FROM entities")
         assert len(result.data) >= 1
-        assert result.query_type == "cypher"
+        assert result.query_type == "sql"
         store.close()
 
     def test_raw_query_on_store(self, tmp_path):
-        from video_processor.integrators.graph_store import FalkorDBStore
-
-        store = FalkorDBStore(tmp_path / "test.db")
+        store = SQLiteStore(tmp_path / "test.db")
         store.merge_entity("Alice", "person", ["Engineer"])
-        rows = store.raw_query("MATCH (e:Entity) RETURN e.name")
+        rows = store.raw_query("SELECT name FROM entities")
         assert len(rows) >= 1
         store.close()
 

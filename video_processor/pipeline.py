@@ -192,12 +192,11 @@ def process_single_video(
     # --- Step 5: Knowledge graph ---
     pm.usage.start_step("Knowledge graph")
     pipeline_bar.set_description("Pipeline: building knowledge graph")
-    kg_json_path = dirs["results"] / "knowledge_graph.json"
     kg_db_path = dirs["results"] / "knowledge_graph.db"
-    if kg_json_path.exists():
+    kg_json_path = dirs["results"] / "knowledge_graph.json"
+    if kg_db_path.exists():
         logger.info("Resuming: found knowledge graph on disk, loading")
-        kg_data = json.loads(kg_json_path.read_text())
-        kg = KnowledgeGraph.from_dict(kg_data, db_path=kg_db_path)
+        kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
     else:
         logger.info("Building knowledge graph...")
         kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
@@ -205,7 +204,8 @@ def process_single_video(
         if diagrams:
             diagram_dicts = [d.model_dump() for d in diagrams]
             kg.process_diagrams(diagram_dicts)
-        kg.save(kg_json_path)
+    # Export JSON copy alongside the SQLite db
+    kg.save(kg_json_path)
     pipeline_bar.update(1)
 
     # --- Step 6: Extract key points & action items ---

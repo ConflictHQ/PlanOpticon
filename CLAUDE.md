@@ -9,7 +9,7 @@ PlanOpticon can build and query knowledge graphs from video content. If you see 
 ### Auto-detection
 
 Look for these files (checked automatically):
-- `knowledge_graph.db` — FalkorDB binary graph (preferred)
+- `knowledge_graph.db` — SQLite graph database (preferred)
 - `knowledge_graph.json` — JSON export (fallback)
 
 Common locations: project root, `results/`, `output/`, `knowledge-base/`.

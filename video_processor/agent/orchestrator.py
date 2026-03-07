@@ -202,6 +202,7 @@ class AgentOrchestrator:
             if diagrams:
                 kg.process_diagrams([d.model_dump() for d in diagrams])
 
+            # Export JSON copy alongside the SQLite db
             kg.save(dirs["results"] / "knowledge_graph.json")
             return {"knowledge_graph": kg}
 

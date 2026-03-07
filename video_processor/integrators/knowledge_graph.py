@@ -215,14 +215,53 @@ class KnowledgeGraph:
         return self._store.to_dict()
 
     def save(self, output_path: Union[str, Path]) -> Path:
-        """Save knowledge graph to JSON file."""
+        """Save knowledge graph. Defaults to .db (SQLite), also supports .json."""
         output_path = Path(output_path)
         if not output_path.suffix:
-            output_path = output_path.with_suffix(".json")
+            output_path = output_path.with_suffix(".db")
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        data = self.to_data()
-        output_path.write_text(data.model_dump_json(indent=2))
+        if output_path.suffix == ".json":
+            data = self.to_data()
+            output_path.write_text(data.model_dump_json(indent=2))
+        elif output_path.suffix == ".db":
+            # If the backing store is already SQLite at this path, it's already persisted.
+            # Otherwise, create a new SQLite store and copy data into it.
+            from video_processor.integrators.graph_store import SQLiteStore
+
+            if not isinstance(self._store, SQLiteStore) or self._store._db_path != str(output_path):
+                target = SQLiteStore(output_path)
+                for entity in self._store.get_all_entities():
+                    descs = entity.get("descriptions", [])
+                    if isinstance(descs, set):
+                        descs = list(descs)
+                    target.merge_entity(
+                        entity["name"],
+                        entity.get("type", "concept"),
+                        descs,
+                        source=entity.get("source"),
+                    )
+                    for occ in entity.get("occurrences", []):
+                        target.add_occurrence(
+                            entity["name"],
+                            occ.get("source", ""),
+                            occ.get("timestamp"),
+                            occ.get("text"),
+                        )
+                for rel in self._store.get_all_relationships():
+                    target.add_relationship(
+                        rel.get("source", ""),
+                        rel.get("target", ""),
+                        rel.get("type", "related_to"),
+                        content_source=rel.get("content_source"),
+                        timestamp=rel.get("timestamp"),
+                    )
+                target.close()
+        else:
+            # Unknown suffix — fall back to JSON
+            data = self.to_data()
+            output_path.write_text(data.model_dump_json(indent=2))
+
         logger.info(
             f"Saved knowledge graph with {self._store.get_entity_count()} nodes "
             f"and {self._store.get_relationship_count()} relationships to {output_path}"

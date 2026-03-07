@@ -286,15 +286,15 @@ class GraphQueryEngine:
             explanation="Knowledge graph statistics",
         )
 
-    def cypher(self, query: str) -> QueryResult:
-        """Execute a raw Cypher query (FalkorDB only)."""
+    def sql(self, query: str) -> QueryResult:
+        """Execute a raw SQL query (SQLite only)."""
         result = self.store.raw_query(query)
         return QueryResult(
             data=result,
-            query_type="cypher",
+            query_type="sql",
             raw_query=query,
             explanation=(
-                f"Cypher query returned {len(result) if isinstance(result, list) else 1} rows"
+                f"SQL query returned {len(result) if isinstance(result, list) else 1} rows"
             ),
         )
 

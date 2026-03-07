@@ -284,10 +284,14 @@ def batch(
             entry.duration_seconds = manifest.video.duration_seconds
             manifests.append(manifest)
 
-            # Merge knowledge graph
-            kg_path = video_output / "results" / "knowledge_graph.json"
-            if kg_path.exists():
-                kg_data = json.loads(kg_path.read_text())
+            # Merge knowledge graph (prefer .db, fall back to .json)
+            kg_db = video_output / "results" / "knowledge_graph.db"
+            kg_json = video_output / "results" / "knowledge_graph.json"
+            if kg_db.exists():
+                video_kg = KnowledgeGraph(db_path=kg_db)
+                merged_kg.merge(video_kg)
+            elif kg_json.exists():
+                kg_data = json.loads(kg_json.read_text())
                 video_kg = KnowledgeGraph.from_dict(kg_data)
                 merged_kg.merge(video_kg)
 
@@ -302,9 +306,8 @@ def batch(
 
         entries.append(entry)
 
-    # Save merged knowledge graph
-    merged_kg_path = Path(output) / "knowledge_graph.json"
-    merged_kg.save(merged_kg_path)
+    # Save merged knowledge graph (SQLite is primary, JSON is export)
+    merged_kg.save(Path(output) / "knowledge_graph.json")
 
     # Generate batch summary
     plan_gen = PlanGenerator(provider_manager=pm, knowledge_graph=merged_kg)
@@ -500,7 +503,7 @@ def query(ctx, question, db_path, mode, output_format, interactive, provider, ch
     """Query a knowledge graph. Runs stats if no question given.
 
     Direct commands recognized in QUESTION: stats, entities, relationships,
-    neighbors, cypher. Natural language questions use agentic mode.
+    neighbors, sql. Natural language questions use agentic mode.
 
     Examples:
 
@@ -590,9 +593,9 @@ def _execute_query(engine, question, mode):
         entity_name = " ".join(parts[1:]) if len(parts) > 1 else ""
         return engine.neighbors(entity_name)
 
-    if cmd == "cypher":
-        cypher_query = " ".join(parts[1:])
-        return engine.cypher(cypher_query)
+    if cmd == "sql":
+        sql_query = " ".join(parts[1:])
+        return engine.sql(sql_query)
 
     # Natural language → agentic (or fallback to entity search in direct mode)
     if mode == "direct":
@@ -671,6 +674,152 @@ def auth(ctx, service):
         else:
             click.echo("Dropbox authentication failed.", err=True)
             sys.exit(1)
+
+
+@cli.group()
+def kg():
+    """Knowledge graph utilities: convert, sync, and inspect."""
+    pass
+
+
+@kg.command()
+@click.argument("source_path", type=click.Path(exists=True))
+@click.argument("dest_path", type=click.Path())
+def convert(source_path, dest_path):
+    """Convert a knowledge graph between formats.
+
+    Supports .db (SQLite) and .json. The output format is inferred from DEST_PATH extension.
+
+    Examples:
+
+        planopticon kg convert results/knowledge_graph.db output.json
+        planopticon kg convert knowledge_graph.json knowledge_graph.db
+    """
+    from video_processor.integrators.graph_store import InMemoryStore, SQLiteStore
+
+    source_path = Path(source_path)
+    dest_path = Path(dest_path)
+
+    if source_path.suffix == dest_path.suffix:
+        click.echo(f"Source and destination are the same format ({source_path.suffix}).", err=True)
+        sys.exit(1)
+
+    # Load source
+    if source_path.suffix == ".db":
+        src_store = SQLiteStore(source_path)
+    elif source_path.suffix == ".json":
+        data = json.loads(source_path.read_text())
+        src_store = InMemoryStore()
+        for node in data.get("nodes", []):
+            descs = node.get("descriptions", [])
+            if isinstance(descs, set):
+                descs = list(descs)
+            src_store.merge_entity(node.get("name", ""), node.get("type", "concept"), descs)
+            for occ in node.get("occurrences", []):
+                src_store.add_occurrence(
+                    node.get("name", ""),
+                    occ.get("source", ""),
+                    occ.get("timestamp"),
+                    occ.get("text"),
+                )
+        for rel in data.get("relationships", []):
+            src_store.add_relationship(
+                rel.get("source", ""),
+                rel.get("target", ""),
+                rel.get("type", "related_to"),
+                content_source=rel.get("content_source"),
+                timestamp=rel.get("timestamp"),
+            )
+    else:
+        click.echo(f"Unsupported source format: {source_path.suffix}", err=True)
+        sys.exit(1)
+
+    # Write destination
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    kg_obj = KnowledgeGraph(store=src_store)
+    kg_obj.save(dest_path)
+
+    e_count = src_store.get_entity_count()
+    r_count = src_store.get_relationship_count()
+    click.echo(
+        f"Converted {source_path} → {dest_path} ({e_count} entities, {r_count} relationships)"
+    )
+
+    if hasattr(src_store, "close"):
+        src_store.close()
+
+
+@kg.command()
+@click.argument("db_path", type=click.Path(exists=True))
+@click.argument("json_path", type=click.Path(), required=False, default=None)
+@click.option(
+    "--direction",
+    type=click.Choice(["db-to-json", "json-to-db", "auto"]),
+    default="auto",
+    help="Sync direction. 'auto' picks the newer file as source.",
+)
+def sync(db_path, json_path, direction):
+    """Sync a .db and .json knowledge graph, updating the stale one.
+
+    If JSON_PATH is omitted, uses the same name with .json extension.
+
+    Examples:
+
+        planopticon kg sync results/knowledge_graph.db
+        planopticon kg sync knowledge_graph.db knowledge_graph.json --direction db-to-json
+    """
+    db_path = Path(db_path)
+    if json_path is None:
+        json_path = db_path.with_suffix(".json")
+    else:
+        json_path = Path(json_path)
+
+    if direction == "auto":
+        if not json_path.exists():
+            direction = "db-to-json"
+        elif not db_path.exists():
+            direction = "json-to-db"
+        else:
+            db_mtime = db_path.stat().st_mtime
+            json_mtime = json_path.stat().st_mtime
+            direction = "db-to-json" if db_mtime >= json_mtime else "json-to-db"
+
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    if direction == "db-to-json":
+        kg_obj = KnowledgeGraph(db_path=db_path)
+        kg_obj.save(json_path)
+        click.echo(f"Synced {db_path} → {json_path}")
+    else:
+        data = json.loads(json_path.read_text())
+        kg_obj = KnowledgeGraph.from_dict(data, db_path=db_path)
+        # Force write to db by saving
+        kg_obj.save(db_path)
+        click.echo(f"Synced {json_path} → {db_path}")
+
+    click.echo(
+        f"  {kg_obj._store.get_entity_count()} entities, "
+        f"{kg_obj._store.get_relationship_count()} relationships"
+    )
+
+
+@kg.command()
+@click.argument("path", type=click.Path(exists=True))
+def inspect(path):
+    """Show summary stats for a knowledge graph file (.db or .json)."""
+    from video_processor.integrators.graph_discovery import describe_graph
+
+    path = Path(path)
+    info = describe_graph(path)
+    click.echo(f"File: {path}")
+    click.echo(f"Store: {info['store_type']}")
+    click.echo(f"Entities: {info['entity_count']}")
+    click.echo(f"Relationships: {info['relationship_count']}")
+    if info["entity_types"]:
+        click.echo("Entity types:")
+        for t, count in sorted(info["entity_types"].items(), key=lambda x: -x[1]):
+            click.echo(f"  {t}: {count}")
 
 
 def _interactive_menu(ctx):
