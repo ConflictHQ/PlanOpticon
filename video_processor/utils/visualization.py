@@ -5,9 +5,14 @@ from typing import Dict, List, Optional
 try:
     import networkx as nx
 except ImportError:
-    raise ImportError(
-        "networkx is required for graph visualization. Install it with: pip install networkx"
-    )
+    nx = None
+
+
+def _require_nx():
+    if nx is None:
+        raise ImportError(
+            "networkx is required for graph visualization. Install it with: pip install networkx"
+        )
 
 
 def graph_to_networkx(kg_data: dict) -> "nx.DiGraph":
@@ -16,6 +21,7 @@ def graph_to_networkx(kg_data: dict) -> "nx.DiGraph":
     Nodes get attributes: type, descriptions, source, occurrences
     Edges get attributes: type, content_source, timestamp
     """
+    _require_nx()
     G = nx.DiGraph()
 
     for node in kg_data.get("nodes", []):

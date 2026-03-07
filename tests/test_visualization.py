@@ -2,7 +2,9 @@
 
 import pytest
 
-from video_processor.utils.visualization import (
+nx = pytest.importorskip("networkx", reason="networkx not installed")
+
+from video_processor.utils.visualization import (  # noqa: E402
     compute_graph_stats,
     filter_graph,
     generate_mermaid,
