@@ -222,6 +222,7 @@ class ProviderManager:
         self,
         audio_path: str | Path,
         language: Optional[str] = None,
+        speaker_hints: Optional[list[str]] = None,
     ) -> dict:
         """Transcribe audio using local Whisper if available, otherwise API."""
         # Prefer local Whisper — no file size limits, no API costs
@@ -237,7 +238,13 @@ class ProviderManager:
                     if not hasattr(self, "_whisper_local"):
                         self._whisper_local = WhisperLocal(model_size=size)
                     logger.info(f"Transcription: using local whisper-{size}")
-                    result = self._whisper_local.transcribe(audio_path, language=language)
+                    # Pass speaker names as initial prompt hint for Whisper
+                    whisper_kwargs = {"language": language}
+                    if speaker_hints:
+                        whisper_kwargs["initial_prompt"] = (
+                            "Speakers: " + ", ".join(speaker_hints) + "."
+                        )
+                    result = self._whisper_local.transcribe(audio_path, **whisper_kwargs)
                     duration = result.get("duration") or 0
                     self.usage.record(
                         provider="local",
@@ -254,7 +261,15 @@ class ProviderManager:
         )
         logger.info(f"Transcription: using {prov_name}/{model}")
         provider = self._get_provider(prov_name)
-        result = provider.transcribe_audio(audio_path, language=language, model=model)
+        # Build transcription kwargs, passing speaker hints where supported
+        transcribe_kwargs: dict = {"language": language, "model": model}
+        if speaker_hints:
+            if prov_name == "openai":
+                # OpenAI Whisper supports a 'prompt' parameter for hints
+                transcribe_kwargs["prompt"] = "Speakers: " + ", ".join(speaker_hints) + "."
+            else:
+                transcribe_kwargs["speaker_hints"] = speaker_hints
+        result = provider.transcribe_audio(audio_path, **transcribe_kwargs)
         duration = result.get("duration") or 0
         self.usage.record(
             provider=prov_name,

@@ -106,6 +106,12 @@ def cli(ctx, verbose):
     default=None,
     help="Directory with custom prompt template .txt files",
 )
+@click.option(
+    "--speakers",
+    type=str,
+    default=None,
+    help='Comma-separated speaker names for diarization hints (e.g., "Alice,Bob,Carol")',
+)
 @click.pass_context
 def analyze(
     ctx,
@@ -123,12 +129,14 @@ def analyze(
     chat_model,
     output_format,
     templates_dir,
+    speakers,
 ):
     """Analyze a single video and extract structured knowledge."""
     from video_processor.pipeline import process_single_video
     from video_processor.providers.manager import ProviderManager
 
     focus_areas = [a.strip().lower() for a in focus.split(",")] if focus else []
+    speaker_hints = [s.strip() for s in speakers.split(",")] if speakers else None
     prov = None if provider == "auto" else provider
 
     pm = ProviderManager(
@@ -154,6 +162,7 @@ def analyze(
             periodic_capture_seconds=periodic_capture,
             use_gpu=use_gpu,
             title=title,
+            speaker_hints=speaker_hints,
         )
         if output_format == "json":
             click.echo(json.dumps(manifest.model_dump(), indent=2, default=str))
