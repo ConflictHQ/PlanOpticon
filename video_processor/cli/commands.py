@@ -67,6 +67,25 @@ def cli(ctx, verbose, chat, interactive_flag):
         _interactive_menu(ctx)
 
 
+@cli.command("init")
+@click.pass_context
+def init_cmd(ctx):
+    """Interactive setup wizard — configure providers, API keys, and .env."""
+    from video_processor.cli.init_wizard import run_wizard
+
+    run_wizard()
+
+
+@cli.command()
+@click.pass_context
+def doctor(ctx):
+    """Check setup health — Python, FFmpeg, API keys, dependencies."""
+    from video_processor.cli.doctor import format_results, run_all_checks
+
+    results = run_all_checks()
+    click.echo(format_results(results))
+
+
 @cli.command()
 @click.option(
     "--input", "-i", required=True, type=click.Path(exists=True), help="Input video file path"

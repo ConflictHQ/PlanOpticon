@@ -445,11 +445,79 @@ class CompanionREPL:
 
         return f"Unknown command: {cmd}. Type /help for help."
 
+    COMMANDS = [
+        "/help",
+        "/status",
+        "/skills",
+        "/entities",
+        "/search",
+        "/neighbors",
+        "/export",
+        "/analyze",
+        "/ingest",
+        "/auth",
+        "/provider",
+        "/model",
+        "/run",
+        "/plan",
+        "/prd",
+        "/tasks",
+        "/quit",
+        "/exit",
+    ]
+
+    def _setup_readline(self) -> None:
+        """Set up readline for tab completion and history."""
+        try:
+            import readline
+        except ImportError:
+            return
+
+        commands = self.COMMANDS
+
+        def completer(text, state):
+            if text.startswith("/"):
+                matches = [c for c in commands if c.startswith(text)]
+            else:
+                matches = [c for c in commands if c.startswith("/" + text)]
+                matches = [m[1:] for m in matches]  # strip leading /
+            if state < len(matches):
+                return matches[state]
+            return None
+
+        readline.set_completer(completer)
+        readline.set_completer_delims(" \t\n")
+        # macOS uses libedit which needs a different syntax
+        if "libedit" in readline.__doc__:
+            readline.parse_and_bind("bind ^I rl_complete")
+        else:
+            readline.parse_and_bind("tab: complete")
+
+        # Load history
+        history_path = Path.home() / ".planopticon_history"
+        try:
+            if history_path.exists():
+                readline.read_history_file(str(history_path))
+        except Exception:
+            pass
+
+        self._history_path = history_path
+
+    def _save_history(self) -> None:
+        """Save readline history."""
+        try:
+            import readline
+
+            readline.write_history_file(str(self._history_path))
+        except Exception:
+            pass
+
     def run(self) -> None:
         """Main REPL loop."""
         self._discover()
         self._init_provider()
         self._init_agent()
+        self._setup_readline()
 
         print(self._welcome_banner())
 
@@ -466,3 +534,5 @@ class CompanionREPL:
                 break
             if output:
                 print(output)
+
+        self._save_history()
