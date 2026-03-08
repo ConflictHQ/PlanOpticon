@@ -81,8 +81,15 @@ nav:
   - User Guide:
       - Single Video Analysis: guide/single-video.md
       - Batch Processing: guide/batch.md
+      - Document Ingestion: guide/document-ingestion.md
       - Cloud Sources: guide/cloud-sources.md
+      - Knowledge Graphs: guide/knowledge-graphs.md
+      - Interactive Companion: guide/companion.md
+      - Planning Agent: guide/planning-agent.md
+      - Authentication: guide/authentication.md
+      - Export & Documents: guide/export.md
       - Output Formats: guide/output-formats.md
+  - Use Cases: use-cases.md
   - CLI Reference: cli-reference.md
   - Architecture:
       - Overview: architecture/overview.md
@@ -92,6 +99,10 @@ nav:
       - Models: api/models.md
       - Providers: api/providers.md
       - Analyzers: api/analyzers.md
+      - Agent & Skills: api/agent.md
+      - Sources: api/sources.md
+      - Authentication: api/auth.md
+  - FAQ & Troubleshooting: faq.md
   - Contributing: contributing.md
 
 extra:
