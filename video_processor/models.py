@@ -37,6 +37,7 @@ class OutputFormat(str, Enum):
     json = "json"
     html = "html"
     pdf = "pdf"
+    pptx = "pptx"
     svg = "svg"
     png = "png"
 

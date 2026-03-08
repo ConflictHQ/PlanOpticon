@@ -53,6 +53,7 @@ dependencies = [
 
 [project.optional-dependencies]
 pdf = ["pymupdf>=1.24.0"]
+exports = ["reportlab>=4.0", "python-pptx>=1.0"]
 gpu = ["torch>=2.0.0", "torchvision>=0.15.0"]
 gdrive = ["google-auth>=2.0.0", "google-auth-oauthlib>=1.0.0", "google-api-python-client>=2.0.0"]
 dropbox = ["dropbox>=12.0.0"]

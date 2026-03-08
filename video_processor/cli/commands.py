@@ -1579,6 +1579,80 @@ def export_notion(db_path, output):
     click.echo(f"Exported Notion markdown: {len(created)} files in {out_dir}/")
 
 
+@export.command("pdf")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output PDF file path")
+@click.option("--title", type=str, default=None, help="Report title")
+@click.option(
+    "--diagrams",
+    type=click.Path(exists=True),
+    default=None,
+    help="Directory with diagram PNGs to embed",
+)
+def export_pdf(db_path, output, title, diagrams):
+    """Generate a PDF report from a knowledge graph.
+
+    Requires: pip install reportlab
+
+    Examples:
+
+        planopticon export pdf knowledge_graph.db
+
+        planopticon export pdf kg.db -o report.pdf --title "Q1 Review"
+
+        planopticon export pdf kg.db --diagrams ./diagrams/
+    """
+    from video_processor.exporters.pdf_export import generate_pdf
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    db_path = Path(db_path)
+    out_path = Path(output) if output else Path.cwd() / "export" / "report.pdf"
+    diagrams_path = Path(diagrams) if diagrams else None
+
+    kg = KnowledgeGraph(db_path=db_path)
+    kg_data = kg.to_dict()
+
+    result = generate_pdf(kg_data, out_path, title=title, diagrams_dir=diagrams_path)
+    click.echo(f"Generated PDF: {result}")
+
+
+@export.command("pptx")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option("-o", "--output", type=click.Path(), default=None, help="Output PPTX file path")
+@click.option("--title", type=str, default=None, help="Presentation title")
+@click.option(
+    "--diagrams",
+    type=click.Path(exists=True),
+    default=None,
+    help="Directory with diagram PNGs to embed",
+)
+def export_pptx(db_path, output, title, diagrams):
+    """Generate a PPTX slide deck from a knowledge graph.
+
+    Requires: pip install python-pptx
+
+    Examples:
+
+        planopticon export pptx knowledge_graph.db
+
+        planopticon export pptx kg.db -o slides.pptx --title "Architecture Overview"
+
+        planopticon export pptx kg.db --diagrams ./diagrams/
+    """
+    from video_processor.exporters.pptx_export import generate_pptx
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    db_path = Path(db_path)
+    out_path = Path(output) if output else Path.cwd() / "export" / "presentation.pptx"
+    diagrams_path = Path(diagrams) if diagrams else None
+
+    kg = KnowledgeGraph(db_path=db_path)
+    kg_data = kg.to_dict()
+
+    result = generate_pptx(kg_data, out_path, title=title, diagrams_dir=diagrams_path)
+    click.echo(f"Generated PPTX: {result}")
+
+
 @export.command("exchange")
 @click.argument("db_path", type=click.Path(exists=True))
 @click.option(
