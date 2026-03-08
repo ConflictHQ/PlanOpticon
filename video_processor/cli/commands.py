@@ -853,7 +853,8 @@ def query(ctx, question, db_path, mode, output_format, interactive, provider, ch
     """Query a knowledge graph. Runs stats if no question given.
 
     Direct commands recognized in QUESTION: stats, entities, relationships,
-    neighbors, sources, provenance, sql. Natural language questions use agentic mode.
+    neighbors, path, clusters, sources, provenance, sql.
+    Natural language questions use agentic mode.
 
     Examples:
 
@@ -951,6 +952,14 @@ def _execute_query(engine, question, mode):
     if cmd == "provenance":
         entity_name = " ".join(parts[1:]) if len(parts) > 1 else ""
         return engine.provenance(entity_name)
+
+    if cmd == "path":
+        if len(parts) < 3:
+            return engine.stats()
+        return engine.shortest_path(start=parts[1], end=parts[2])
+
+    if cmd == "clusters":
+        return engine.clusters()
 
     if cmd == "sql":
         sql_query = " ".join(parts[1:])
