@@ -1,1 +1,1 @@
-"""Document exporters for generating markdown, CSV, and structured notes."""
+"""Document exporters for generating markdown, CSV, PDF, PPTX, and structured notes."""
