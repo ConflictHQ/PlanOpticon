@@ -28,7 +28,7 @@ class TestEnums:
     def test_output_format_values(self):
         assert OutputFormat.markdown == "markdown"
         assert OutputFormat.pdf == "pdf"
-        assert len(OutputFormat) == 6
+        assert len(OutputFormat) == 7
 
 
 class TestTranscriptSegment:
