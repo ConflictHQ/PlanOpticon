@@ -11,7 +11,7 @@ class TestCLIRoot:
         result = runner.invoke(cli, ["--version"])
         assert result.exit_code == 0
         assert "PlanOpticon" in result.output
-        assert "0.4.0" in result.output  # matches @click.version_option
+        assert "0.5.0" in result.output  # matches @click.version_option
 
     def test_help(self):
         runner = CliRunner()
