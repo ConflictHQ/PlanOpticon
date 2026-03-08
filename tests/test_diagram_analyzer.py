@@ -149,18 +149,29 @@ class TestDiagramAnalyzer:
             }
         )
 
+        # Screenshot extraction response for medium-confidence frame
+        screenshot_response = json.dumps(
+            {
+                "content_type": "slide",
+                "caption": "A slide about something",
+                "text_content": "Key Points\n- Item 1\n- Item 2",
+                "entities": ["Item 1", "Item 2"],
+                "topics": ["presentation"],
+            }
+        )
+
         # Calls are interleaved per-frame:
         # call 0: classify frame 0 (high conf)
         # call 1: analyze frame 0 (full analysis)
         # call 2: classify frame 1 (low conf - skip)
         # call 3: classify frame 2 (medium conf)
-        # call 4: caption frame 2 (screengrab)
+        # call 4: screenshot extraction frame 2
         call_sequence = [
             classify_responses[0],  # classify frame 0
             analysis_response,  # analyze frame 0
             classify_responses[1],  # classify frame 1
             classify_responses[2],  # classify frame 2
-            "A slide about something",  # caption frame 2
+            screenshot_response,  # screenshot extraction frame 2
         ]
         call_count = [0]
 
@@ -180,6 +191,10 @@ class TestDiagramAnalyzer:
 
         assert len(captures) == 1
         assert captures[0].frame_index == 2
+        assert captures[0].content_type == "slide"
+        assert captures[0].text_content == "Key Points\n- Item 1\n- Item 2"
+        assert "Item 1" in captures[0].entities
+        assert "presentation" in captures[0].topics
 
         # Check files were saved
         assert (diagrams_dir / "diagram_0.jpg").exists()
@@ -210,7 +225,16 @@ class TestDiagramAnalyzer:
                 )
             if idx == 1:
                 return "This is not valid JSON"  # Analysis fails
-            return "A chart showing data"  # Caption
+            # Screenshot extraction for the fallback screengrab
+            return json.dumps(
+                {
+                    "content_type": "chart",
+                    "caption": "A chart showing data",
+                    "text_content": "Sales Q1 Q2 Q3",
+                    "entities": ["Sales"],
+                    "topics": ["metrics"],
+                }
+            )
 
         mock_pm.analyze_image.side_effect = side_effect
 
@@ -218,3 +242,25 @@ class TestDiagramAnalyzer:
         assert len(diagrams) == 0
         assert len(captures) == 1
         assert captures[0].frame_index == 0
+        assert captures[0].content_type == "chart"
+        assert captures[0].text_content == "Sales Q1 Q2 Q3"
+
+    def test_extract_screenshot_knowledge(self, analyzer, mock_pm, fake_frame):
+        mock_pm.analyze_image.return_value = json.dumps(
+            {
+                "content_type": "code",
+                "caption": "Python source code",
+                "text_content": "def main():\n    print('hello')",
+                "entities": ["Python", "main function"],
+                "topics": ["programming", "source code"],
+            }
+        )
+        result = analyzer.extract_screenshot_knowledge(fake_frame)
+        assert result["content_type"] == "code"
+        assert "Python" in result["entities"]
+        assert "def main" in result["text_content"]
+
+    def test_extract_screenshot_knowledge_failure(self, analyzer, mock_pm, fake_frame):
+        mock_pm.analyze_image.return_value = "not json"
+        result = analyzer.extract_screenshot_knowledge(fake_frame)
+        assert result == {}

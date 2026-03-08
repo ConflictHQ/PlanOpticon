@@ -199,6 +199,38 @@ class KnowledgeGraph:
                     text=f"frame_index={diagram.get('frame_index')}",
                 )
 
+    def process_screenshots(self, screenshots: List[Dict]) -> None:
+        """Process screenshot captures into knowledge graph.
+
+        Extracts entities from text_content and adds screenshot-specific
+        entities from the entities list.
+        """
+        for i, capture in enumerate(screenshots):
+            text_content = capture.get("text_content", "")
+            source = f"screenshot_{i}"
+            content_type = capture.get("content_type", "screenshot")
+
+            # Extract entities from visible text via LLM
+            if text_content:
+                self.add_content(text_content, source)
+
+            # Add explicitly identified entities from vision extraction
+            for entity_name in capture.get("entities", []):
+                if not entity_name or len(entity_name) < 2:
+                    continue
+                if not self._store.has_entity(entity_name):
+                    self._store.merge_entity(
+                        entity_name,
+                        "concept",
+                        [f"Identified in {content_type} screenshot"],
+                        source=source,
+                    )
+                self._store.add_occurrence(
+                    entity_name,
+                    source,
+                    text=f"Visible in {content_type} (frame {capture.get('frame_index', '?')})",
+                )
+
     def to_data(self) -> KnowledgeGraphData:
         """Convert to pydantic KnowledgeGraphData model."""
         nodes = []

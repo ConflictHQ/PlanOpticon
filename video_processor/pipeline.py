@@ -245,6 +245,9 @@ def process_single_video(
         if diagrams:
             diagram_dicts = [d.model_dump() for d in diagrams]
             kg.process_diagrams(diagram_dicts)
+        if screen_captures:
+            capture_dicts = [sc.model_dump() for sc in screen_captures]
+            kg.process_screenshots(capture_dicts)
     # Export JSON copy alongside the SQLite db
     kg.save(kg_json_path)
     pipeline_bar.update(1)

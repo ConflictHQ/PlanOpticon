@@ -117,6 +117,24 @@ class TestScreenCapture:
     def test_basic(self):
         sc = ScreenCapture(frame_index=10, caption="Architecture overview slide", confidence=0.5)
         assert sc.image_path is None
+        assert sc.content_type is None
+        assert sc.text_content is None
+        assert sc.entities == []
+        assert sc.topics == []
+
+    def test_with_extraction(self):
+        sc = ScreenCapture(
+            frame_index=5,
+            caption="Code editor showing Python",
+            confidence=0.5,
+            content_type="code",
+            text_content="def main():\n    print('hello')",
+            entities=["Python", "main function"],
+            topics=["programming"],
+        )
+        assert sc.content_type == "code"
+        assert "Python" in sc.entities
+        assert sc.text_content is not None
 
     def test_round_trip(self):
         sc = ScreenCapture(
@@ -125,6 +143,10 @@ class TestScreenCapture:
             caption="Timeline",
             image_path="captures/capture_0.jpg",
             confidence=0.45,
+            content_type="slide",
+            text_content="Q4 Roadmap",
+            entities=["Roadmap"],
+            topics=["planning"],
         )
         restored = ScreenCapture.model_validate_json(sc.model_dump_json())
         assert restored == sc

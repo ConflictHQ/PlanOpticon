@@ -57,6 +57,27 @@ If any field cannot be determined, use null or empty list.
 # Caption prompt for screengrab fallback
 _CAPTION_PROMPT = "Briefly describe what this image shows in 1-2 sentences."
 
+# Rich screenshot extraction prompt — extracts knowledge from shared screens
+_SCREENSHOT_EXTRACT_PROMPT = """\
+Analyze this screenshot from a video recording. Extract all visible knowledge.
+This is shared screen content (slides, code, documents, browser, terminal, etc.).
+
+Return ONLY a JSON object (no markdown fences):
+{
+  "content_type": "slide"|"code"|"document"|"terminal"|"browser"|"chat"|"other",
+  "caption": "one-sentence description of what is shown",
+  "text_content": "all visible text, preserving structure and line breaks",
+  "entities": ["named things visible: people, technologies, tools, services, \
+projects, libraries, APIs, error codes, URLs, file paths"],
+  "topics": ["concepts or subjects this content is about"]
+}
+
+For text_content: extract ALL readable text — code, titles, bullet points, URLs,
+error messages, terminal output, chat messages, file names. Be thorough.
+For entities: extract specific named things, not generic words.
+For topics: extract 2-5 high-level topics this content relates to.
+"""
+
 
 def _read_image_bytes(image_path: Union[str, Path]) -> bytes:
     """Read image file as bytes."""
@@ -131,6 +152,13 @@ class DiagramAnalyzer:
         """Get a brief caption for a screengrab fallback."""
         image_bytes = _read_image_bytes(image_path)
         return self.pm.analyze_image(image_bytes, _CAPTION_PROMPT, max_tokens=256)
+
+    def extract_screenshot_knowledge(self, image_path: Union[str, Path]) -> dict:
+        """Extract knowledge from a screenshot — text, entities, topics."""
+        image_bytes = _read_image_bytes(image_path)
+        raw = self.pm.analyze_image(image_bytes, _SCREENSHOT_EXTRACT_PROMPT, max_tokens=2048)
+        result = _parse_json_response(raw)
+        return result or {}
 
     def process_frames(
         self,
@@ -314,17 +342,47 @@ class DiagramAnalyzer:
         captures_dir: Optional[Path],
         confidence: float,
     ) -> ScreenCapture:
-        """Save a frame as a captioned screengrab."""
+        """Extract knowledge from a screenshot and save it."""
+        # Try rich extraction first, fall back to caption-only
         caption = ""
+        content_type = None
+        text_content = None
+        entities: List[str] = []
+        topics: List[str] = []
+
         try:
-            caption = self.caption_frame(frame_path)
+            extraction = self.extract_screenshot_knowledge(frame_path)
+            if extraction:
+                caption = extraction.get("caption", "")
+                content_type = extraction.get("content_type")
+                text_content = extraction.get("text_content")
+                raw_entities = extraction.get("entities", [])
+                entities = [str(e) for e in raw_entities] if isinstance(raw_entities, list) else []
+                raw_topics = extraction.get("topics", [])
+                topics = [str(t) for t in raw_topics] if isinstance(raw_topics, list) else []
+                logger.info(
+                    f"Frame {frame_index}: extracted "
+                    f"{len(entities)} entities, "
+                    f"{len(topics)} topics from {content_type}"
+                )
         except Exception as e:
-            logger.warning(f"Caption failed for frame {frame_index}: {e}")
+            logger.warning(
+                f"Screenshot extraction failed for frame "
+                f"{frame_index}: {e}, falling back to caption"
+            )
+            try:
+                caption = self.caption_frame(frame_path)
+            except Exception as e2:
+                logger.warning(f"Caption also failed for frame {frame_index}: {e2}")
 
         sc = ScreenCapture(
             frame_index=frame_index,
             caption=caption,
             confidence=confidence,
+            content_type=content_type,
+            text_content=text_content,
+            entities=entities,
+            topics=topics,
         )
 
         if captures_dir:
