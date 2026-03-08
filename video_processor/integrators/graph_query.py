@@ -313,6 +313,134 @@ class GraphQueryEngine:
             explanation=f"Found {len(locations)} provenance records for '{entity_name}'",
         )
 
+    def shortest_path(self, start: str, end: str, max_depth: int = 6) -> QueryResult:
+        """Find the shortest path between two entities via BFS."""
+        start_entity = self.store.get_entity(start)
+        end_entity = self.store.get_entity(end)
+        if not start_entity:
+            return QueryResult(
+                data=[],
+                query_type="filter",
+                raw_query=f"shortest_path({start!r}, {end!r})",
+                explanation=f"Entity '{start}' not found",
+            )
+        if not end_entity:
+            return QueryResult(
+                data=[],
+                query_type="filter",
+                raw_query=f"shortest_path({start!r}, {end!r})",
+                explanation=f"Entity '{end}' not found",
+            )
+
+        all_rels = self.store.get_all_relationships()
+        # Build adjacency list
+        adj: dict[str, list[tuple[str, dict]]] = {}
+        for rel in all_rels:
+            src_l = rel["source"].lower()
+            tgt_l = rel["target"].lower()
+            adj.setdefault(src_l, []).append((tgt_l, rel))
+            adj.setdefault(tgt_l, []).append((src_l, rel))
+
+        # BFS
+        start_l = start.lower()
+        end_l = end.lower()
+        if start_l == end_l:
+            return QueryResult(
+                data=[start_entity],
+                query_type="filter",
+                raw_query=f"shortest_path({start!r}, {end!r})",
+                explanation="Start and end are the same entity",
+            )
+
+        from collections import deque
+
+        queue: deque[tuple[str, list[dict]]] = deque([(start_l, [])])
+        visited = {start_l}
+
+        while queue:
+            current, path = queue.popleft()
+            if len(path) >= max_depth:
+                continue
+            for neighbor, rel in adj.get(current, []):
+                if neighbor in visited:
+                    continue
+                new_path = path + [rel]
+                if neighbor == end_l:
+                    # Build result: entities + relationships along path
+                    path_entities = [start_entity]
+                    for r in new_path:
+                        path_entities.append(r)
+                        tgt_name = r["target"] if r["source"].lower() == current else r["source"]
+                        e = self.store.get_entity(tgt_name)
+                        if e:
+                            path_entities.append(e)
+                    path_entities.append(end_entity)
+                    # Deduplicate
+                    seen = set()
+                    deduped = []
+                    for item in path_entities:
+                        key = str(item)
+                        if key not in seen:
+                            seen.add(key)
+                            deduped.append(item)
+                    return QueryResult(
+                        data=deduped,
+                        query_type="filter",
+                        raw_query=f"shortest_path({start!r}, {end!r})",
+                        explanation=f"Path found: {len(new_path)} hops",
+                    )
+                visited.add(neighbor)
+                queue.append((neighbor, new_path))
+
+        return QueryResult(
+            data=[],
+            query_type="filter",
+            raw_query=f"shortest_path({start!r}, {end!r})",
+            explanation=f"No path found between '{start}' and '{end}' within {max_depth} hops",
+        )
+
+    def clusters(self) -> QueryResult:
+        """Find connected components (clusters) in the graph."""
+        all_entities = self.store.get_all_entities()
+        all_rels = self.store.get_all_relationships()
+
+        # Build adjacency
+        adj: dict[str, set[str]] = {}
+        for e in all_entities:
+            adj.setdefault(e["name"].lower(), set())
+        for r in all_rels:
+            adj.setdefault(r["source"].lower(), set()).add(r["target"].lower())
+            adj.setdefault(r["target"].lower(), set()).add(r["source"].lower())
+
+        visited: set[str] = set()
+        components: list[list[str]] = []
+
+        for node in adj:
+            if node in visited:
+                continue
+            component: list[str] = []
+            stack = [node]
+            while stack:
+                n = stack.pop()
+                if n in visited:
+                    continue
+                visited.add(n)
+                component.append(n)
+                stack.extend(adj.get(n, set()) - visited)
+            components.append(sorted(component))
+
+        # Sort by size descending
+        components.sort(key=len, reverse=True)
+
+        result = [{"cluster_id": i, "size": len(c), "members": c} for i, c in enumerate(components)]
+
+        return QueryResult(
+            data=result,
+            query_type="filter",
+            raw_query="clusters()",
+            explanation=f"Found {len(components)} clusters",
+        )
+
     def sql(self, query: str) -> QueryResult:
         """Execute a raw SQL query (SQLite only)."""
         result = self.store.raw_query(query)
@@ -352,6 +480,8 @@ class GraphQueryEngine:
             '- {{"action": "entities", "name": "...", "entity_type": "..."}}\n'
             '- {{"action": "relationships", "source": "...", "target": "...", "rel_type": "..."}}\n'
             '- {{"action": "neighbors", "entity_name": "...", "depth": 1}}\n'
+            '- {{"action": "shortest_path", "start": "...", "end": "..."}}\n'
+            '- {{"action": "clusters"}}\n'
             '- {{"action": "stats"}}\n\n'
             f"User question: {question}\n\n"
             "Return ONLY a JSON object with the action. Omit optional fields you don't need."
@@ -400,6 +530,13 @@ class GraphQueryEngine:
                     entity_name=plan.get("entity_name", ""),
                     depth=plan.get("depth", 1),
                 )
+            elif action == "shortest_path":
+                result = self.shortest_path(
+                    start=plan.get("start", ""),
+                    end=plan.get("end", ""),
+                )
+            elif action == "clusters":
+                result = self.clusters()
             elif action == "stats":
                 result = self.stats()
             else:

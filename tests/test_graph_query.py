@@ -273,3 +273,65 @@ class TestAgenticMode:
         result = engine.ask("Gibberish?")
         assert result.data is None
         assert "parse" in result.explanation.lower() or "could not" in result.explanation.lower()
+
+
+class TestGraphAlgorithms:
+    def test_shortest_path(self):
+        store = InMemoryStore()
+        store.merge_entity("A", "concept", [])
+        store.merge_entity("B", "concept", [])
+        store.merge_entity("C", "concept", [])
+        store.add_relationship("A", "B", "connects")
+        store.add_relationship("B", "C", "connects")
+        engine = GraphQueryEngine(store)
+
+        result = engine.shortest_path("A", "C")
+        assert "Path found" in result.explanation
+        assert len(result.data) > 0
+
+    def test_shortest_path_same_entity(self):
+        store = InMemoryStore()
+        store.merge_entity("X", "concept", [])
+        engine = GraphQueryEngine(store)
+
+        result = engine.shortest_path("X", "X")
+        assert "same entity" in result.explanation.lower()
+
+    def test_shortest_path_not_found(self):
+        store = InMemoryStore()
+        store.merge_entity("A", "concept", [])
+        store.merge_entity("Z", "concept", [])
+        engine = GraphQueryEngine(store)
+
+        result = engine.shortest_path("A", "Z")
+        assert "No path found" in result.explanation
+
+    def test_shortest_path_entity_missing(self):
+        store = InMemoryStore()
+        engine = GraphQueryEngine(store)
+
+        result = engine.shortest_path("Missing", "Also Missing")
+        assert "not found" in result.explanation
+
+    def test_clusters(self):
+        store = InMemoryStore()
+        store.merge_entity("A", "concept", [])
+        store.merge_entity("B", "concept", [])
+        store.add_relationship("A", "B", "connected")
+
+        store.merge_entity("X", "concept", [])
+        store.merge_entity("Y", "concept", [])
+        store.add_relationship("X", "Y", "connected")
+
+        store.merge_entity("Lone", "concept", [])
+
+        engine = GraphQueryEngine(store)
+        result = engine.clusters()
+        assert "3 clusters" in result.explanation
+        assert result.data[0]["size"] == 2
+
+    def test_clusters_empty(self):
+        store = InMemoryStore()
+        engine = GraphQueryEngine(store)
+        result = engine.clusters()
+        assert result.data == []
