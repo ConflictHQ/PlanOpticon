@@ -49,7 +49,7 @@ def setup_logging(verbose: bool = False) -> None:
     is_flag=True,
     help="Launch interactive companion REPL",
 )
-@click.version_option("0.4.0", prog_name="PlanOpticon")
+@click.version_option("0.5.0", prog_name="PlanOpticon")
 @click.pass_context
 def cli(ctx, verbose, chat, interactive_flag):
     """PlanOpticon - Comprehensive Video Analysis & Knowledge Extraction Tool."""
