@@ -99,7 +99,7 @@ class DiagramResult(BaseModel):
 
 
 class ScreenCapture(BaseModel):
-    """A screengrab fallback when diagram extraction fails or is uncertain."""
+    """A screen capture with knowledge extraction from shared content."""
 
     frame_index: int = Field(description="Index of the source frame")
     timestamp: Optional[float] = Field(default=None, description="Timestamp in video (seconds)")
@@ -107,6 +107,19 @@ class ScreenCapture(BaseModel):
     image_path: Optional[str] = Field(default=None, description="Relative path to screenshot")
     confidence: float = Field(
         default=0.0, description="Detection confidence that triggered fallback"
+    )
+    content_type: Optional[str] = Field(
+        default=None,
+        description="Content type: slide, code, document, terminal, browser, chat, other",
+    )
+    text_content: Optional[str] = Field(
+        default=None, description="All visible text extracted from the screenshot"
+    )
+    entities: List[str] = Field(
+        default_factory=list, description="Entities identified in the screenshot"
+    )
+    topics: List[str] = Field(
+        default_factory=list, description="Topics or concepts visible in the screenshot"
     )
 
 

@@ -136,6 +136,80 @@ class TestProcessDiagrams:
         assert kg_with_provider._store.has_entity("diagram_1")
 
 
+class TestProcessScreenshots:
+    @pytest.fixture
+    def mock_pm(self):
+        pm = MagicMock()
+        pm.chat.return_value = json.dumps(
+            [
+                {"name": "Python", "type": "technology", "description": "Language"},
+                {"name": "Flask", "type": "technology", "description": "Framework"},
+            ]
+        )
+        return pm
+
+    @pytest.fixture
+    def kg_with_provider(self, mock_pm):
+        return KnowledgeGraph(provider_manager=mock_pm)
+
+    def test_process_screenshots_with_text(self, kg_with_provider, mock_pm):
+        screenshots = [
+            {
+                "text_content": "import flask\napp = Flask(__name__)",
+                "content_type": "code",
+                "entities": ["Flask", "Python"],
+                "frame_index": 3,
+            },
+        ]
+        kg_with_provider.process_screenshots(screenshots)
+        # LLM extraction from text_content
+        mock_pm.chat.assert_called()
+        # Explicitly listed entities should be added
+        assert kg_with_provider._store.has_entity("Flask")
+        assert kg_with_provider._store.has_entity("Python")
+
+    def test_process_screenshots_without_text(self, kg_with_provider, mock_pm):
+        screenshots = [
+            {
+                "text_content": "",
+                "content_type": "other",
+                "entities": ["Docker"],
+                "frame_index": 5,
+            },
+        ]
+        kg_with_provider.process_screenshots(screenshots)
+        # No chat call for empty text
+        mock_pm.chat.assert_not_called()
+        # But explicit entities still added
+        assert kg_with_provider._store.has_entity("Docker")
+
+    def test_process_screenshots_empty_entities(self, kg_with_provider):
+        screenshots = [
+            {
+                "text_content": "",
+                "content_type": "slide",
+                "entities": [],
+                "frame_index": 0,
+            },
+        ]
+        kg_with_provider.process_screenshots(screenshots)
+        # No crash, no entities added
+
+    def test_process_screenshots_filters_short_names(self, kg_with_provider):
+        screenshots = [
+            {
+                "text_content": "",
+                "entities": ["A", "Go", "Python"],
+                "frame_index": 0,
+            },
+        ]
+        kg_with_provider.process_screenshots(screenshots)
+        # "A" is too short (< 2 chars), filtered out
+        assert not kg_with_provider._store.has_entity("A")
+        assert kg_with_provider._store.has_entity("Go")
+        assert kg_with_provider._store.has_entity("Python")
+
+
 class TestToDictFromDict:
     def test_round_trip_empty(self):
         kg = KnowledgeGraph()
