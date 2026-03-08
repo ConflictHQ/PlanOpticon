@@ -1,11 +1,13 @@
 """Tests for all source connectors: import, instantiation, authenticate, list_videos."""
 
+import json
 import os
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from video_processor.sources.base import SourceFile
+from video_processor.sources.base import BaseSource, SourceFile
 
 # ---------------------------------------------------------------------------
 # SourceFile model
@@ -1570,3 +1572,502 @@ class TestMeetRecordingSource:
         from video_processor.sources import ZoomSource
 
         assert ZoomSource is not None
+
+    def test_invalid_lazy_import(self):
+        from video_processor import sources
+
+        with pytest.raises(AttributeError):
+            _ = sources.NonexistentSource
+
+
+# ---------------------------------------------------------------------------
+# BaseSource.download_all
+# ---------------------------------------------------------------------------
+
+
+class TestBaseSourceDownloadAll:
+    def test_download_all_success(self, tmp_path):
+        """download_all should download all files using path when available."""
+
+        class FakeSource(BaseSource):
+            def authenticate(self):
+                return True
+
+            def list_videos(self, **kwargs):
+                return []
+
+            def download(self, file, destination):
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_text(f"content:{file.name}")
+                return destination
+
+        src = FakeSource()
+        files = [
+            SourceFile(name="a.mp4", id="1"),
+            SourceFile(name="b.mp4", id="2", path="subdir/b.mp4"),
+        ]
+        paths = src.download_all(files, tmp_path)
+        assert len(paths) == 2
+        assert (tmp_path / "a.mp4").read_text() == "content:a.mp4"
+        assert (tmp_path / "subdir" / "b.mp4").read_text() == "content:b.mp4"
+
+    def test_download_all_partial_failure(self, tmp_path):
+        """download_all should continue past failures and return successful paths."""
+
+        class PartialFail(BaseSource):
+            def authenticate(self):
+                return True
+
+            def list_videos(self, **kwargs):
+                return []
+
+            def download(self, file, destination):
+                if file.id == "bad":
+                    raise RuntimeError("download failed")
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_text("ok")
+                return destination
+
+        src = PartialFail()
+        files = [
+            SourceFile(name="good.mp4", id="good"),
+            SourceFile(name="bad.mp4", id="bad"),
+            SourceFile(name="also_good.mp4", id="good2"),
+        ]
+        paths = src.download_all(files, tmp_path)
+        assert len(paths) == 2
+
+
+# ---------------------------------------------------------------------------
+# Download & error handling tests
+# ---------------------------------------------------------------------------
+
+
+class TestRSSSourceDownload:
+    @patch("requests.get")
+    def test_download_entry(self, mock_get, tmp_path):
+        from video_processor.sources.rss_source import RSSSource
+
+        xml = (
+            "<rss><channel><item><title>Post 1</title>"
+            "<link>https://example.com/1</link>"
+            "<description>Summary here</description>"
+            "<pubDate>Mon, 01 Jan 2025</pubDate></item></channel></rss>"
+        )
+        mock_get.return_value = MagicMock(text=xml, status_code=200)
+        mock_get.return_value.raise_for_status = MagicMock()
+
+        src = RSSSource(url="https://example.com/feed.xml")
+        with patch.dict("sys.modules", {"feedparser": None}):
+            files = src.list_videos()
+        assert len(files) == 1
+
+        dest = tmp_path / "entry.txt"
+        result = src.download(files[0], dest)
+        assert result.exists()
+        content = result.read_text()
+        assert "Post 1" in content
+        assert "Summary here" in content
+
+    @patch("requests.get")
+    def test_download_not_found(self, mock_get, tmp_path):
+        from video_processor.sources.rss_source import RSSSource
+
+        xml = "<rss><channel></channel></rss>"
+        mock_get.return_value = MagicMock(text=xml, status_code=200)
+        mock_get.return_value.raise_for_status = MagicMock()
+
+        src = RSSSource(url="https://example.com/feed.xml")
+        with patch.dict("sys.modules", {"feedparser": None}):
+            src.list_videos()
+
+        fake = SourceFile(name="missing", id="nonexistent")
+        with pytest.raises(ValueError, match="Entry not found"):
+            src.download(fake, tmp_path / "out.txt")
+
+
+class TestWebSourceDownload:
+    @patch("requests.get")
+    def test_download_saves_text(self, mock_get, tmp_path):
+        from video_processor.sources.web_source import WebSource
+
+        mock_get.return_value = MagicMock(
+            text="<html><body><p>Page content</p></body></html>", status_code=200
+        )
+        mock_get.return_value.raise_for_status = MagicMock()
+
+        src = WebSource(url="https://example.com/page")
+        with patch.dict("sys.modules", {"bs4": None}):
+            file = src.list_videos()[0]
+            dest = tmp_path / "page.txt"
+            result = src.download(file, dest)
+        assert result.exists()
+        assert "Page content" in result.read_text()
+
+    def test_strip_html_tags(self):
+        from video_processor.sources.web_source import _strip_html_tags
+
+        html = "<p>Hello</p><script>evil()</script><style>.x{}</style>"
+        text = _strip_html_tags(html)
+        assert "Hello" in text
+        assert "evil" not in text
+
+
+class TestHackerNewsSourceDownload:
+    @patch("requests.get")
+    def test_download(self, mock_get, tmp_path):
+        from video_processor.sources.hackernews_source import HackerNewsSource
+
+        story = {"title": "Story", "by": "user", "score": 1, "kids": []}
+
+        def side_effect(url, timeout=10):
+            resp = MagicMock()
+            resp.raise_for_status = MagicMock()
+            resp.json.return_value = story
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        src = HackerNewsSource(item_id=12345)
+        file = src.list_videos()[0]
+        dest = tmp_path / "hn.txt"
+        result = src.download(file, dest)
+        assert result.exists()
+        assert "Story" in result.read_text()
+
+    @patch("requests.get")
+    def test_max_comments(self, mock_get):
+        from video_processor.sources.hackernews_source import HackerNewsSource
+
+        story = {"title": "Big", "by": "u", "score": 1, "kids": list(range(100, 110))}
+        comment = {"by": "c", "text": "hi", "kids": []}
+
+        def side_effect(url, timeout=10):
+            resp = MagicMock()
+            resp.raise_for_status = MagicMock()
+            if "/12345.json" in url:
+                resp.json.return_value = story
+            else:
+                resp.json.return_value = comment
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        src = HackerNewsSource(item_id=12345, max_comments=3)
+        text = src.fetch_text()
+        assert text.count("**c**") == 3
+
+    @patch("requests.get")
+    def test_deleted_comments_skipped(self, mock_get):
+        from video_processor.sources.hackernews_source import HackerNewsSource
+
+        story = {"title": "Story", "by": "u", "score": 1, "kids": [200, 201]}
+
+        def side_effect(url, timeout=10):
+            resp = MagicMock()
+            resp.raise_for_status = MagicMock()
+            if "/12345.json" in url:
+                resp.json.return_value = story
+            elif "/200.json" in url:
+                resp.json.return_value = {"deleted": True}
+            elif "/201.json" in url:
+                resp.json.return_value = {"by": "alive", "text": "here", "dead": False}
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        src = HackerNewsSource(item_id=12345)
+        text = src.fetch_text()
+        assert "alive" in text
+        assert text.count("**") == 2  # only the alive comment
+
+
+class TestRedditSourceDownload:
+    @patch("requests.get")
+    def test_download(self, mock_get, tmp_path):
+        from video_processor.sources.reddit_source import RedditSource
+
+        mock_get.return_value = MagicMock(status_code=200)
+        mock_get.return_value.raise_for_status = MagicMock()
+        mock_get.return_value.json.return_value = [
+            {"data": {"children": [{"data": {"title": "Post", "author": "u", "score": 1}}]}},
+            {"data": {"children": []}},
+        ]
+
+        src = RedditSource(url="https://reddit.com/r/test/comments/abc/post")
+        file = src.list_videos()[0]
+        dest = tmp_path / "reddit.txt"
+        result = src.download(file, dest)
+        assert result.exists()
+        assert "Post" in result.read_text()
+
+
+class TestArxivSourceDownload:
+    @patch("requests.get")
+    def test_download_metadata(self, mock_get, tmp_path):
+        from video_processor.sources.arxiv_source import ArxivSource
+
+        xml = """<?xml version="1.0"?>
+        <feed xmlns="http://www.w3.org/2005/Atom">
+          <entry>
+            <title>Paper Title</title>
+            <summary>Abstract text</summary>
+            <author><name>Alice</name></author>
+            <published>2023-01-01</published>
+          </entry>
+        </feed>"""
+
+        mock_get.return_value = MagicMock(text=xml, status_code=200)
+        mock_get.return_value.raise_for_status = MagicMock()
+
+        src = ArxivSource("2301.12345")
+        files = src.list_videos()
+        meta = [f for f in files if f.id.startswith("meta:")][0]
+        dest = tmp_path / "paper.txt"
+        result = src.download(meta, dest)
+        assert result.exists()
+        content = result.read_text()
+        assert "Paper Title" in content
+        assert "Alice" in content
+        assert "Abstract text" in content
+
+
+class TestPodcastSourceDownload:
+    @patch("requests.get")
+    def test_max_episodes(self, mock_get):
+        from video_processor.sources.podcast_source import PodcastSource
+
+        items = "".join(
+            f"<item><title>Ep {i}</title>"
+            f'<enclosure url="https://example.com/ep{i}.mp3" type="audio/mpeg"/></item>'
+            for i in range(20)
+        )
+        xml = f"<rss><channel>{items}</channel></rss>"
+
+        mock_get.return_value = MagicMock(text=xml, status_code=200)
+        mock_get.return_value.raise_for_status = MagicMock()
+
+        src = PodcastSource(feed_url="https://example.com/feed.xml", max_episodes=5)
+        with patch.dict("sys.modules", {"feedparser": None}):
+            files = src.list_videos()
+        assert len(files) == 5
+
+
+# ---------------------------------------------------------------------------
+# Auth edge cases
+# ---------------------------------------------------------------------------
+
+
+class TestZoomSourceAuth:
+    def test_saved_token_valid(self, tmp_path):
+        import time
+
+        from video_processor.sources.zoom_source import ZoomSource
+
+        token_path = tmp_path / "token.json"
+
+        token_path.write_text(
+            json.dumps({"access_token": "valid", "expires_at": time.time() + 3600})
+        )
+        src = ZoomSource(token_path=token_path)
+        assert src._auth_saved_token() is True
+        assert src._access_token == "valid"
+
+    def test_saved_token_expired_no_refresh(self, tmp_path):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        token_path = tmp_path / "token.json"
+        token_path.write_text(json.dumps({"access_token": "old", "expires_at": 0}))
+        src = ZoomSource(token_path=token_path)
+        assert src._auth_saved_token() is False
+
+    @patch("video_processor.sources.zoom_source.requests")
+    def test_server_to_server_success(self, mock_requests, tmp_path):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        mock_requests.post.return_value = MagicMock(status_code=200)
+        mock_requests.post.return_value.raise_for_status = MagicMock()
+        mock_requests.post.return_value.json.return_value = {
+            "access_token": "s2s_tok",
+            "expires_in": 3600,
+        }
+
+        src = ZoomSource(
+            client_id="cid",
+            client_secret="csec",
+            account_id="aid",
+            token_path=tmp_path / "token.json",
+        )
+        assert src._auth_server_to_server() is True
+        assert src._access_token == "s2s_tok"
+
+    def test_server_to_server_no_creds(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        src = ZoomSource(account_id="aid")
+        assert src._auth_server_to_server() is False
+
+    def test_download_no_url_raises(self):
+        from video_processor.sources.zoom_source import ZoomSource
+
+        src = ZoomSource()
+        src._access_token = "tok"
+        file = SourceFile(name="meeting.mp4", id="123")
+        with pytest.raises(ValueError, match="No download URL"):
+            src.download(file, Path("/tmp/out.mp4"))
+
+
+class TestGoogleDriveSourceAuth:
+    def test_is_service_account_true(self, tmp_path):
+        from video_processor.sources.google_drive import GoogleDriveSource
+
+        creds = tmp_path / "sa.json"
+        creds.write_text(json.dumps({"type": "service_account"}))
+        src = GoogleDriveSource(credentials_path=str(creds))
+        assert src._is_service_account() is True
+
+    def test_is_service_account_false(self, tmp_path):
+        from video_processor.sources.google_drive import GoogleDriveSource
+
+        creds = tmp_path / "oauth.json"
+        creds.write_text(json.dumps({"type": "authorized_user"}))
+        src = GoogleDriveSource(credentials_path=str(creds))
+        assert src._is_service_account() is False
+
+    def test_is_service_account_no_file(self):
+        from video_processor.sources.google_drive import GoogleDriveSource
+
+        with patch.dict("os.environ", {}, clear=True):
+            src = GoogleDriveSource(credentials_path=None)
+        src.credentials_path = None
+        assert src._is_service_account() is False
+
+    def test_download_not_authed(self):
+        from video_processor.sources.google_drive import GoogleDriveSource
+
+        src = GoogleDriveSource()
+        with pytest.raises(RuntimeError, match="Not authenticated"):
+            src.download(SourceFile(name="x", id="y"), Path("/tmp/x"))
+
+
+class TestDropboxSourceAuth:
+    def test_init_from_env(self):
+        from video_processor.sources.dropbox_source import DropboxSource
+
+        with patch.dict(
+            "os.environ",
+            {"DROPBOX_ACCESS_TOKEN": "tok", "DROPBOX_APP_KEY": "key"},
+        ):
+            src = DropboxSource()
+        assert src.access_token == "tok"
+        assert src.app_key == "key"
+
+    def test_not_authed_list(self):
+        from video_processor.sources.dropbox_source import DropboxSource
+
+        src = DropboxSource()
+        with pytest.raises(RuntimeError, match="Not authenticated"):
+            src.list_videos()
+
+    def test_not_authed_download(self):
+        from video_processor.sources.dropbox_source import DropboxSource
+
+        src = DropboxSource()
+        with pytest.raises(RuntimeError, match="Not authenticated"):
+            src.download(SourceFile(name="x", id="y"), Path("/tmp/x"))
+
+
+class TestNotionSourceAuth:
+    def test_no_token(self):
+        from video_processor.sources.notion_source import NotionSource
+
+        with patch.dict("os.environ", {}, clear=True):
+            src = NotionSource(token="")
+        assert src.authenticate() is False
+
+    @patch("video_processor.sources.notion_source.requests")
+    def test_auth_success(self, mock_requests):
+        from video_processor.sources.notion_source import NotionSource
+
+        mock_requests.get.return_value = MagicMock(status_code=200)
+        mock_requests.get.return_value.raise_for_status = MagicMock()
+        mock_requests.get.return_value.json.return_value = {"name": "Bot"}
+        mock_requests.RequestException = Exception
+
+        src = NotionSource(token="ntn_valid")
+        assert src.authenticate() is True
+
+    @patch("video_processor.sources.notion_source.requests")
+    def test_auth_failure(self, mock_requests):
+        from video_processor.sources.notion_source import NotionSource
+
+        mock_requests.get.return_value.raise_for_status.side_effect = Exception("401")
+        mock_requests.RequestException = Exception
+
+        src = NotionSource(token="ntn_bad")
+        assert src.authenticate() is False
+
+    def test_extract_property_values(self):
+        from video_processor.sources.notion_source import _extract_property_value
+
+        assert _extract_property_value({"type": "number", "number": 42}) == "42"
+        assert _extract_property_value({"type": "number", "number": None}) == ""
+        assert _extract_property_value({"type": "select", "select": {"name": "High"}}) == "High"
+        assert _extract_property_value({"type": "select", "select": None}) == ""
+        assert _extract_property_value({"type": "checkbox", "checkbox": True}) == "True"
+        assert _extract_property_value({"type": "url", "url": "https://ex.com"}) == "https://ex.com"
+        assert _extract_property_value({"type": "unknown"}) == ""
+
+
+class TestGitHubSourceAuth:
+    def test_authenticate_no_token(self):
+        from video_processor.sources.github_source import GitHubSource
+
+        src = GitHubSource(repo="owner/repo")
+        with patch.dict("os.environ", {}, clear=True):
+            with patch("subprocess.run", side_effect=FileNotFoundError):
+                result = src.authenticate()
+        assert result is True  # works for public repos
+
+    @patch("requests.get")
+    def test_list_excludes_pr_from_issues(self, mock_get):
+        from video_processor.sources.github_source import GitHubSource
+
+        def side_effect(url, **kwargs):
+            resp = MagicMock()
+            resp.ok = True
+            if "/readme" in url:
+                resp.json.return_value = {}
+            elif "/issues" in url:
+                resp.json.return_value = [
+                    {"number": 1, "title": "Bug"},
+                    {"number": 2, "title": "PR as issue", "pull_request": {}},
+                ]
+            elif "/pulls" in url:
+                resp.json.return_value = []
+            return resp
+
+        mock_get.side_effect = side_effect
+
+        src = GitHubSource(repo="o/r")
+        src.authenticate()
+        files = src.list_videos()
+        ids = [f.id for f in files]
+        assert "issue:1" in ids
+        assert "issue:2" not in ids  # excluded because it has pull_request key
+
+
+class TestS3SourceErrors:
+    def test_not_authed_list(self):
+        from video_processor.sources.s3_source import S3Source
+
+        src = S3Source(bucket="test")
+        with pytest.raises(RuntimeError, match="Not authenticated"):
+            src.list_videos()
+
+    def test_not_authed_download(self):
+        from video_processor.sources.s3_source import S3Source
+
+        src = S3Source(bucket="test")
+        with pytest.raises(RuntimeError, match="Not authenticated"):
+            src.download(SourceFile(name="x", id="x"), Path("/tmp/x"))
