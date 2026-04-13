@@ -70,16 +70,16 @@ Core analysis artifacts are stored as JSON files in the `results/` subdirectory.
 | Format | File | Description |
 |--------|------|-------------|
 | SQLite | `results/knowledge_graph.db` | Primary knowledge graph database. SQLite-based, queryable with `planopticon query`. Contains entities, relationships, source provenance, and metadata. This is the preferred format for querying and merging. |
-| JSON | `results/knowledge_graph.json` | JSON export of the knowledge graph. Contains `entities` and `relationships` arrays. Automatically kept in sync with the `.db` file. Used as a fallback when SQLite is not available. |
-| JSON | `results/key_points.json` | Array of extracted key points, each with `text`, `category`, and `confidence` fields. |
-| JSON | `results/action_items.json` | Array of action items, each with `text`, `assignee`, `due_date`, `priority`, and `status` fields. |
+| JSON | `results/knowledge_graph.json` | JSON export of the knowledge graph. Contains `nodes`, `relationships`, and optional `sources` arrays. Automatically kept in sync with the `.db` file. Used as a fallback when SQLite is not available. |
+| JSON | `results/key_points.json` | Array of extracted key points with fields such as `point`, `topic`, `details`, `timestamp`, `source`, and `related_diagrams`. |
+| JSON | `results/action_items.json` | Array of action items with fields such as `action`, `assignee`, `deadline`, `priority`, `context`, and `source`. |
 | JSON | `manifest.json` | Complete run manifest. The single source of truth for the analysis run. Contains video metadata, processing stats, file paths to all outputs, and inline key points, action items, diagram metadata, and screen captures. |
 
 ### Knowledge graph JSON structure
 
 ```json
 {
-  "entities": [
+  "nodes": [
     {
       "name": "Kubernetes",
       "type": "technology",
@@ -93,8 +93,16 @@ Core analysis artifacts are stored as JSON files in the `results/` subdirectory.
     {
       "source": "Kubernetes",
       "target": "Docker",
-      "type": "DEPENDS_ON",
-      "descriptions": ["Kubernetes uses Docker as container runtime"]
+      "type": "depends_on",
+      "content_source": "transcript:recording.mp4",
+      "timestamp": 323.0
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "src1",
+      "source_type": "video",
+      "title": "Architecture Review"
     }
   ]
 }
@@ -164,7 +172,7 @@ The exchange payload includes:
 
 ```json
 {
-  "schema_version": "1.0",
+  "version": "1.0",
   "project": {
     "name": "Sprint Reviews Q4",
     "description": "Knowledge extracted from Q4 sprint review recordings"
@@ -250,7 +258,7 @@ Batch processing produces additional files at the batch root directory, alongsid
 
 | Format | File | Description |
 |--------|------|-------------|
-| JSON | `batch_manifest.json` | Batch-level manifest with aggregate stats, per-video status (completed/failed), error details, and paths to all sub-outputs. |
+| JSON | `manifest.json` | Batch-level manifest at the batch root with aggregate stats, per-video status (completed/failed), error details, and paths to all sub-outputs. |
 | Markdown | `batch_summary.md` | Aggregated summary report with combined key points, action items, entity counts, and a Mermaid diagram of the merged knowledge graph. |
 | SQLite | `knowledge_graph.db` | Merged knowledge graph combining entities and relationships across all successfully processed videos. Uses fuzzy matching and conflict resolution. |
 | JSON | `knowledge_graph.json` | JSON export of the merged knowledge graph. |

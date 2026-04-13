@@ -102,7 +102,7 @@ flowchart TD
     I --> J[Fuzzy matching + conflict resolution]
     J --> K[Generate batch summary]
     K --> L[Write batch manifest]
-    L --> M[batch_manifest.json + batch_summary.md + merged KG]
+    L --> M[manifest.json + batch_summary.md + merged KG]
 ```
 
 ### Knowledge graph merge strategy
