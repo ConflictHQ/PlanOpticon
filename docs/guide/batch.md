@@ -14,7 +14,7 @@ Batch mode:
 2. Processes each video through the full single-video pipeline
 3. Merges knowledge graphs across all videos with fuzzy matching and conflict resolution
 4. Generates a batch summary with aggregated stats and action items
-5. Writes a batch manifest linking to per-video results
+5. Writes a batch manifest (`manifest.json` at the batch root) linking to per-video results
 
 ## File patterns
 
@@ -30,7 +30,7 @@ planopticon batch -i ./recordings -o ./output --pattern "*.mp4,*.mov"
 
 ```
 output/
-├── batch_manifest.json       # Batch-level manifest
+├── manifest.json             # Batch-level manifest
 ├── batch_summary.md          # Aggregated summary
 ├── knowledge_graph.db        # Merged KG across all videos (SQLite, primary)
 ├── knowledge_graph.json      # Merged KG across all videos (JSON export)

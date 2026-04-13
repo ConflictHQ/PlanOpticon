@@ -221,7 +221,7 @@ planopticon analyze -i long-video.mp4 -o ./output --sampling-rate 0.25
 
 #### Batch processing — one video fails
 
-Individual video failures don't stop the batch. Failed videos are logged in the batch manifest with error details. Check `batch_manifest.json` for the specific error.
+Individual video failures don't stop the batch. Failed videos are logged in the batch manifest with error details. Check the batch root `manifest.json` for the specific error.
 
 ### Knowledge graph issues
 

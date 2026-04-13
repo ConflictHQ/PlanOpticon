@@ -5,6 +5,14 @@ All notable changes to PlanOpticon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-04-13
+
+### Fixed
+
+- Aligned public output-format docs with the emitted JSON schemas for `knowledge_graph.json`, `key_points.json`, and `action_items.json`.
+- Updated PlanOpticonExchange docs to use the emitted `version` field instead of `schema_version`.
+- Corrected batch output docs and CLI messaging to point at the batch root `manifest.json`.
+
 ## [0.4.0] - 2026-03-07
 
 ### Added
@@ -65,6 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Markdown and HTML report output.
 - Mermaid diagram generation.
 
+[0.6.0]: https://github.com/ConflictHQ/PlanOpticon/compare/v0.5.0...v0.6.0
 [0.4.0]: https://github.com/ConflictHQ/PlanOpticon/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/ConflictHQ/PlanOpticon/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ConflictHQ/PlanOpticon/compare/v0.1.0...v0.2.0
