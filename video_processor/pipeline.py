@@ -4,6 +4,7 @@ import hashlib
 import json
 import logging
 import mimetypes
+import re
 import time
 from datetime import datetime
 from pathlib import Path
@@ -151,6 +152,48 @@ def process_single_video(
         transcription = pm.transcribe_audio(audio_path, speaker_hints=speaker_hints)
         transcript_text = transcription.get("text", "")
         segments = transcription.get("segments", [])
+
+        # Synthesize segments when the provider returned text but no segments.
+        # Downstream steps (knowledge graph, SRT, batched analysis) require segments
+        # to do anything useful — without this fallback the KG silently produces
+        # 0 batches and ends up empty.
+        #
+        # Use sentence-level granularity when reasonable. For pathological
+        # transcripts (e.g. rapid-fire dialogue with many short interjections)
+        # cap at MAX_SEGMENTS by coalescing groups of sentences. This preserves
+        # KG fidelity on typical recordings while preventing the KG batch count
+        # from exploding on long, choppy ones.
+        if transcript_text and not segments:
+            duration = transcription.get("duration") or audio_props.get("duration") or 0.0
+            sentences = [
+                s.strip() for s in re.split(r"(?<=[.!?])\s+", transcript_text) if s.strip()
+            ]
+            if not sentences:
+                sentences = [transcript_text]
+
+            MAX_SEGMENTS = 600
+            if len(sentences) <= MAX_SEGMENTS:
+                chunks = sentences
+            else:
+                group_size = (len(sentences) + MAX_SEGMENTS - 1) // MAX_SEGMENTS
+                chunks = [
+                    " ".join(sentences[i : i + group_size])
+                    for i in range(0, len(sentences), group_size)
+                ]
+
+            chunk_duration = (duration / len(chunks)) if duration and len(chunks) else 0.0
+            segments = [
+                {
+                    "start": i * chunk_duration,
+                    "end": (i + 1) * chunk_duration,
+                    "text": chunk,
+                }
+                for i, chunk in enumerate(chunks)
+            ]
+            logger.info(
+                f"Provider returned no segments; synthesized {len(segments)} segments "
+                f"from {len(sentences)} sentences (max={MAX_SEGMENTS})"
+            )
 
         # Save transcript files
         transcript_data = {

@@ -96,9 +96,9 @@ class UsageTracker:
             self._models[key] = ModelUsage(provider=provider, model=model)
         usage = self._models[key]
         usage.calls += 1
-        usage.input_tokens += input_tokens
-        usage.output_tokens += output_tokens
-        usage.audio_minutes += audio_minutes
+        usage.input_tokens += input_tokens or 0
+        usage.output_tokens += output_tokens or 0
+        usage.audio_minutes += audio_minutes or 0.0
 
     def start_step(self, name: str) -> None:
         """Start timing a pipeline step."""
