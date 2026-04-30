@@ -151,9 +151,8 @@ class GeminiProvider(BaseProvider):
         lang_hint = f" The audio is in {language}." if language else ""
         prompt = (
             f"Transcribe this audio accurately.{lang_hint} "
-            "Return a JSON object with keys: "
-            '"text" (full transcript), '
-            '"segments" (array of {start, end, text} objects with timestamps in seconds).'
+            "Return only the verbatim transcript text — no JSON, no markdown, "
+            "no preamble, no labels, no commentary."
         )
 
         response = self.client.models.generate_content(
@@ -163,22 +162,34 @@ class GeminiProvider(BaseProvider):
                 prompt,
             ],
             config=types.GenerateContentConfig(
-                max_output_tokens=8192,
-                response_mime_type="application/json",
+                max_output_tokens=65536,
             ),
         )
 
-        # Parse JSON response
+        text = (response.text or "").strip()
+
+        # Defensively unwrap if the model still returned a JSON object despite
+        # being asked for plain text. Walk up to a few wrapper layers — Gemini
+        # has been observed to double-encode.
         import json
 
-        try:
-            data = json.loads(response.text)
-        except (json.JSONDecodeError, TypeError):
-            data = {"text": response.text or "", "segments": []}
+        for _ in range(3):
+            if not text.lstrip().startswith("{"):
+                break
+            try:
+                parsed = json.loads(text)
+            except (json.JSONDecodeError, TypeError):
+                break
+            if not isinstance(parsed, dict) or "text" not in parsed:
+                break
+            inner = parsed.get("text", "")
+            if not isinstance(inner, str):
+                break
+            text = inner.strip()
 
         return {
-            "text": data.get("text", ""),
-            "segments": data.get("segments", []),
+            "text": text,
+            "segments": [],
             "language": language,
             "duration": None,
             "provider": "gemini",
