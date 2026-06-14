@@ -10,6 +10,18 @@ import click
 import colorlog
 from tqdm import tqdm
 
+# Maps the --transcriber choice to a ProviderManager transcription_model.
+# "auto" (None) lets the manager pick: diarization prefs when --diarize is set,
+# else local Whisper / the default transcription preferences.
+_TRANSCRIBER_MODELS = {
+    "auto": None,
+    "deepgram": "nova-3",
+    "elevenlabs": "scribe_v1",
+    "openai": "whisper-1",
+    "gemini": "gemini-2.5-flash",
+    "whisper-local": "whisper-local",
+}
+
 
 def setup_logging(verbose: bool = False) -> None:
     """Set up logging with color formatting."""
@@ -150,6 +162,17 @@ def doctor(ctx):
     default=None,
     help='Comma-separated speaker names for diarization hints (e.g., "Alice,Bob,Carol")',
 )
+@click.option(
+    "--transcriber",
+    type=click.Choice(["auto", "deepgram", "elevenlabs", "openai", "gemini", "whisper-local"]),
+    default="auto",
+    help="Transcription backend (deepgram/elevenlabs support speaker diarization)",
+)
+@click.option(
+    "--diarize/--no-diarize",
+    default=False,
+    help="Label speakers in the transcript (uses Deepgram/ElevenLabs)",
+)
 @click.pass_context
 def analyze(
     ctx,
@@ -168,6 +191,8 @@ def analyze(
     output_format,
     templates_dir,
     speakers,
+    transcriber,
+    diarize,
 ):
     """Analyze a single video and extract structured knowledge."""
     from video_processor.pipeline import process_single_video
@@ -180,6 +205,7 @@ def analyze(
     pm = ProviderManager(
         vision_model=vision_model,
         chat_model=chat_model,
+        transcription_model=_TRANSCRIBER_MODELS.get(transcriber),
         provider=prov,
     )
 
@@ -201,6 +227,7 @@ def analyze(
             use_gpu=use_gpu,
             title=title,
             speaker_hints=speaker_hints,
+            diarize=diarize,
         )
         if output_format == "json":
             click.echo(json.dumps(manifest.model_dump(), indent=2, default=str))
@@ -271,6 +298,17 @@ def analyze(
 @click.option(
     "--recursive/--no-recursive", default=True, help="Recurse into subfolders (default: recursive)"
 )
+@click.option(
+    "--transcriber",
+    type=click.Choice(["auto", "deepgram", "elevenlabs", "openai", "gemini", "whisper-local"]),
+    default="auto",
+    help="Transcription backend (deepgram/elevenlabs support speaker diarization)",
+)
+@click.option(
+    "--diarize/--no-diarize",
+    default=False,
+    help="Label speakers in transcripts (uses Deepgram/ElevenLabs)",
+)
 @click.pass_context
 def batch(
     ctx,
@@ -286,6 +324,8 @@ def batch(
     folder_id,
     folder_path,
     recursive,
+    transcriber,
+    diarize,
 ):
     """Process a folder of videos in batch."""
     from video_processor.integrators.knowledge_graph import KnowledgeGraph
@@ -299,7 +339,12 @@ def batch(
     from video_processor.providers.manager import ProviderManager
 
     prov = None if provider == "auto" else provider
-    pm = ProviderManager(vision_model=vision_model, chat_model=chat_model, provider=prov)
+    pm = ProviderManager(
+        vision_model=vision_model,
+        chat_model=chat_model,
+        transcription_model=_TRANSCRIBER_MODELS.get(transcriber),
+        provider=prov,
+    )
     patterns = [p.strip() for p in pattern.split(",")]
 
     # Handle cloud sources
@@ -374,6 +419,7 @@ def batch(
                 provider_manager=pm,
                 depth=depth,
                 title=f"Analysis of {video_name}",
+                diarize=diarize,
             )
             entry.status = "completed"
             entry.diagrams_count = len(manifest.diagrams)
