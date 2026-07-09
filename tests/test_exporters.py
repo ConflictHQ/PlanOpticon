@@ -155,3 +155,154 @@ class TestPPTXExport:
         monkeypatch.setattr(builtins, "__import__", mock_import)
         with pytest.raises(ImportError):
             generate_pptx(_sample_kg(), tmp_path / "fail.pptx")
+
+
+class TestConflictKGExport:
+    def test_canonical_shape(self):
+        from video_processor.exporters.conflict_kg import FORMAT_ID, to_conflict_kg
+
+        data = to_conflict_kg(_sample_kg())
+        assert data["format"] == FORMAT_ID == "conflict-kg/v1"
+        assert len(data["nodes"]) == 5
+        assert len(data["edges"]) == 4
+
+        ids = [n["id"] for n in data["nodes"]]
+        assert len(ids) == len(set(ids))
+        assert ids == [n["name"].lower() for n in data["nodes"]]
+
+        python = next(n for n in data["nodes"] if n["id"] == "python")
+        assert python["name"] == "Python"
+        assert python["type"] == "technology"
+        assert python["props"]["descriptions"] == ["A programming language"]
+
+    def test_edges_reference_node_ids(self):
+        from video_processor.exporters.conflict_kg import to_conflict_kg
+
+        data = to_conflict_kg(_sample_kg())
+        node_ids = {n["id"] for n in data["nodes"]}
+        for edge in data["edges"]:
+            assert edge["source"] in node_ids
+            assert edge["target"] in node_ids
+
+    def test_edge_props_dropped_when_absent(self):
+        from video_processor.exporters.conflict_kg import to_conflict_kg
+
+        kg = {
+            "nodes": [{"name": "A", "type": "concept"}, {"name": "B", "type": "concept"}],
+            "relationships": [
+                {"source": "A", "target": "B", "type": "related_to", "timestamp": 5.0},
+                {"source": "B", "target": "A", "type": "related_to", "content_source": None},
+            ],
+        }
+        data = to_conflict_kg(kg)
+        assert data["edges"][0]["props"] == {"timestamp": 5.0}
+        assert data["edges"][1]["props"] == {}
+
+    def test_json_writer(self, tmp_path):
+        import json
+
+        from video_processor.exporters.conflict_kg import to_conflict_kg, write_conflict_kg_json
+
+        out = tmp_path / "conflict_kg.json"
+        write_conflict_kg_json(_sample_kg(), out)
+        assert json.loads(out.read_text()) == to_conflict_kg(_sample_kg())
+
+    def test_sqlite_writer_schema_and_rows(self, tmp_path):
+        import json
+        import sqlite3
+
+        from video_processor.exporters.conflict_kg import write_conflict_kg_sqlite
+
+        out = tmp_path / "conflict_kg.db"
+        write_conflict_kg_sqlite(_sample_kg(), out)
+
+        conn = sqlite3.connect(out)
+        try:
+            tables = {
+                r[0]
+                for r in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                ).fetchall()
+            }
+            assert tables == {"nodes", "edges"}
+            indexes = {
+                r[0]
+                for r in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx%'"
+                ).fetchall()
+            }
+            assert indexes == {"idx_edges_source", "idx_edges_target"}
+
+            nodes = conn.execute("SELECT id, name, type, props FROM nodes ORDER BY id").fetchall()
+            assert len(nodes) == 5
+            assert all(json.loads(props) is not None for *_rest, props in nodes)
+
+            edges = conn.execute("SELECT source, target, type FROM edges").fetchall()
+            assert len(edges) == 4
+            node_ids = {n[0] for n in nodes}
+            assert all(src in node_ids and tgt in node_ids for src, tgt, _ in edges)
+        finally:
+            conn.close()
+
+    def test_sqlite_matches_json_encoding(self, tmp_path):
+        import json
+        import sqlite3
+
+        from video_processor.exporters.conflict_kg import (
+            to_conflict_kg,
+            write_conflict_kg_sqlite,
+        )
+
+        out = tmp_path / "conflict_kg.db"
+        write_conflict_kg_sqlite(_sample_kg(), out)
+        canonical = to_conflict_kg(_sample_kg())
+
+        conn = sqlite3.connect(out)
+        try:
+            nodes = [
+                {"id": i, "name": n, "type": t, "props": json.loads(p)}
+                for i, n, t, p in conn.execute("SELECT id, name, type, props FROM nodes")
+            ]
+            edges = [
+                {"source": s, "target": t, "type": ty, "props": json.loads(p)}
+                for s, t, ty, p in conn.execute("SELECT source, target, type, props FROM edges")
+            ]
+        finally:
+            conn.close()
+        assert nodes == canonical["nodes"]
+        assert edges == canonical["edges"]
+
+    def test_cli_export_conflict_kg(self, tmp_path):
+        import json
+
+        from click.testing import CliRunner
+
+        from video_processor.cli.commands import cli
+        from video_processor.integrators.graph_store import SQLiteStore
+
+        db = tmp_path / "knowledge_graph.db"
+        store = SQLiteStore(db)
+        store.merge_entity("Alice", "person", ["Engineer"])
+        store.merge_entity("Python", "technology", [])
+        store.add_relationship("Alice", "Python", "uses")
+
+        runner = CliRunner()
+        out_json = tmp_path / "out.json"
+        result = runner.invoke(cli, ["export", "conflict-kg", str(db), "-o", str(out_json)])
+        assert result.exit_code == 0, result.output
+        data = json.loads(out_json.read_text())
+        assert data["format"] == "conflict-kg/v1"
+        assert {n["id"] for n in data["nodes"]} == {"alice", "python"}
+        assert data["edges"][0] == {
+            "source": "alice",
+            "target": "python",
+            "type": "uses",
+            "props": {},
+        }
+
+        out_db = tmp_path / "out.db"
+        result = runner.invoke(
+            cli, ["export", "conflict-kg", str(db), "--sqlite", "-o", str(out_db)]
+        )
+        assert result.exit_code == 0, result.output
+        assert out_db.exists()

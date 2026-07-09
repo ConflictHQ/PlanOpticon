@@ -10,6 +10,7 @@ PlanOpticon provides multiple ways to export knowledge graph data into formats s
 | Obsidian vault | `planopticon export obsidian` | No | YAML frontmatter, `[[wiki-links]]`, tag pages, Map of Content |
 | Notion-compatible | `planopticon export notion` | No | Callout blocks, CSV database for bulk import |
 | PlanOpticonExchange JSON | `planopticon export exchange` | No | Canonical interchange format for merging and sharing |
+| conflict-kg/v1 | `planopticon export conflict-kg` | No | Cross-tool graph interchange format (JSON or SQLite) |
 | GitHub wiki | `planopticon wiki generate` | No | Home, Sidebar, entity pages, type indexes |
 | GitHub wiki push | `planopticon wiki push` | Git auth | Push generated wiki to a GitHub repo |
 
@@ -561,6 +562,68 @@ schema = PlanOpticonExchange.json_schema()
 ```
 
 This returns the full JSON Schema for validation and documentation purposes.
+
+## conflict-kg/v1 format
+
+`conflict-kg/v1` is the canonical knowledge-graph interchange format shared by
+all Conflict tools (PlanOpticon, Navegador, portal viewers) — a graph exported
+from any tool loads anywhere with no adapter. One schema, two encodings: JSON
+for small and medium graphs, SQLite for large ones (the SQLite file is
+Cloudflare D1-compatible for read-only portal queries).
+
+### CLI usage
+
+```
+planopticon export conflict-kg DB_PATH [OPTIONS]
+```
+
+| Option | Short | Default | Description |
+|--------|-------|---------|-------------|
+| `--output` | `-o` | `./conflict_kg.json` (or `.db`) | Output file path |
+| `--sqlite` | | off | Emit the SQLite encoding instead of JSON |
+
+**Examples:**
+
+```bash
+# JSON encoding
+planopticon export conflict-kg knowledge_graph.db
+
+# SQLite encoding for large graphs / D1
+planopticon export conflict-kg knowledge_graph.db --sqlite -o graph.db
+```
+
+### Schema
+
+```json
+{
+  "format": "conflict-kg/v1",
+  "nodes": [
+    { "id": "python", "name": "Python", "type": "technology", "props": {} }
+  ],
+  "edges": [
+    { "source": "alice", "target": "python", "type": "uses", "props": {} }
+  ]
+}
+```
+
+- `id` is stable and unique — the entity's case-insensitive name, matching the
+  store's identity key.
+- Edges reference node `id`s (not names or prop dicts), so loaders are O(1).
+- Everything beyond the core fields lives under `props` (descriptions and
+  occurrences for nodes; `content_source` and `timestamp` for edges).
+
+The SQLite encoding is the same contract as two tables:
+
+```sql
+CREATE TABLE nodes (id TEXT PRIMARY KEY, name TEXT, type TEXT, props JSON);
+CREATE TABLE edges (source TEXT, target TEXT, type TEXT, props JSON);
+CREATE INDEX idx_edges_source ON edges(source);
+CREATE INDEX idx_edges_target ON edges(target);
+```
+
+The legacy `knowledge_graph.json` shape (`{nodes, relationships}`) is unchanged
+and remains supported for existing consumers; new integrations should read
+conflict-kg/v1.
 
 ## Python API for all exporters
 

@@ -1773,6 +1773,54 @@ def export_exchange(db_path, output, project_name, project_desc):
     )
 
 
+@export.command("conflict-kg")
+@click.argument("db_path", type=click.Path(exists=True))
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(),
+    default=None,
+    help="Output file path (default: conflict_kg.json or conflict_kg.db)",
+)
+@click.option(
+    "--sqlite",
+    "as_sqlite",
+    is_flag=True,
+    default=False,
+    help="Emit the SQLite encoding (for large graphs / Cloudflare D1)",
+)
+def export_conflict_kg(db_path, output, as_sqlite):
+    """Export a knowledge graph in the canonical conflict-kg/v1 format.
+
+    Examples:
+
+        planopticon export conflict-kg knowledge_graph.db
+
+        planopticon export conflict-kg knowledge_graph.db --sqlite -o graph.db
+    """
+    from video_processor.exporters.conflict_kg import (
+        write_conflict_kg_json,
+        write_conflict_kg_sqlite,
+    )
+    from video_processor.integrators.knowledge_graph import KnowledgeGraph
+
+    kg = KnowledgeGraph(db_path=Path(db_path))
+    kg_data = kg.to_dict()
+
+    if as_sqlite:
+        out_path = Path(output) if output else Path.cwd() / "conflict_kg.db"
+        write_conflict_kg_sqlite(kg_data, out_path)
+    else:
+        out_path = Path(output) if output else Path.cwd() / "conflict_kg.json"
+        write_conflict_kg_json(kg_data, out_path)
+
+    click.echo(
+        f"Exported conflict-kg/v1 to {out_path} "
+        f"({len(kg_data.get('nodes', []))} nodes, "
+        f"{len(kg_data.get('relationships', []))} edges)"
+    )
+
+
 @cli.group()
 def wiki():
     """Generate and push GitHub wikis from knowledge graphs."""
