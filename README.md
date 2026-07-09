@@ -12,7 +12,7 @@ PlanOpticon processes video recordings, documents, and 20+ online sources into s
 
 ## Features
 
-- **15+ AI providers** -- OpenAI, Anthropic, Gemini, Ollama, Azure, Together, Fireworks, Cerebras, xAI, Bedrock, Vertex, Mistral, Cohere, AI21, HuggingFace, Qianfan, and LiteLLM. Defaults to cheap models (Haiku, GPT-4o-mini, Gemini Flash).
+- **15+ AI providers** -- OpenAI, Anthropic, Gemini, Ollama, Azure, Together, Fireworks, Cerebras, xAI, Bedrock, Vertex, Mistral, Cohere, AI21, HuggingFace, Replicate, Qianfan, and LiteLLM. Defaults to cheap models (Haiku, GPT-4o-mini, Gemini Flash).
 - **20+ source connectors** -- YouTube, web pages, GitHub, Reddit, HackerNews, RSS, podcasts, arXiv, S3, Google Workspace, Microsoft 365, Obsidian, Notion, Apple Notes, Zoom, Teams, Google Meet, and more.
 - **Planning agent** -- 11 skills including project plans, PRDs, roadmaps, task breakdowns, and GitHub integration.
 - **Interactive companion** -- Chat REPL with 15 slash commands, auto-discovery of workspace knowledge, and runtime provider/model switching.

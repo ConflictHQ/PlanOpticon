@@ -30,6 +30,7 @@ from video_processor.providers.huggingface_provider import HuggingFaceProvider
 from video_processor.providers.litellm_provider import LiteLLMProvider
 from video_processor.providers.mistral_provider import MistralProvider
 from video_processor.providers.qianfan_provider import QianfanProvider
+from video_processor.providers.replicate_provider import ReplicateProvider
 from video_processor.providers.vertex_provider import VertexProvider
 from video_processor.providers.whisper_local import WhisperLocal
 
@@ -915,3 +916,255 @@ class TestWhisperLocal:
             wl = WhisperLocal(model_size="base", device="cpu")
             with pytest.raises(ImportError, match="openai-whisper"):
                 wl.transcribe(audio)
+
+
+# ---------------------------------------------------------------------------
+# Replicate (no SDK: raw HTTP against the prediction API -> patch module requests)
+# ---------------------------------------------------------------------------
+
+
+def _replicate_response(payload, raise_exc=None):
+    """Build a stand-in for the requests.Response the prediction API returns."""
+    resp = MagicMock()
+    resp.json.return_value = payload
+    if raise_exc is not None:
+        resp.raise_for_status.side_effect = raise_exc
+    else:
+        resp.raise_for_status.return_value = None
+    return resp
+
+
+class TestReplicateProvider:
+    @patch.dict("os.environ", {}, clear=True)
+    def test_construction_requires_token(self):
+        with pytest.raises(ValueError, match="REPLICATE_API_TOKEN"):
+            ReplicateProvider()
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_chat_maps_request_and_response(self, mock_requests):
+        mock_requests.post.return_value = _replicate_response(
+            {"status": "succeeded", "output": ["meta", " says", " hi"]}
+        )
+        provider = ReplicateProvider(api_key="k")
+        out = provider.chat(USER_MSG, max_tokens=321, temperature=0.2)
+
+        assert out == "meta says hi"  # list of chunks joined
+        args, kwargs = mock_requests.post.call_args
+        assert (
+            args[0]
+            == "https://api.replicate.com/v1/models/meta/meta-llama-3-8b-instruct/predictions"
+        )
+        assert kwargs["headers"]["Authorization"] == "Bearer k"
+        assert kwargs["headers"]["Prefer"] == "wait"  # blocking prediction
+        model_input = kwargs["json"]["input"]
+        assert model_input["prompt"] == "hello"  # messages flattened to prompt
+        assert model_input["max_tokens"] == 321
+        assert model_input["temperature"] == 0.2
+        assert "system_prompt" not in model_input
+        assert provider._last_usage == {"input_tokens": 0, "output_tokens": 0}
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_chat_pulls_system_message_into_system_prompt(self, mock_requests):
+        mock_requests.post.return_value = _replicate_response(
+            {"status": "succeeded", "output": ["ok"]}
+        )
+        provider = ReplicateProvider(api_key="k")
+        provider.chat(
+            [
+                {"role": "system", "content": "be brief"},
+                {"role": "user", "content": "hello"},
+            ]
+        )
+        model_input = mock_requests.post.call_args.kwargs["json"]["input"]
+        assert model_input["prompt"] == "hello"
+        assert model_input["system_prompt"] == "be brief"
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_analyze_image_builds_data_uri_input(self, mock_requests):
+        mock_requests.post.return_value = _replicate_response(
+            {"status": "succeeded", "output": ["a", " cat"]}
+        )
+        provider = ReplicateProvider(api_key="k")
+        out = provider.analyze_image(b"\x89PNG", "what is this?")
+
+        assert out == "a cat"
+        args, kwargs = mock_requests.post.call_args
+        assert args[0] == "https://api.replicate.com/v1/models/yorickvp/llava-13b/predictions"
+        model_input = kwargs["json"]["input"]
+        assert model_input["prompt"] == "what is this?"
+        assert (
+            model_input["image"]
+            == "data:image/jpeg;base64," + base64.b64encode(b"\x89PNG").decode()
+        )
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_transcribe_immediate_success(self, mock_requests, tmp_path):
+        audio = tmp_path / "a.wav"
+        audio.write_bytes(b"\x00\x01\x02")
+        mock_requests.post.return_value = _replicate_response(
+            {
+                "id": "pred1",
+                "status": "succeeded",
+                "output": {
+                    "transcription": "  hello world  ",
+                    "detected_language": "english",
+                    "segments": [
+                        {"start": 0.0, "end": 1.5, "text": " hello world "},
+                        "not-a-dict-segment",  # malformed entries are skipped
+                    ],
+                },
+            }
+        )
+        provider = ReplicateProvider(api_key="k")
+        result = provider.transcribe_audio(audio)
+
+        assert result["text"] == "hello world"  # stripped
+        assert result["language"] == "english"
+        assert result["segments"] == [{"start": 0.0, "end": 1.5, "text": "hello world"}]
+        assert result["duration"] == 1.5  # last segment end
+        assert result["provider"] == "replicate"
+        assert result["model"] == "openai/whisper"  # default
+        mock_requests.get.assert_not_called()  # terminal already -> no polling
+        model_input = mock_requests.post.call_args.kwargs["json"]["input"]
+        assert model_input["audio"].startswith("data:audio/wav;base64,")
+        assert base64.b64encode(b"\x00\x01\x02").decode() in model_input["audio"]
+
+    @patch("video_processor.providers.replicate_provider.time")
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_transcribe_polls_until_success(self, mock_requests, mock_time, tmp_path):
+        audio = tmp_path / "a.mp3"
+        audio.write_bytes(b"\x00")
+        mock_requests.post.return_value = _replicate_response(
+            {"id": "pred2", "status": "processing", "output": None}
+        )
+        mock_requests.get.return_value = _replicate_response(
+            {
+                "id": "pred2",
+                "status": "succeeded",
+                "output": {"transcription": "done", "segments": []},
+            }
+        )
+        provider = ReplicateProvider(api_key="k")
+        result = provider.transcribe_audio(audio, language="en")
+
+        assert result["text"] == "done"
+        assert result["language"] == "en"  # falls back to the passed language
+        assert result["segments"] == []
+        mock_requests.get.assert_called_once()  # polled once
+        assert mock_requests.get.call_args.args[0].endswith("/predictions/pred2")
+        mock_time.sleep.assert_called()  # slept between polls
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_failed_prediction_raises_with_detail(self, mock_requests):
+        mock_requests.post.return_value = _replicate_response(
+            {"id": "p", "status": "failed", "error": "CUDA out of memory"}
+        )
+        provider = ReplicateProvider(api_key="k")
+        with pytest.raises(RuntimeError, match="CUDA out of memory"):
+            provider.chat(USER_MSG)
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_http_error_propagates(self, mock_requests):
+        mock_requests.post.return_value = _replicate_response(
+            {"status": "succeeded", "output": []},
+            raise_exc=RuntimeError("500 Server Error"),
+        )
+        provider = ReplicateProvider(api_key="k")
+        with pytest.raises(RuntimeError, match="500"):
+            provider.chat(USER_MSG)
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_strips_replicate_prefix(self, mock_requests, tmp_path):
+        audio = tmp_path / "a.wav"
+        audio.write_bytes(b"\x00")
+        mock_requests.post.return_value = _replicate_response(
+            {"id": "p", "status": "succeeded", "output": {"transcription": "x", "segments": []}}
+        )
+        provider = ReplicateProvider(api_key="k")
+        result = provider.transcribe_audio(audio, model="replicate/openai/whisper")
+
+        # replicate/openai/whisper -> owner "openai", name "whisper"
+        assert (
+            mock_requests.post.call_args.args[0]
+            == "https://api.replicate.com/v1/models/openai/whisper/predictions"
+        )
+        assert result["model"] == "openai/whisper"
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_list_models_maps_and_infers_capabilities(self, mock_requests):
+        mock_requests.get.return_value = _replicate_response(
+            {
+                "results": [
+                    {
+                        "owner": "openai",
+                        "name": "whisper",
+                        "description": "Whisper speech recognition",
+                    },
+                    {
+                        "owner": "yorickvp",
+                        "name": "llava-13b",
+                        "description": "LLaVA vision model",
+                    },
+                    {
+                        "owner": "meta",
+                        "name": "meta-llama-3-8b-instruct",
+                        "description": "Llama 3 chat",
+                    },
+                    {"owner": "", "name": "orphan", "description": "no owner"},
+                ]
+            }
+        )
+        provider = ReplicateProvider(api_key="k")
+        models = provider.list_models()
+
+        assert all(isinstance(m, ModelInfo) for m in models)
+        assert all(m.provider == "replicate" for m in models)
+        assert len(models) == 3  # the malformed (owner-less) entry is skipped
+        by_id = {m.id: m for m in models}
+        assert by_id["openai/whisper"].capabilities == ["audio"]
+        assert by_id["yorickvp/llava-13b"].capabilities == ["vision"]
+        assert by_id["meta/meta-llama-3-8b-instruct"].capabilities == ["chat"]
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_list_models_returns_empty_on_error(self, mock_requests):
+        mock_requests.get.side_effect = ConnectionError("no network")
+        provider = ReplicateProvider(api_key="k")
+        assert provider.list_models() == []
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_chat_handles_non_list_output(self, mock_requests):
+        # Some models return a single string (or null) instead of a chunk list.
+        provider = ReplicateProvider(api_key="k")
+        mock_requests.post.return_value = _replicate_response(
+            {"status": "succeeded", "output": "single string reply"}
+        )
+        assert provider.chat(USER_MSG) == "single string reply"
+        mock_requests.post.return_value = _replicate_response(
+            {"status": "succeeded", "output": None}
+        )
+        assert provider.chat(USER_MSG) == ""
+
+    @patch("video_processor.providers.replicate_provider.requests")
+    def test_transcribe_handles_bare_string_output(self, mock_requests, tmp_path):
+        # Some ASR models return just the transcript string, not a dict.
+        audio = tmp_path / "a.wav"
+        audio.write_bytes(b"\x00")
+        mock_requests.post.return_value = _replicate_response(
+            {"id": "p", "status": "succeeded", "output": "  bare transcript  "}
+        )
+        provider = ReplicateProvider(api_key="k")
+        result = provider.transcribe_audio(audio, language="fr")
+
+        assert result["text"] == "bare transcript"
+        assert result["segments"] == []
+        assert result["language"] == "fr"
+        assert result["duration"] is None
+
+    def test_registration_metadata(self):
+        info = ProviderRegistry.all_registered()["replicate"]
+        assert info["class"] is ReplicateProvider
+        assert info["env_var"] == "REPLICATE_API_TOKEN"
+        assert info["model_prefixes"] == ["replicate/"]
+        assert info["default_models"]["chat"] == "meta/meta-llama-3-8b-instruct"
+        assert info["default_models"]["vision"] == "yorickvp/llava-13b"
+        assert info["default_models"]["audio"] == "openai/whisper"
