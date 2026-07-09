@@ -39,6 +39,7 @@ def _ensure_providers_registered() -> None:
     import video_processor.providers.gemini_provider  # noqa: F401
     import video_processor.providers.ollama_provider  # noqa: F401
     import video_processor.providers.openai_provider  # noqa: F401
+    import video_processor.providers.replicate_provider  # noqa: F401
     import video_processor.providers.together_provider  # noqa: F401
     import video_processor.providers.xai_provider  # noqa: F401
 

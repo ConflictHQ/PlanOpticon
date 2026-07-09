@@ -16,6 +16,7 @@ PlanOpticon supports multiple AI providers through a unified abstraction layer. 
 | Fireworks AI | Llama, Mixtral, etc. | Llava | — | `FIREWORKS_API_KEY` |
 | Cerebras | Llama (fast inference) | — | — | `CEREBRAS_API_KEY` |
 | xAI | Grok | Grok | — | `XAI_API_KEY` |
+| Replicate | Llama 3, etc. | Llava | Whisper | `REPLICATE_API_TOKEN` |
 | Ollama (local) | Any installed model | llava, moondream, etc. | — (use local Whisper) | `OLLAMA_HOST` |
 
 ## Default models
