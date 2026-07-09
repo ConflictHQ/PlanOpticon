@@ -108,14 +108,24 @@ class TestInitWizard:
         assert "setup wizard" in result.output.lower() or "wizard" in result.output.lower()
 
     def test_wizard_provider_selection(self):
-        """Test the wizard runs with simulated input."""
+        """Test the wizard runs with simulated input.
+
+        Hermeticity: the canned input assumes a first-run environment with no
+        provider configured, so we (1) clear os.environ — otherwise an ambient
+        OPENAI_API_KEY (which any provider import pulls in via load_dotenv from a
+        developer .env) flips the wizard to an "Update it?" prompt the input can't
+        answer — and (2) use isolated_filesystem so the wizard writes .env into a
+        throwaway cwd instead of the repo root (a leftover .env there would add an
+        "Append new keys?" prompt). Either leak causes stdin EOF -> Abort (exit 1).
+        """
         runner = CliRunner()
-        # Select provider 1 (OpenAI), enter a key, decline additional providers
-        result = runner.invoke(
-            cli,
-            ["init"],
-            input="1\nsk-test-key-1234567890\nn\n",
-        )
+        with patch.dict(os.environ, {}, clear=True), runner.isolated_filesystem():
+            # Select provider 1 (OpenAI), enter a key, decline additional providers
+            result = runner.invoke(
+                cli,
+                ["init"],
+                input="1\nsk-test-key-1234567890\nn\n",
+            )
         assert result.exit_code == 0
         assert "Setup complete" in result.output
 
