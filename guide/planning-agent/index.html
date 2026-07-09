@@ -1,0 +1,2803 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered video analysis and knowledge extraction">
+      
+      
+        <meta name="author" content="CONFLICT LLC">
+      
+      
+        <link rel="canonical" href="https://planopticon.dev/guide/planning-agent/">
+      
+      
+        <link rel="prev" href="../companion/">
+      
+      
+        <link rel="next" href="../authentication/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Planning Agent - PlanOpticon</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../assets/css/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#planning-agent" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PlanOpticon" class="md-header__button md-logo" aria-label="PlanOpticon" data-md-component="logo">
+      
+  <img src="../../assets/images/conflict-logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PlanOpticon
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Planning Agent
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ConflictHQ/PlanOpticon" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ConflictHQ/PlanOpticon
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../single-video/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../use-cases/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Use Cases
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../cli-reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/models/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ & Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PlanOpticon" class="md-nav__button md-logo" aria-label="PlanOpticon" data-md-component="logo">
+      
+  <img src="../../assets/images/conflict-logo.svg" alt="logo">
+
+    </a>
+    PlanOpticon
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ConflictHQ/PlanOpticon" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ConflictHQ/PlanOpticon
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../single-video/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Video Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../document-ingestion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Document Ingestion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloud-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloud Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../knowledge-graphs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knowledge Graphs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../companion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive Companion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planning Agent
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planning Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How It Works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-context-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Context Assembly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-skill-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Skill Selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AgentContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Artifacts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#skills-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skills Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skills Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#project_plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        project_plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        prd
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        roadmap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task_breakdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        task_breakdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github_issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        github_issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requirements_chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        requirements_chat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#doc_generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        doc_generator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#artifact_export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        artifact_export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli_adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cli_adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notes_export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wiki_generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        wiki_generator
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-shot-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One-shot execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-artifacts-to-disk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export artifacts to disk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-and-model-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider and model options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auto-discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-skills-from-the-companion-repl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Skills from the Companion REPL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-video-to-project-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From video to project plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-planning-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive planning session
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skill-chaining" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill chaining
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export & Documents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-formats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../use-cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Use Cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processing Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/analyzers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analyzers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent & Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ & Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How It Works">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-context-assembly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Context Assembly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-skill-selection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Skill Selection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agentcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AgentContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Artifacts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#skills-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skills Reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skills Reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#project_plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        project_plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#prd" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        prd
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        roadmap
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#task_breakdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        task_breakdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github_issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        github_issues
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requirements_chat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        requirements_chat
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#doc_generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        doc_generator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#artifact_export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        artifact_export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli_adapter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cli_adapter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notes_export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notes_export
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#wiki_generator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        wiki_generator
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-shot-execution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One-shot execution
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#export-artifacts-to-disk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Export artifacts to disk
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#provider-and-model-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider and model options
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#auto-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auto-discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#using-skills-from-the-companion-repl" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using Skills from the Companion REPL
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-workflows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example Workflows
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Example Workflows">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-video-to-project-plan" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From video to project plan
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interactive-planning-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interactive planning session
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skill-chaining" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skill chaining
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="planning-agent">Planning Agent<a class="headerlink" href="#planning-agent" title="Permanent link">&para;</a></h1>
+<p>The Planning Agent is PlanOpticon's AI-powered system for synthesizing knowledge graph content into structured planning artifacts. It takes extracted entities and relationships from video analyses, document ingestions, and other sources, then uses LLM reasoning to produce project plans, PRDs, roadmaps, task breakdowns, GitHub issues, and more.</p>
+<hr />
+<h2 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h2>
+<p>The Planning Agent operates through a three-stage pipeline:</p>
+<h3 id="1-context-assembly">1. Context Assembly<a class="headerlink" href="#1-context-assembly" title="Permanent link">&para;</a></h3>
+<p>The agent gathers context from all available sources:</p>
+<ul>
+<li><strong>Knowledge graph</strong> -- entity counts, types, relationships, and planning entities from the loaded KG</li>
+<li><strong>Query engine</strong> -- used to pull stats, entity lists, and relationship data for prompt construction</li>
+<li><strong>Provider manager</strong> -- the configured LLM provider used for generation</li>
+<li><strong>Prior artifacts</strong> -- any artifacts already generated in the session (skills can chain off each other)</li>
+<li><strong>Conversation history</strong> -- accumulated chat messages when running in interactive mode</li>
+</ul>
+<p>This context is bundled into an <code>AgentContext</code> dataclass that is shared across all skills.</p>
+<h3 id="2-skill-selection">2. Skill Selection<a class="headerlink" href="#2-skill-selection" title="Permanent link">&para;</a></h3>
+<p>When the agent receives a user request, it determines which skills to run:</p>
+<p><strong>LLM-driven planning (with provider).</strong> The agent constructs a prompt that includes the knowledge base summary, all available skill names and descriptions, and the user's request. The LLM returns a JSON array of skill names to execute in order, along with any parameters. For example, given "Create a project plan and break it into tasks," the LLM might select <code>["project_plan", "task_breakdown"]</code>.</p>
+<p><strong>Keyword fallback (without provider).</strong> If no LLM provider is available, the agent falls back to simple keyword matching. It splits each skill name on underscores and checks whether any of those words appear in the user's request. For example, the request "generate a roadmap" would match the <code>roadmap</code> skill because "roadmap" appears in both the request and the skill name.</p>
+<h3 id="3-execution">3. Execution<a class="headerlink" href="#3-execution" title="Permanent link">&para;</a></h3>
+<p>Selected skills are executed sequentially. Each skill:</p>
+<ol>
+<li>Checks <code>can_execute()</code> to verify the required context is available (by default, both a knowledge graph and an LLM provider must be present)</li>
+<li>Pulls relevant data from the knowledge graph via the query engine</li>
+<li>Constructs a detailed prompt for the LLM with extracted context</li>
+<li>Calls the LLM and parses the response</li>
+<li>Returns an <code>Artifact</code> object containing the generated content</li>
+</ol>
+<p>Each artifact is appended to <code>context.artifacts</code>, making it available to subsequent skills. This enables chaining -- for example, <code>task_breakdown</code> can feed into <code>github_issues</code>.</p>
+<hr />
+<h2 id="agentcontext">AgentContext<a class="headerlink" href="#agentcontext" title="Permanent link">&para;</a></h2>
+<p>The <code>AgentContext</code> dataclass is the shared state object that connects all components of the planning agent system.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">AgentContext</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">knowledge_graph</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>       <span class="c1"># KnowledgeGraph instance</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">query_engine</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>          <span class="c1"># GraphQueryEngine instance</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">provider_manager</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>      <span class="c1"># ProviderManager instance</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">planning_entities</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">user_requirements</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">conversation_history</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">artifacts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Artifact</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>knowledge_graph</code></td>
+<td>The loaded <code>KnowledgeGraph</code> instance; provides access to entities, relationships, and graph operations</td>
+</tr>
+<tr>
+<td><code>query_engine</code></td>
+<td>A <code>GraphQueryEngine</code> for running structured queries (stats, entities, neighbors, relationships)</td>
+</tr>
+<tr>
+<td><code>provider_manager</code></td>
+<td>The <code>ProviderManager</code> that handles LLM API calls across providers</td>
+</tr>
+<tr>
+<td><code>planning_entities</code></td>
+<td>Entities classified into the planning taxonomy (goals, requirements, risks, etc.)</td>
+</tr>
+<tr>
+<td><code>user_requirements</code></td>
+<td>Structured requirements gathered from the <code>requirements_chat</code> skill</td>
+</tr>
+<tr>
+<td><code>conversation_history</code></td>
+<td>Accumulated chat messages for interactive sessions</td>
+</tr>
+<tr>
+<td><code>artifacts</code></td>
+<td>All artifacts generated during the session, enabling skill chaining</td>
+</tr>
+<tr>
+<td><code>config</code></td>
+<td>Arbitrary configuration overrides</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="artifacts">Artifacts<a class="headerlink" href="#artifacts" title="Permanent link">&para;</a></h2>
+<p>Every skill returns an <code>Artifact</code> dataclass:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">Artifact</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>              <span class="c1"># Human-readable name (e.g., &quot;Project Plan&quot;)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">content</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># The generated content (markdown, JSON, etc.)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">artifact_type</span><span class="p">:</span> <span class="nb">str</span>     <span class="c1"># Type identifier: &quot;project_plan&quot;, &quot;prd&quot;, &quot;roadmap&quot;, etc.</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;markdown&quot;</span>  <span class="c1"># Content format: &quot;markdown&quot;, &quot;json&quot;, &quot;mermaid&quot;</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+</code></pre></div>
+<p>Artifacts are the currency of the agent system. They can be:</p>
+<ul>
+<li>Displayed directly in the Companion REPL</li>
+<li>Exported to disk via the <code>artifact_export</code> skill</li>
+<li>Pushed to external tools via the <code>cli_adapter</code> skill</li>
+<li>Chained into other skills (e.g., task breakdown feeds into GitHub issues)</li>
+</ul>
+<hr />
+<h2 id="skills-reference">Skills Reference<a class="headerlink" href="#skills-reference" title="Permanent link">&para;</a></h2>
+<p>The agent ships with 11 built-in skills. Each skill is a class that extends <code>Skill</code> and self-registers at import time via <code>register_skill()</code>.</p>
+<h3 id="project_plan">project_plan<a class="headerlink" href="#project_plan" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Generate a structured project plan from knowledge graph.</p>
+<p>Pulls the full knowledge graph context (stats, entities, relationships, and planning entities grouped by type) and asks the LLM to produce a comprehensive project plan with:</p>
+<ol>
+<li>Executive Summary</li>
+<li>Goals and Objectives</li>
+<li>Scope</li>
+<li>Phases and Milestones</li>
+<li>Resource Requirements</li>
+<li>Risks and Mitigations</li>
+<li>Success Criteria</li>
+</ol>
+<p><strong>Artifact type:</strong> <code>project_plan</code> | <strong>Format:</strong> markdown</p>
+<h3 id="prd">prd<a class="headerlink" href="#prd" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Generate a product requirements document (PRD) / feature spec.</p>
+<p>Filters planning entities to those of type <code>requirement</code>, <code>feature</code>, and <code>constraint</code>, then asks the LLM to generate a PRD with:</p>
+<ol>
+<li>Problem Statement</li>
+<li>User Stories</li>
+<li>Functional Requirements</li>
+<li>Non-Functional Requirements</li>
+<li>Acceptance Criteria</li>
+<li>Out of Scope</li>
+</ol>
+<p>If no pre-filtered entities match, the LLM derives requirements from the full knowledge graph context.</p>
+<p><strong>Artifact type:</strong> <code>prd</code> | <strong>Format:</strong> markdown</p>
+<h3 id="roadmap">roadmap<a class="headerlink" href="#roadmap" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Generate a product/project roadmap.</p>
+<p>Focuses on planning entities of type <code>milestone</code>, <code>feature</code>, and <code>dependency</code>. Asks the LLM to produce a roadmap with:</p>
+<ol>
+<li>Vision and Strategy</li>
+<li>Phases (with timeline estimates)</li>
+<li>Key Dependencies</li>
+<li>A Mermaid Gantt chart summarizing the timeline</li>
+</ol>
+<p><strong>Artifact type:</strong> <code>roadmap</code> | <strong>Format:</strong> markdown</p>
+<h3 id="task_breakdown">task_breakdown<a class="headerlink" href="#task_breakdown" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Break down goals into tasks with dependencies.</p>
+<p>Focuses on planning entities of type <code>goal</code>, <code>feature</code>, and <code>milestone</code>. Returns a JSON array of task objects, each containing:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>string</td>
+<td>Task identifier (e.g., "T1", "T2")</td>
+</tr>
+<tr>
+<td><code>title</code></td>
+<td>string</td>
+<td>Short task title</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td>Detailed description</td>
+</tr>
+<tr>
+<td><code>depends_on</code></td>
+<td>list</td>
+<td>IDs of prerequisite tasks</td>
+</tr>
+<tr>
+<td><code>priority</code></td>
+<td>string</td>
+<td><code>high</code>, <code>medium</code>, or <code>low</code></td>
+</tr>
+<tr>
+<td><code>estimate</code></td>
+<td>string</td>
+<td>Effort estimate (e.g., "2d", "1w")</td>
+</tr>
+<tr>
+<td><code>assignee_role</code></td>
+<td>string</td>
+<td>Role needed to perform the task</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Artifact type:</strong> <code>task_list</code> | <strong>Format:</strong> json</p>
+<h3 id="github_issues">github_issues<a class="headerlink" href="#github_issues" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Generate GitHub issues from task breakdown.</p>
+<p>Converts tasks into GitHub-ready issue objects. If a <code>task_list</code> artifact exists in the context, it is used as input. Otherwise, minimal issues are generated from the planning entities directly.</p>
+<p>Each issue includes a formatted body with description, priority, estimate, and dependencies, plus labels derived from the task priority.</p>
+<p>The skill also provides a <code>push_to_github(issues_json, repo)</code> function that shells out to the <code>gh</code> CLI to create actual issues. This is used by the <code>cli_adapter</code> skill.</p>
+<p><strong>Artifact type:</strong> <code>issues</code> | <strong>Format:</strong> json</p>
+<h3 id="requirements_chat">requirements_chat<a class="headerlink" href="#requirements_chat" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Interactive requirements gathering via guided questions.</p>
+<p>Generates a structured requirements questionnaire based on the knowledge graph context. The questionnaire contains 8-12 targeted questions, each with:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>id</code></td>
+<td>string</td>
+<td>Question identifier (e.g., "Q1")</td>
+</tr>
+<tr>
+<td><code>category</code></td>
+<td>string</td>
+<td><code>goals</code>, <code>constraints</code>, <code>priorities</code>, or <code>scope</code></td>
+</tr>
+<tr>
+<td><code>question</code></td>
+<td>string</td>
+<td>The question text</td>
+</tr>
+<tr>
+<td><code>context</code></td>
+<td>string</td>
+<td>Why this question matters</td>
+</tr>
+</tbody>
+</table>
+<p>The skill also provides a <code>gather_requirements(context, answers)</code> method that takes the completed Q&amp;A and synthesizes structured requirements (goals, constraints, priorities, scope).</p>
+<p><strong>Artifact type:</strong> <code>requirements</code> | <strong>Format:</strong> json</p>
+<h3 id="doc_generator">doc_generator<a class="headerlink" href="#doc_generator" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Generate technical documentation, ADRs, or meeting notes.</p>
+<p>Supports three document types, selected via the <code>doc_type</code> parameter:</p>
+<table>
+<thead>
+<tr>
+<th><code>doc_type</code></th>
+<th>Output Structure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>technical_doc</code> (default)</td>
+<td>Overview, Architecture, Components and Interfaces, Data Flow, Deployment and Configuration, API Reference</td>
+</tr>
+<tr>
+<td><code>adr</code></td>
+<td>Title, Status (Proposed), Context, Decision, Consequences, Alternatives Considered</td>
+</tr>
+<tr>
+<td><code>meeting_notes</code></td>
+<td>Meeting Summary, Key Discussion Points, Decisions Made, Action Items (with owners), Open Questions, Next Steps</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Artifact type:</strong> <code>document</code> | <strong>Format:</strong> markdown</p>
+<h3 id="artifact_export">artifact_export<a class="headerlink" href="#artifact_export" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Export artifacts in agent-ready formats.</p>
+<p>Writes all artifacts accumulated in the context to a directory structure. Each artifact is written to a file based on its type:</p>
+<table>
+<thead>
+<tr>
+<th>Artifact Type</th>
+<th>Filename</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>project_plan</code></td>
+<td><code>project_plan.md</code></td>
+</tr>
+<tr>
+<td><code>prd</code></td>
+<td><code>prd.md</code></td>
+</tr>
+<tr>
+<td><code>roadmap</code></td>
+<td><code>roadmap.md</code></td>
+</tr>
+<tr>
+<td><code>task_list</code></td>
+<td><code>tasks.json</code></td>
+</tr>
+<tr>
+<td><code>issues</code></td>
+<td><code>issues.json</code></td>
+</tr>
+<tr>
+<td><code>requirements</code></td>
+<td><code>requirements.json</code></td>
+</tr>
+<tr>
+<td><code>document</code></td>
+<td><code>docs/&lt;name&gt;.md</code></td>
+</tr>
+</tbody>
+</table>
+<p>A <code>manifest.json</code> is written alongside, listing all exported files with their names, types, and formats.</p>
+<p><strong>Artifact type:</strong> <code>export_manifest</code> | <strong>Format:</strong> json</p>
+<p>Accepts an <code>output_dir</code> parameter (defaults to <code>plan/</code>).</p>
+<h3 id="cli_adapter">cli_adapter<a class="headerlink" href="#cli_adapter" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Push artifacts to external tools via their CLIs.</p>
+<p>Converts artifacts into CLI commands for external project management tools. Supported tools:</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>CLI</th>
+<th>Example Command</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>github</code></td>
+<td><code>gh</code></td>
+<td><code>gh issue create --title "..." --body "..." --label "..."</code></td>
+</tr>
+<tr>
+<td><code>jira</code></td>
+<td><code>jira</code></td>
+<td><code>jira issue create --summary "..." --description "..."</code></td>
+</tr>
+<tr>
+<td><code>linear</code></td>
+<td><code>linear</code></td>
+<td><code>linear issue create --title "..." --description "..."</code></td>
+</tr>
+</tbody>
+</table>
+<p>The skill checks whether the target CLI is available on the system and includes that status in the output. Commands are generated in dry-run mode by default.</p>
+<p><strong>Artifact type:</strong> <code>cli_commands</code> | <strong>Format:</strong> json</p>
+<h3 id="notes_export">notes_export<a class="headerlink" href="#notes_export" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Export knowledge graph as structured notes (Obsidian, Notion).</p>
+<p>Exports the entire knowledge graph as a collection of markdown files optimized for a specific note-taking platform. Accepts a <code>format</code> parameter:</p>
+<p><strong>Obsidian format</strong> creates:</p>
+<ul>
+<li>One <code>.md</code> file per entity with YAML frontmatter, tags, and <code>[[wiki-links]]</code></li>
+<li>An <code>_Index.md</code> Map of Content grouping entities by type</li>
+<li>Tag pages for each entity type</li>
+<li>Artifact notes for any generated artifacts</li>
+</ul>
+<p><strong>Notion format</strong> creates:</p>
+<ul>
+<li>One <code>.md</code> file per entity with Notion-style callout blocks and relationship tables</li>
+<li>An <code>entities_database.csv</code> for bulk import into a Notion database</li>
+<li>An <code>Overview.md</code> page with stats and entity listings</li>
+<li>Artifact pages</li>
+</ul>
+<p><strong>Artifact type:</strong> <code>notes_export</code> | <strong>Format:</strong> markdown</p>
+<h3 id="wiki_generator">wiki_generator<a class="headerlink" href="#wiki_generator" title="Permanent link">&para;</a></h3>
+<p><strong>Description:</strong> Generate a GitHub wiki from knowledge graph and artifacts.</p>
+<p>Generates a complete GitHub wiki structure as a dictionary of page names to markdown content. Creates:</p>
+<ul>
+<li><strong>Home</strong> page with entity type counts and links</li>
+<li><strong>_Sidebar</strong> navigation with entity types and artifacts</li>
+<li><strong>Type index pages</strong> with tables of entities per type</li>
+<li><strong>Individual entity pages</strong> with descriptions, outgoing/incoming relationships, and source occurrences</li>
+<li><strong>Artifact pages</strong> for any generated planning artifacts</li>
+</ul>
+<p>The skill also provides standalone functions <code>write_wiki(pages, output_dir)</code> to write pages to disk and <code>push_wiki(wiki_dir, repo)</code> to push directly to a GitHub wiki repository.</p>
+<p><strong>Artifact type:</strong> <code>wiki</code> | <strong>Format:</strong> markdown</p>
+<hr />
+<h2 id="cli-usage">CLI Usage<a class="headerlink" href="#cli-usage" title="Permanent link">&para;</a></h2>
+<h3 id="one-shot-execution">One-shot execution<a class="headerlink" href="#one-shot-execution" title="Permanent link">&para;</a></h3>
+<p>Run the agent with a request string. The agent selects and executes appropriate skills automatically.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Generate a project plan</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>planopticon<span class="w"> </span>agent<span class="w"> </span><span class="s2">&quot;Create a project plan&quot;</span><span class="w"> </span>--kb<span class="w"> </span>./results
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># Generate a PRD</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>planopticon<span class="w"> </span>agent<span class="w"> </span><span class="s2">&quot;Write a PRD for the authentication system&quot;</span><span class="w"> </span>--kb<span class="w"> </span>./results
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="c1"># Break down into tasks</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>planopticon<span class="w"> </span>agent<span class="w"> </span><span class="s2">&quot;Break this into tasks and estimate effort&quot;</span><span class="w"> </span>--kb<span class="w"> </span>./results
+</code></pre></div>
+<h3 id="export-artifacts-to-disk">Export artifacts to disk<a class="headerlink" href="#export-artifacts-to-disk" title="Permanent link">&para;</a></h3>
+<p>Use <code>--export</code> to write generated artifacts to a directory:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>planopticon<span class="w"> </span>agent<span class="w"> </span><span class="s2">&quot;Create a full project plan with tasks&quot;</span><span class="w"> </span>--kb<span class="w"> </span>./results<span class="w"> </span>--export<span class="w"> </span>./output
+</code></pre></div>
+<h3 id="interactive-mode">Interactive mode<a class="headerlink" href="#interactive-mode" title="Permanent link">&para;</a></h3>
+<p>Use <code>-I</code> for a multi-turn session where you can issue multiple requests:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>planopticon<span class="w"> </span>agent<span class="w"> </span>-I<span class="w"> </span>--kb<span class="w"> </span>./results
+</code></pre></div>
+<p>In interactive mode, the agent supports:</p>
+<ul>
+<li>Free-text requests (executed via LLM skill selection)</li>
+<li><code>/plan</code> -- shortcut to generate a project plan</li>
+<li><code>/skills</code> -- list available skills</li>
+<li><code>quit</code>, <code>exit</code>, <code>q</code> -- end the session</li>
+</ul>
+<h3 id="provider-and-model-options">Provider and model options<a class="headerlink" href="#provider-and-model-options" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Use a specific provider</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>planopticon<span class="w"> </span>agent<span class="w"> </span><span class="s2">&quot;Create a roadmap&quot;</span><span class="w"> </span>--kb<span class="w"> </span>./results<span class="w"> </span>-p<span class="w"> </span>anthropic
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Use a specific model</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>planopticon<span class="w"> </span>agent<span class="w"> </span><span class="s2">&quot;Generate a PRD&quot;</span><span class="w"> </span>--kb<span class="w"> </span>./results<span class="w"> </span>--chat-model<span class="w"> </span>gpt-4o
+</code></pre></div>
+<h3 id="auto-discovery">Auto-discovery<a class="headerlink" href="#auto-discovery" title="Permanent link">&para;</a></h3>
+<p>If <code>--kb</code> is not specified, the agent uses <code>KBContext.auto_discover()</code> to find knowledge graphs in the workspace.</p>
+<hr />
+<h2 id="using-skills-from-the-companion-repl">Using Skills from the Companion REPL<a class="headerlink" href="#using-skills-from-the-companion-repl" title="Permanent link">&para;</a></h2>
+<p>The Companion REPL provides direct access to agent skills through slash commands. See the <a href="../companion/">Companion guide</a> for full details.</p>
+<table>
+<thead>
+<tr>
+<th>Companion Command</th>
+<th>Skill Executed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>/plan</code></td>
+<td><code>project_plan</code></td>
+</tr>
+<tr>
+<td><code>/prd</code></td>
+<td><code>prd</code></td>
+</tr>
+<tr>
+<td><code>/tasks</code></td>
+<td><code>task_breakdown</code></td>
+</tr>
+<tr>
+<td><code>/run SKILL_NAME</code></td>
+<td>Any registered skill by name</td>
+</tr>
+</tbody>
+</table>
+<p>When executed from the Companion, skills use the same <code>AgentContext</code> that powers the chat mode. This means:</p>
+<ul>
+<li>The knowledge graph loaded at startup is automatically available</li>
+<li>The active LLM provider (set via <code>/provider</code> or <code>/model</code>) is used for generation</li>
+<li>Generated artifacts accumulate across the session, enabling chaining</li>
+</ul>
+<hr />
+<h2 id="example-workflows">Example Workflows<a class="headerlink" href="#example-workflows" title="Permanent link">&para;</a></h2>
+<h3 id="from-video-to-project-plan">From video to project plan<a class="headerlink" href="#from-video-to-project-plan" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># 1. Analyze a video</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>planopticon<span class="w"> </span>analyze<span class="w"> </span>-i<span class="w"> </span>sprint-review.mp4<span class="w"> </span>-o<span class="w"> </span>results/
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># 2. Launch the agent with the results</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>planopticon<span class="w"> </span>agent<span class="w"> </span><span class="s2">&quot;Create a comprehensive project plan with tasks and a roadmap&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span>--kb<span class="w"> </span>results/<span class="w"> </span>--export<span class="w"> </span>plan/
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># 3. Review the generated artifacts</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>ls<span class="w"> </span>plan/
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="c1"># project_plan.md  roadmap.md  tasks.json  manifest.json</span>
+</code></pre></div>
+<h3 id="interactive-planning-session">Interactive planning session<a class="headerlink" href="#interactive-planning-session" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>planopticon<span class="w"> </span>companion<span class="w"> </span>--kb<span class="w"> </span>./results
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>planopticon&gt;<span class="w"> </span>/status
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>Workspace<span class="w"> </span>status:
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>KG:<span class="w"> </span>knowledge_graph.db<span class="w"> </span><span class="o">(</span><span class="m">58</span><span class="w"> </span>entities,<span class="w"> </span><span class="m">124</span><span class="w"> </span>relationships<span class="o">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="w">  </span>...
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>planopticon&gt;<span class="w"> </span>What<span class="w"> </span>are<span class="w"> </span>the<span class="w"> </span>main<span class="w"> </span>goals<span class="w"> </span>discussed?
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>Based<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>knowledge<span class="w"> </span>graph,<span class="w"> </span>the<span class="w"> </span>main<span class="w"> </span>goals<span class="w"> </span>are...
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>planopticon&gt;<span class="w"> </span>/plan
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>---<span class="w"> </span>Project<span class="w"> </span>Plan<span class="w"> </span><span class="o">(</span>project_plan<span class="o">)</span><span class="w"> </span>---
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>...
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>planopticon&gt;<span class="w"> </span>/tasks
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>---<span class="w"> </span>Task<span class="w"> </span>Breakdown<span class="w"> </span><span class="o">(</span>task_list<span class="o">)</span><span class="w"> </span>---
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>...
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>planopticon&gt;<span class="w"> </span>/run<span class="w"> </span>github_issues
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>---<span class="w"> </span>GitHub<span class="w"> </span>Issues<span class="w"> </span><span class="o">(</span>issues<span class="o">)</span><span class="w"> </span>---
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="o">[</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a><span class="w">  </span><span class="o">{</span><span class="s2">&quot;title&quot;</span>:<span class="w"> </span><span class="s2">&quot;Set up authentication service&quot;</span>,<span class="w"> </span>...<span class="o">}</span>,
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="w">  </span>...
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a><span class="o">]</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>planopticon&gt;<span class="w"> </span>/run<span class="w"> </span>artifact_export
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>---<span class="w"> </span>Export<span class="w"> </span>Manifest<span class="w"> </span><span class="o">(</span>export_manifest<span class="o">)</span><span class="w"> </span>---
+<a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="o">{</span>
+<a id="__codelineno-7-29" name="__codelineno-7-29" href="#__codelineno-7-29"></a><span class="w">  </span><span class="s2">&quot;artifact_count&quot;</span>:<span class="w"> </span><span class="m">3</span>,
+<a id="__codelineno-7-30" name="__codelineno-7-30" href="#__codelineno-7-30"></a><span class="w">  </span><span class="s2">&quot;output_dir&quot;</span>:<span class="w"> </span><span class="s2">&quot;plan&quot;</span>,
+<a id="__codelineno-7-31" name="__codelineno-7-31" href="#__codelineno-7-31"></a><span class="w">  </span><span class="s2">&quot;files&quot;</span>:<span class="w"> </span><span class="o">[</span>...<span class="o">]</span>
+<a id="__codelineno-7-32" name="__codelineno-7-32" href="#__codelineno-7-32"></a><span class="o">}</span>
+</code></pre></div>
+<h3 id="skill-chaining">Skill chaining<a class="headerlink" href="#skill-chaining" title="Permanent link">&para;</a></h3>
+<p>Skills that produce artifacts make them available to subsequent skills automatically:</p>
+<ol>
+<li><code>/tasks</code> generates a <code>task_list</code> artifact</li>
+<li><code>/run github_issues</code> detects the existing <code>task_list</code> artifact and converts its tasks into GitHub issues</li>
+<li><code>/run cli_adapter</code> takes the most recent artifact and generates <code>gh issue create</code> commands</li>
+<li><code>/run artifact_export</code> writes all accumulated artifacts to disk with a manifest</li>
+</ol>
+<p>This chaining works both in the Companion REPL and in one-shot agent execution, since the <code>AgentContext.artifacts</code> list persists for the duration of the session.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 CONFLICT LLC
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ConflictHQ/PlanOpticon" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

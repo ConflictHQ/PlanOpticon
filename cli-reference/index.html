@@ -1,0 +1,3790 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered video analysis and knowledge extraction">
+      
+      
+        <meta name="author" content="CONFLICT LLC">
+      
+      
+        <link rel="canonical" href="https://planopticon.dev/cli-reference/">
+      
+      
+        <link rel="prev" href="../use-cases/">
+      
+      
+        <link rel="next" href="../architecture/overview/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>CLI Reference - PlanOpticon</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../assets/css/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PlanOpticon" class="md-header__button md-logo" aria-label="PlanOpticon" data-md-component="logo">
+      
+  <img src="../assets/images/conflict-logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PlanOpticon
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI Reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ConflictHQ/PlanOpticon" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ConflictHQ/PlanOpticon
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../guide/single-video/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../use-cases/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Use Cases
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/overview/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/models/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ & Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PlanOpticon" class="md-nav__button md-logo" aria-label="PlanOpticon" data-md-component="logo">
+      
+  <img src="../assets/images/conflict-logo.svg" alt="logo">
+
+    </a>
+    PlanOpticon
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ConflictHQ/PlanOpticon" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ConflictHQ/PlanOpticon
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../getting-started/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/single-video/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Video Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/document-ingestion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Document Ingestion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/cloud-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloud Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/knowledge-graphs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knowledge Graphs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/companion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive Companion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/planning-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planning Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export & Documents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guide/output-formats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../use-cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Use Cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon batch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-list-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon list-models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-clear-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon clear-cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-agent-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon agent-analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-companion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon companion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon query
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon ingest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon auth
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-gws" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon gws
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon gws">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-gws-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon gws list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-gws-fetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon gws fetch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-gws-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon gws ingest
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-m365" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon m365
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon m365">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-m365-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon m365 list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-m365-fetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon m365 fetch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-m365-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon m365 ingest
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-recordings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon recordings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon recordings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-recordings-zoom-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon recordings zoom-list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-recordings-teams-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon recordings teams-list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-recordings-meet-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon recordings meet-list
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon export">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-export-markdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export markdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-export-obsidian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export obsidian
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-export-notion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export notion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-export-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export exchange
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-wiki" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon wiki
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon wiki">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-wiki-generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon wiki generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-wiki-push" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon wiki push
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-kg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon kg">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-convert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg convert
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg sync
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-inspect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg inspect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-classify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg classify
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-from-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg from-exchange
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processing Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/analyzers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analyzers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent & Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ & Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#global-options" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global options
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-batch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon batch
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-list-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon list-models
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-clear-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon clear-cache
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-agent-analyze" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon agent-analyze
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-companion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon companion
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon query
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon ingest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon auth
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-gws" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon gws
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon gws">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-gws-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon gws list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-gws-fetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon gws fetch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-gws-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon gws ingest
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-m365" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon m365
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon m365">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-m365-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon m365 list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-m365-fetch" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon m365 fetch
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-m365-ingest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon m365 ingest
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-recordings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon recordings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon recordings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-recordings-zoom-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon recordings zoom-list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-recordings-teams-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon recordings teams-list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-recordings-meet-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon recordings meet-list
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-export" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon export">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-export-markdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export markdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-export-obsidian" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export obsidian
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-export-notion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export notion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-export-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon export exchange
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-wiki" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon wiki
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon wiki">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-wiki-generate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon wiki generate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-wiki-push" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon wiki push
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#planopticon-kg" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="planopticon kg">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-convert" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg convert
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg sync
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-inspect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg inspect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-classify" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg classify
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-kg-from-exchange" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon kg from-exchange
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
+<h2 id="global-options">Global options<a class="headerlink" href="#global-options" title="Permanent link">&para;</a></h2>
+<p>These options are available on all commands.</p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-v</code>, <code>--verbose</code></td>
+<td>Enable debug-level logging</td>
+</tr>
+<tr>
+<td><code>-C</code>, <code>--chat</code></td>
+<td>Enable chat mode (interactive follow-up after command completes)</td>
+</tr>
+<tr>
+<td><code>-I</code>, <code>--interactive</code></td>
+<td>Enable interactive REPL mode</td>
+</tr>
+<tr>
+<td><code>--version</code></td>
+<td>Show version and exit</td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>Show help and exit</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="planopticon-analyze"><code>planopticon analyze</code><a class="headerlink" href="#planopticon-analyze" title="Permanent link">&para;</a></h2>
+<p>Analyze a single video and extract structured knowledge.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>planopticon<span class="w"> </span>analyze<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-i</code>, <code>--input</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Input video file path</td>
+</tr>
+<tr>
+<td><code>-o</code>, <code>--output</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Output directory</td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td><code>basic\|standard\|comprehensive</code></td>
+<td><code>standard</code></td>
+<td>Processing depth</td>
+</tr>
+<tr>
+<td><code>--focus</code></td>
+<td>TEXT</td>
+<td>all</td>
+<td>Comma-separated focus areas</td>
+</tr>
+<tr>
+<td><code>--use-gpu</code></td>
+<td>FLAG</td>
+<td>off</td>
+<td>Enable GPU acceleration</td>
+</tr>
+<tr>
+<td><code>--sampling-rate</code></td>
+<td>FLOAT</td>
+<td>0.5</td>
+<td>Frame sampling rate (fps)</td>
+</tr>
+<tr>
+<td><code>--change-threshold</code></td>
+<td>FLOAT</td>
+<td>0.15</td>
+<td>Visual change threshold</td>
+</tr>
+<tr>
+<td><code>--periodic-capture</code></td>
+<td>FLOAT</td>
+<td>30.0</td>
+<td>Capture a frame every N seconds regardless of change (0 to disable)</td>
+</tr>
+<tr>
+<td><code>--title</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Report title</td>
+</tr>
+<tr>
+<td><code>-p</code>, <code>--provider</code></td>
+<td><code>auto\|openai\|anthropic\|gemini\|ollama</code></td>
+<td><code>auto</code></td>
+<td>API provider</td>
+</tr>
+<tr>
+<td><code>--vision-model</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Override vision model</td>
+</tr>
+<tr>
+<td><code>--chat-model</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Override chat model</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="planopticon-batch"><code>planopticon batch</code><a class="headerlink" href="#planopticon-batch" title="Permanent link">&para;</a></h2>
+<p>Process a folder of videos in batch.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>planopticon<span class="w"> </span>batch<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-i</code>, <code>--input-dir</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Directory containing videos</td>
+</tr>
+<tr>
+<td><code>-o</code>, <code>--output</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Output directory</td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td><code>basic\|standard\|comprehensive</code></td>
+<td><code>standard</code></td>
+<td>Processing depth</td>
+</tr>
+<tr>
+<td><code>--pattern</code></td>
+<td>TEXT</td>
+<td><code>*.mp4,*.mkv,*.avi,*.mov,*.webm</code></td>
+<td>File glob patterns</td>
+</tr>
+<tr>
+<td><code>--title</code></td>
+<td>TEXT</td>
+<td><code>Batch Processing Results</code></td>
+<td>Batch title</td>
+</tr>
+<tr>
+<td><code>-p</code>, <code>--provider</code></td>
+<td><code>auto\|openai\|anthropic\|gemini\|ollama</code></td>
+<td><code>auto</code></td>
+<td>API provider</td>
+</tr>
+<tr>
+<td><code>--vision-model</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Override vision model</td>
+</tr>
+<tr>
+<td><code>--chat-model</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Override chat model</td>
+</tr>
+<tr>
+<td><code>--source</code></td>
+<td><code>local\|gdrive\|dropbox</code></td>
+<td><code>local</code></td>
+<td>Video source</td>
+</tr>
+<tr>
+<td><code>--folder-id</code></td>
+<td>TEXT</td>
+<td>none</td>
+<td>Google Drive folder ID</td>
+</tr>
+<tr>
+<td><code>--folder-path</code></td>
+<td>TEXT</td>
+<td>none</td>
+<td>Cloud folder path</td>
+</tr>
+<tr>
+<td><code>--recursive/--no-recursive</code></td>
+<td>FLAG</td>
+<td>recursive</td>
+<td>Recurse into subfolders</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="planopticon-list-models"><code>planopticon list-models</code><a class="headerlink" href="#planopticon-list-models" title="Permanent link">&para;</a></h2>
+<p>Discover and display available models from all configured providers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>planopticon<span class="w"> </span>list-models
+</code></pre></div>
+<p>No options. Queries each provider's API and displays models grouped by provider with capabilities.</p>
+<hr />
+<h2 id="planopticon-clear-cache"><code>planopticon clear-cache</code><a class="headerlink" href="#planopticon-clear-cache" title="Permanent link">&para;</a></h2>
+<p>Clear API response cache.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>planopticon<span class="w"> </span>clear-cache<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--cache-dir</code></td>
+<td>PATH</td>
+<td><code>$CACHE_DIR</code></td>
+<td>Path to cache directory</td>
+</tr>
+<tr>
+<td><code>--older-than</code></td>
+<td>INT</td>
+<td>all</td>
+<td>Clear entries older than N seconds</td>
+</tr>
+<tr>
+<td><code>--all</code></td>
+<td>FLAG</td>
+<td>off</td>
+<td>Clear all cache entries</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="planopticon-agent-analyze"><code>planopticon agent-analyze</code><a class="headerlink" href="#planopticon-agent-analyze" title="Permanent link">&para;</a></h2>
+<p>Agentic video analysis — adaptive, intelligent processing that adjusts depth and focus based on content.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>planopticon<span class="w"> </span>agent-analyze<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>-i</code>, <code>--input</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Input video file path</td>
+</tr>
+<tr>
+<td><code>-o</code>, <code>--output</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Output directory</td>
+</tr>
+<tr>
+<td><code>--depth</code></td>
+<td><code>basic\|standard\|comprehensive</code></td>
+<td><code>standard</code></td>
+<td>Initial processing depth (agent may adapt)</td>
+</tr>
+<tr>
+<td><code>--title</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Report title</td>
+</tr>
+<tr>
+<td><code>-p</code>, <code>--provider</code></td>
+<td><code>auto\|openai\|anthropic\|gemini\|ollama</code></td>
+<td><code>auto</code></td>
+<td>API provider</td>
+</tr>
+<tr>
+<td><code>--vision-model</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Override vision model</td>
+</tr>
+<tr>
+<td><code>--chat-model</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Override chat model</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="planopticon-companion"><code>planopticon companion</code><a class="headerlink" href="#planopticon-companion" title="Permanent link">&para;</a></h2>
+<p>Interactive knowledge base companion. Opens a REPL for conversational exploration of your knowledge base.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>planopticon<span class="w"> </span>companion<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--kb</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Path to knowledge base directory</td>
+</tr>
+<tr>
+<td><code>-p</code>, <code>--provider</code></td>
+<td>TEXT</td>
+<td><code>auto</code></td>
+<td>AI provider</td>
+</tr>
+<tr>
+<td><code>--chat-model</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Override chat model</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Start companion with auto-detected knowledge base</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>planopticon<span class="w"> </span>companion
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Point to a specific knowledge base</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>planopticon<span class="w"> </span>companion<span class="w"> </span>--kb<span class="w"> </span>./my-kb
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="c1"># Use a specific provider</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>planopticon<span class="w"> </span>companion<span class="w"> </span>--kb<span class="w"> </span>./kb<span class="w"> </span>--provider<span class="w"> </span>anthropic<span class="w"> </span>--chat-model<span class="w"> </span>claude-sonnet-4-20250514
+</code></pre></div>
+<hr />
+<h2 id="planopticon-agent"><code>planopticon agent</code><a class="headerlink" href="#planopticon-agent" title="Permanent link">&para;</a></h2>
+<p>Planning agent with adaptive analysis. Runs an agentic loop that reasons about your knowledge base, plans actions, and executes them.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>planopticon<span class="w"> </span>agent<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--kb</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Path to knowledge base directory</td>
+</tr>
+<tr>
+<td><code>-I</code>, <code>--interactive</code></td>
+<td>FLAG</td>
+<td>off</td>
+<td>Interactive mode (ask before each action)</td>
+</tr>
+<tr>
+<td><code>--export</code></td>
+<td>PATH</td>
+<td>none</td>
+<td>Export agent results to a file</td>
+</tr>
+<tr>
+<td><code>-p</code>, <code>--provider</code></td>
+<td>TEXT</td>
+<td><code>auto</code></td>
+<td>AI provider</td>
+</tr>
+<tr>
+<td><code>--chat-model</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Override chat model</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Run the agent interactively</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>planopticon<span class="w"> </span>agent<span class="w"> </span>--kb<span class="w"> </span>./kb<span class="w"> </span>--interactive
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Run agent and export results</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>planopticon<span class="w"> </span>agent<span class="w"> </span>--kb<span class="w"> </span>./kb<span class="w"> </span>--export<span class="w"> </span>./plan.md
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># Use a specific model</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>planopticon<span class="w"> </span>agent<span class="w"> </span>--kb<span class="w"> </span>./kb<span class="w"> </span>--provider<span class="w"> </span>openai<span class="w"> </span>--chat-model<span class="w"> </span>gpt-4o
+</code></pre></div>
+<hr />
+<h2 id="planopticon-query"><code>planopticon query</code><a class="headerlink" href="#planopticon-query" title="Permanent link">&para;</a></h2>
+<p>Query the knowledge graph directly or with natural language.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>planopticon<span class="w"> </span>query<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>QUERY<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--db-path</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Path to knowledge graph database</td>
+</tr>
+<tr>
+<td><code>--mode</code></td>
+<td><code>direct\|agentic</code></td>
+<td>auto</td>
+<td>Query mode (direct for structured, agentic for natural language)</td>
+</tr>
+<tr>
+<td><code>--format</code></td>
+<td><code>text\|json\|mermaid</code></td>
+<td><code>text</code></td>
+<td>Output format</td>
+</tr>
+<tr>
+<td><code>-I</code>, <code>--interactive</code></td>
+<td>FLAG</td>
+<td>off</td>
+<td>Interactive REPL mode</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Show graph stats</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>planopticon<span class="w"> </span>query<span class="w"> </span>stats
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># List entities by type</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>planopticon<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;entities --type technology&quot;</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>planopticon<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;entities --type person&quot;</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="c1"># Find neighbors of an entity</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>planopticon<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;neighbors Alice&quot;</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="c1"># List relationships</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>planopticon<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;relationships --source Alice&quot;</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="c1"># Natural language query (requires API key)</span>
+<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>planopticon<span class="w"> </span>query<span class="w"> </span><span class="s2">&quot;What technologies were discussed?&quot;</span>
+<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>
+<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a><span class="c1"># Output as Mermaid diagram</span>
+<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a>planopticon<span class="w"> </span>query<span class="w"> </span>--format<span class="w"> </span>mermaid<span class="w"> </span><span class="s2">&quot;neighbors ProjectX&quot;</span>
+<a id="__codelineno-10-19" name="__codelineno-10-19" href="#__codelineno-10-19"></a>
+<a id="__codelineno-10-20" name="__codelineno-10-20" href="#__codelineno-10-20"></a><span class="c1"># Output as JSON</span>
+<a id="__codelineno-10-21" name="__codelineno-10-21" href="#__codelineno-10-21"></a>planopticon<span class="w"> </span>query<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span>stats
+<a id="__codelineno-10-22" name="__codelineno-10-22" href="#__codelineno-10-22"></a>
+<a id="__codelineno-10-23" name="__codelineno-10-23" href="#__codelineno-10-23"></a><span class="c1"># Interactive REPL</span>
+<a id="__codelineno-10-24" name="__codelineno-10-24" href="#__codelineno-10-24"></a>planopticon<span class="w"> </span>query<span class="w"> </span>-I
+</code></pre></div>
+<hr />
+<h2 id="planopticon-ingest"><code>planopticon ingest</code><a class="headerlink" href="#planopticon-ingest" title="Permanent link">&para;</a></h2>
+<p>Ingest documents and files into a knowledge graph.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>planopticon<span class="w"> </span>ingest<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>INPUT
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./knowledge-base</code></td>
+<td>Output directory for the knowledge base</td>
+</tr>
+<tr>
+<td><code>--db-path</code></td>
+<td>PATH</td>
+<td>auto</td>
+<td>Path to existing knowledge graph database to merge into</td>
+</tr>
+<tr>
+<td><code>--recursive</code></td>
+<td>FLAG</td>
+<td>off</td>
+<td>Recursively process directories</td>
+</tr>
+<tr>
+<td><code>-p</code>, <code>--provider</code></td>
+<td>TEXT</td>
+<td><code>auto</code></td>
+<td>AI provider</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Ingest a single file</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>planopticon<span class="w"> </span>ingest<span class="w"> </span>./meeting-notes.md<span class="w"> </span>--output<span class="w"> </span>./kb
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Ingest a directory recursively</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>planopticon<span class="w"> </span>ingest<span class="w"> </span>./docs/<span class="w"> </span>--output<span class="w"> </span>./kb<span class="w"> </span>--recursive
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="c1"># Merge into an existing knowledge graph</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>planopticon<span class="w"> </span>ingest<span class="w"> </span>./new-notes/<span class="w"> </span>--db-path<span class="w"> </span>./kb/knowledge_graph.db<span class="w"> </span>--recursive
+</code></pre></div>
+<hr />
+<h2 id="planopticon-auth"><code>planopticon auth</code><a class="headerlink" href="#planopticon-auth" title="Permanent link">&para;</a></h2>
+<p>Authenticate with cloud services via OAuth or API keys.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>SERVICE<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Values</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SERVICE</code></td>
+<td><code>google\|dropbox\|zoom\|notion\|github\|microsoft</code></td>
+<td>Cloud service to authenticate with</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--logout</code></td>
+<td>FLAG</td>
+<td>off</td>
+<td>Remove stored credentials for the service</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Authenticate with Google (Drive, Meet, YouTube, etc.)</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>google
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="c1"># Authenticate with Dropbox</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>dropbox
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="c1"># Authenticate with Zoom (for recording access)</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>zoom
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="c1"># Authenticate with Notion</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>notion
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="c1"># Authenticate with GitHub</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>github
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="c1"># Authenticate with Microsoft 365 (OneDrive, Teams, etc.)</span>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>microsoft
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="c1"># Log out of a service</span>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>google<span class="w"> </span>--logout
+</code></pre></div>
+<hr />
+<h2 id="planopticon-gws"><code>planopticon gws</code><a class="headerlink" href="#planopticon-gws" title="Permanent link">&para;</a></h2>
+<p>Google Workspace commands. List, fetch, and ingest content from Google Workspace (Drive, Docs, Sheets, Slides, Meet).</p>
+<h3 id="planopticon-gws-list"><code>planopticon gws list</code><a class="headerlink" href="#planopticon-gws-list" title="Permanent link">&para;</a></h3>
+<p>List available files and recordings from Google Workspace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>planopticon<span class="w"> </span>gws<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--type</code></td>
+<td><code>drive\|docs\|sheets\|slides\|meet</code></td>
+<td>all</td>
+<td>Filter by content type</td>
+</tr>
+<tr>
+<td><code>--folder-id</code></td>
+<td>TEXT</td>
+<td>none</td>
+<td>Google Drive folder ID</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>INT</td>
+<td>50</td>
+<td>Maximum results to return</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-gws-fetch"><code>planopticon gws fetch</code><a class="headerlink" href="#planopticon-gws-fetch" title="Permanent link">&para;</a></h3>
+<p>Download content from Google Workspace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>planopticon<span class="w"> </span>gws<span class="w"> </span>fetch<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>RESOURCE_ID
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./downloads</code></td>
+<td>Output directory</td>
+</tr>
+<tr>
+<td><code>--format</code></td>
+<td>TEXT</td>
+<td>auto</td>
+<td>Export format (pdf, docx, etc.)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-gws-ingest"><code>planopticon gws ingest</code><a class="headerlink" href="#planopticon-gws-ingest" title="Permanent link">&para;</a></h3>
+<p>Ingest Google Workspace content directly into a knowledge graph.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>planopticon<span class="w"> </span>gws<span class="w"> </span>ingest<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--folder-id</code></td>
+<td>TEXT</td>
+<td>none</td>
+<td>Google Drive folder ID</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./knowledge-base</code></td>
+<td>Knowledge base output directory</td>
+</tr>
+<tr>
+<td><code>--recursive</code></td>
+<td>FLAG</td>
+<td>off</td>
+<td>Recurse into subfolders</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># List all Google Workspace files</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>planopticon<span class="w"> </span>gws<span class="w"> </span>list
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="c1"># List only Google Docs</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>planopticon<span class="w"> </span>gws<span class="w"> </span>list<span class="w"> </span>--type<span class="w"> </span>docs
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="c1"># Fetch a specific file</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>planopticon<span class="w"> </span>gws<span class="w"> </span>fetch<span class="w"> </span>abc123def<span class="w"> </span>--output<span class="w"> </span>./downloads
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="c1"># Ingest an entire Drive folder into a knowledge base</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>planopticon<span class="w"> </span>gws<span class="w"> </span>ingest<span class="w"> </span>--folder-id<span class="w"> </span>abc123<span class="w"> </span>--output<span class="w"> </span>./kb<span class="w"> </span>--recursive
+</code></pre></div>
+<hr />
+<h2 id="planopticon-m365"><code>planopticon m365</code><a class="headerlink" href="#planopticon-m365" title="Permanent link">&para;</a></h2>
+<p>Microsoft 365 commands. List, fetch, and ingest content from Microsoft 365 (OneDrive, SharePoint, Teams, Outlook).</p>
+<h3 id="planopticon-m365-list"><code>planopticon m365 list</code><a class="headerlink" href="#planopticon-m365-list" title="Permanent link">&para;</a></h3>
+<p>List available files and recordings from Microsoft 365.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>planopticon<span class="w"> </span>m365<span class="w"> </span>list<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--type</code></td>
+<td><code>onedrive\|sharepoint\|teams\|outlook</code></td>
+<td>all</td>
+<td>Filter by content type</td>
+</tr>
+<tr>
+<td><code>--site</code></td>
+<td>TEXT</td>
+<td>none</td>
+<td>SharePoint site name</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>INT</td>
+<td>50</td>
+<td>Maximum results to return</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-m365-fetch"><code>planopticon m365 fetch</code><a class="headerlink" href="#planopticon-m365-fetch" title="Permanent link">&para;</a></h3>
+<p>Download content from Microsoft 365.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>planopticon<span class="w"> </span>m365<span class="w"> </span>fetch<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>RESOURCE_ID
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./downloads</code></td>
+<td>Output directory</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-m365-ingest"><code>planopticon m365 ingest</code><a class="headerlink" href="#planopticon-m365-ingest" title="Permanent link">&para;</a></h3>
+<p>Ingest Microsoft 365 content directly into a knowledge graph.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>planopticon<span class="w"> </span>m365<span class="w"> </span>ingest<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--site</code></td>
+<td>TEXT</td>
+<td>none</td>
+<td>SharePoint site name</td>
+</tr>
+<tr>
+<td><code>--path</code></td>
+<td>TEXT</td>
+<td><code>/</code></td>
+<td>Folder path in OneDrive/SharePoint</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./knowledge-base</code></td>
+<td>Knowledge base output directory</td>
+</tr>
+<tr>
+<td><code>--recursive</code></td>
+<td>FLAG</td>
+<td>off</td>
+<td>Recurse into subfolders</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># List all Microsoft 365 content</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>planopticon<span class="w"> </span>m365<span class="w"> </span>list
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="c1"># List only Teams recordings</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>planopticon<span class="w"> </span>m365<span class="w"> </span>list<span class="w"> </span>--type<span class="w"> </span>teams
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="c1"># Fetch a specific file</span>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>planopticon<span class="w"> </span>m365<span class="w"> </span>fetch<span class="w"> </span>item-id-123<span class="w"> </span>--output<span class="w"> </span>./downloads
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a><span class="c1"># Ingest SharePoint content</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>planopticon<span class="w"> </span>m365<span class="w"> </span>ingest<span class="w"> </span>--site<span class="w"> </span><span class="s2">&quot;Engineering&quot;</span><span class="w"> </span>--path<span class="w"> </span><span class="s2">&quot;/Shared Documents&quot;</span><span class="w"> </span>--output<span class="w"> </span>./kb<span class="w"> </span>--recursive
+</code></pre></div>
+<hr />
+<h2 id="planopticon-recordings"><code>planopticon recordings</code><a class="headerlink" href="#planopticon-recordings" title="Permanent link">&para;</a></h2>
+<p>List meeting recordings from video conferencing platforms.</p>
+<h3 id="planopticon-recordings-zoom-list"><code>planopticon recordings zoom-list</code><a class="headerlink" href="#planopticon-recordings-zoom-list" title="Permanent link">&para;</a></h3>
+<p>List Zoom cloud recordings.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>planopticon<span class="w"> </span>recordings<span class="w"> </span>zoom-list<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--from</code></td>
+<td>DATE</td>
+<td>30 days ago</td>
+<td>Start date (YYYY-MM-DD)</td>
+</tr>
+<tr>
+<td><code>--to</code></td>
+<td>DATE</td>
+<td>today</td>
+<td>End date (YYYY-MM-DD)</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>INT</td>
+<td>50</td>
+<td>Maximum results</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-recordings-teams-list"><code>planopticon recordings teams-list</code><a class="headerlink" href="#planopticon-recordings-teams-list" title="Permanent link">&para;</a></h3>
+<p>List Microsoft Teams meeting recordings.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a>planopticon<span class="w"> </span>recordings<span class="w"> </span>teams-list<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--from</code></td>
+<td>DATE</td>
+<td>30 days ago</td>
+<td>Start date (YYYY-MM-DD)</td>
+</tr>
+<tr>
+<td><code>--to</code></td>
+<td>DATE</td>
+<td>today</td>
+<td>End date (YYYY-MM-DD)</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>INT</td>
+<td>50</td>
+<td>Maximum results</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-recordings-meet-list"><code>planopticon recordings meet-list</code><a class="headerlink" href="#planopticon-recordings-meet-list" title="Permanent link">&para;</a></h3>
+<p>List Google Meet recordings.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a>planopticon<span class="w"> </span>recordings<span class="w"> </span>meet-list<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--from</code></td>
+<td>DATE</td>
+<td>30 days ago</td>
+<td>Start date (YYYY-MM-DD)</td>
+</tr>
+<tr>
+<td><code>--to</code></td>
+<td>DATE</td>
+<td>today</td>
+<td>End date (YYYY-MM-DD)</td>
+</tr>
+<tr>
+<td><code>--limit</code></td>
+<td>INT</td>
+<td>50</td>
+<td>Maximum results</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="c1"># List recent Zoom recordings</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>planopticon<span class="w"> </span>recordings<span class="w"> </span>zoom-list
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="c1"># List Teams recordings from a specific date range</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a>planopticon<span class="w"> </span>recordings<span class="w"> </span>teams-list<span class="w"> </span>--from<span class="w"> </span><span class="m">2026</span>-01-01<span class="w"> </span>--to<span class="w"> </span><span class="m">2026</span>-02-01
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="c1"># List Google Meet recordings</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a>planopticon<span class="w"> </span>recordings<span class="w"> </span>meet-list<span class="w"> </span>--limit<span class="w"> </span><span class="m">10</span>
+</code></pre></div>
+<hr />
+<h2 id="planopticon-export"><code>planopticon export</code><a class="headerlink" href="#planopticon-export" title="Permanent link">&para;</a></h2>
+<p>Export knowledge base content to various formats.</p>
+<h3 id="planopticon-export-markdown"><code>planopticon export markdown</code><a class="headerlink" href="#planopticon-export-markdown" title="Permanent link">&para;</a></h3>
+<p>Export knowledge base as Markdown files.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a>planopticon<span class="w"> </span><span class="nb">export</span><span class="w"> </span>markdown<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Knowledge base path</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./export</code></td>
+<td>Output directory</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-export-obsidian"><code>planopticon export obsidian</code><a class="headerlink" href="#planopticon-export-obsidian" title="Permanent link">&para;</a></h3>
+<p>Export knowledge base as an Obsidian vault with wikilinks and graph metadata.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a>planopticon<span class="w"> </span><span class="nb">export</span><span class="w"> </span>obsidian<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Knowledge base path</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./obsidian-vault</code></td>
+<td>Output vault directory</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-export-notion"><code>planopticon export notion</code><a class="headerlink" href="#planopticon-export-notion" title="Permanent link">&para;</a></h3>
+<p>Export knowledge base to Notion.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a>planopticon<span class="w"> </span><span class="nb">export</span><span class="w"> </span>notion<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Knowledge base path</td>
+</tr>
+<tr>
+<td><code>--parent-page</code></td>
+<td>TEXT</td>
+<td>none</td>
+<td>Notion parent page ID</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-export-exchange"><code>planopticon export exchange</code><a class="headerlink" href="#planopticon-export-exchange" title="Permanent link">&para;</a></h3>
+<p>Export knowledge base as PlanOpticon Exchange Format (JSON).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a>planopticon<span class="w"> </span><span class="nb">export</span><span class="w"> </span>exchange<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Knowledge base path</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./exchange.json</code></td>
+<td>Output file path</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="c1"># Export to Markdown</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a>planopticon<span class="w"> </span><span class="nb">export</span><span class="w"> </span>markdown<span class="w"> </span>--input<span class="w"> </span>./kb<span class="w"> </span>--output<span class="w"> </span>./docs
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="c1"># Export to Obsidian vault</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a>planopticon<span class="w"> </span><span class="nb">export</span><span class="w"> </span>obsidian<span class="w"> </span>--input<span class="w"> </span>./kb<span class="w"> </span>--output<span class="w"> </span>~/Obsidian/PlanOpticon
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="c1"># Export to Notion</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a>planopticon<span class="w"> </span><span class="nb">export</span><span class="w"> </span>notion<span class="w"> </span>--input<span class="w"> </span>./kb<span class="w"> </span>--parent-page<span class="w"> </span>abc123
+<a id="__codelineno-31-9" name="__codelineno-31-9" href="#__codelineno-31-9"></a>
+<a id="__codelineno-31-10" name="__codelineno-31-10" href="#__codelineno-31-10"></a><span class="c1"># Export as exchange format for interoperability</span>
+<a id="__codelineno-31-11" name="__codelineno-31-11" href="#__codelineno-31-11"></a>planopticon<span class="w"> </span><span class="nb">export</span><span class="w"> </span>exchange<span class="w"> </span>--input<span class="w"> </span>./kb<span class="w"> </span>--output<span class="w"> </span>./export.json
+</code></pre></div>
+<hr />
+<h2 id="planopticon-wiki"><code>planopticon wiki</code><a class="headerlink" href="#planopticon-wiki" title="Permanent link">&para;</a></h2>
+<p>Generate and publish wiki documentation from your knowledge base.</p>
+<h3 id="planopticon-wiki-generate"><code>planopticon wiki generate</code><a class="headerlink" href="#planopticon-wiki-generate" title="Permanent link">&para;</a></h3>
+<p>Generate a static wiki site from the knowledge base.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a>planopticon<span class="w"> </span>wiki<span class="w"> </span>generate<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Knowledge base path</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./wiki</code></td>
+<td>Output directory</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-wiki-push"><code>planopticon wiki push</code><a class="headerlink" href="#planopticon-wiki-push" title="Permanent link">&para;</a></h3>
+<p>Push a generated wiki to a remote target (e.g., GitHub Wiki, Confluence).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a>planopticon<span class="w"> </span>wiki<span class="w"> </span>push<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td>PATH</td>
+<td><code>./wiki</code></td>
+<td>Wiki directory to push</td>
+</tr>
+<tr>
+<td><code>--target</code></td>
+<td>TEXT</td>
+<td><em>required</em></td>
+<td>Push target (e.g., <code>github://org/repo</code>, <code>confluence://space</code>)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="c1"># Generate a wiki from the knowledge base</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>planopticon<span class="w"> </span>wiki<span class="w"> </span>generate<span class="w"> </span>--input<span class="w"> </span>./kb<span class="w"> </span>--output<span class="w"> </span>./wiki
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>
+<a id="__codelineno-34-4" name="__codelineno-34-4" href="#__codelineno-34-4"></a><span class="c1"># Push wiki to GitHub</span>
+<a id="__codelineno-34-5" name="__codelineno-34-5" href="#__codelineno-34-5"></a>planopticon<span class="w"> </span>wiki<span class="w"> </span>push<span class="w"> </span>--input<span class="w"> </span>./wiki<span class="w"> </span>--target<span class="w"> </span><span class="s2">&quot;github://ConflictHQ/project-wiki&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="planopticon-kg"><code>planopticon kg</code><a class="headerlink" href="#planopticon-kg" title="Permanent link">&para;</a></h2>
+<p>Knowledge graph management commands.</p>
+<h3 id="planopticon-kg-convert"><code>planopticon kg convert</code><a class="headerlink" href="#planopticon-kg-convert" title="Permanent link">&para;</a></h3>
+<p>Convert a knowledge graph between formats.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>convert<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Input knowledge graph file</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Output file path</td>
+</tr>
+<tr>
+<td><code>--format</code></td>
+<td><code>json\|db\|graphml\|csv</code></td>
+<td>auto (from extension)</td>
+<td>Target format</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-kg-sync"><code>planopticon kg sync</code><a class="headerlink" href="#planopticon-kg-sync" title="Permanent link">&para;</a></h3>
+<p>Synchronize two knowledge graphs (merge new data).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>sync<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--source</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Source knowledge graph</td>
+</tr>
+<tr>
+<td><code>--target</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Target knowledge graph to merge into</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-kg-inspect"><code>planopticon kg inspect</code><a class="headerlink" href="#planopticon-kg-inspect" title="Permanent link">&para;</a></h3>
+<p>Inspect a knowledge graph and display statistics.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-37-1" name="__codelineno-37-1" href="#__codelineno-37-1"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>inspect<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span><span class="o">[</span>PATH<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PATH</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Knowledge graph file</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-kg-classify"><code>planopticon kg classify</code><a class="headerlink" href="#planopticon-kg-classify" title="Permanent link">&para;</a></h3>
+<p>Classify and tag entities in a knowledge graph.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-38-1" name="__codelineno-38-1" href="#__codelineno-38-1"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>classify<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--db-path</code></td>
+<td>PATH</td>
+<td>auto-detect</td>
+<td>Knowledge graph database</td>
+</tr>
+<tr>
+<td><code>-p</code>, <code>--provider</code></td>
+<td>TEXT</td>
+<td><code>auto</code></td>
+<td>AI provider for classification</td>
+</tr>
+</tbody>
+</table>
+<h3 id="planopticon-kg-from-exchange"><code>planopticon kg from-exchange</code><a class="headerlink" href="#planopticon-kg-from-exchange" title="Permanent link">&para;</a></h3>
+<p>Import a knowledge graph from PlanOpticon Exchange Format.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-39-1" name="__codelineno-39-1" href="#__codelineno-39-1"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>from-exchange<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>INPUT
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Type</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>INPUT</code></td>
+<td>PATH</td>
+<td><em>required</em></td>
+<td>Exchange format JSON file</td>
+</tr>
+<tr>
+<td><code>--output</code></td>
+<td>PATH</td>
+<td><code>./knowledge-base</code></td>
+<td>Output knowledge base directory</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="c1"># Convert JSON knowledge graph to FalkorDB format</span>
+<a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>convert<span class="w"> </span>--input<span class="w"> </span>./kg.json<span class="w"> </span>--output<span class="w"> </span>./kg.db
+<a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a>
+<a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="c1"># Merge two knowledge graphs</span>
+<a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>sync<span class="w"> </span>--source<span class="w"> </span>./new-kg.db<span class="w"> </span>--target<span class="w"> </span>./main-kg.db
+<a id="__codelineno-40-6" name="__codelineno-40-6" href="#__codelineno-40-6"></a>
+<a id="__codelineno-40-7" name="__codelineno-40-7" href="#__codelineno-40-7"></a><span class="c1"># Inspect a knowledge graph</span>
+<a id="__codelineno-40-8" name="__codelineno-40-8" href="#__codelineno-40-8"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>inspect<span class="w"> </span>./knowledge_graph.db
+<a id="__codelineno-40-9" name="__codelineno-40-9" href="#__codelineno-40-9"></a>
+<a id="__codelineno-40-10" name="__codelineno-40-10" href="#__codelineno-40-10"></a><span class="c1"># Classify entities with AI</span>
+<a id="__codelineno-40-11" name="__codelineno-40-11" href="#__codelineno-40-11"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>classify<span class="w"> </span>--db-path<span class="w"> </span>./kg.db<span class="w"> </span>--provider<span class="w"> </span>anthropic
+<a id="__codelineno-40-12" name="__codelineno-40-12" href="#__codelineno-40-12"></a>
+<a id="__codelineno-40-13" name="__codelineno-40-13" href="#__codelineno-40-13"></a><span class="c1"># Import from exchange format</span>
+<a id="__codelineno-40-14" name="__codelineno-40-14" href="#__codelineno-40-14"></a>planopticon<span class="w"> </span>kg<span class="w"> </span>from-exchange<span class="w"> </span>./export.json<span class="w"> </span>--output<span class="w"> </span>./kb
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 CONFLICT LLC
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ConflictHQ/PlanOpticon" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "header.autohide"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

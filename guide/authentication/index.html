@@ -1,0 +1,2936 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="AI-powered video analysis and knowledge extraction">
+      
+      
+        <meta name="author" content="CONFLICT LLC">
+      
+      
+        <link rel="canonical" href="https://planopticon.dev/guide/authentication/">
+      
+      
+        <link rel="prev" href="../planning-agent/">
+      
+      
+        <link rel="next" href="../export/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Authentication - PlanOpticon</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../assets/css/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#authentication" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PlanOpticon" class="md-header__button md-logo" aria-label="PlanOpticon" data-md-component="logo">
+      
+  <img src="../../assets/images/conflict-logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PlanOpticon
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Authentication
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ConflictHQ/PlanOpticon" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ConflictHQ/PlanOpticon
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/installation/" class="md-tabs__link">
+          
+  
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../single-video/" class="md-tabs__link">
+          
+  
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../use-cases/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Use Cases
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../cli-reference/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  CLI Reference
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../architecture/overview/" class="md-tabs__link">
+          
+  
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/models/" class="md-tabs__link">
+          
+  
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ & Troubleshooting
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PlanOpticon" class="md-nav__button md-logo" aria-label="PlanOpticon" data-md-component="logo">
+      
+  <img src="../../assets/images/conflict-logo.svg" alt="logo">
+
+    </a>
+    PlanOpticon
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ConflictHQ/PlanOpticon" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ConflictHQ/PlanOpticon
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Getting Started
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/installation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Installation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Guide
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    User Guide
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../single-video/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Single Video Analysis
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../batch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Batch Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../document-ingestion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Document Ingestion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cloud-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cloud Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../knowledge-graphs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Knowledge Graphs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../companion/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Interactive Companion
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../planning-agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Planning Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#auth-strategy-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auth strategy overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-auth-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The auth chain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token storage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported services
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported services">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#google" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dropbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dropbox
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zoom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zoom
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#microsoft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microsoft
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon auth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#companion-repl-auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Companion REPL /auth
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variables reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AuthConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oauthmanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OAuthManager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-built-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-built configs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-custom-connectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building custom connectors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-auth-method-available-for-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "No auth method available for {service}"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-refresh-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token refresh fails
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oauth-pkce-flow-does-not-open-a-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OAuth PKCE flow does not open a browser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requests-not-installed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "requests not installed"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-denied-on-token-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission denied on token file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#microsoft-authentication-uses-the-common-tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microsoft authentication uses the /common tenant
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../export/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Export & Documents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-formats/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Output Formats
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../use-cases/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Use Cases
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/pipeline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Processing Pipeline
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        
+          
+          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/models/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Models
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/analyzers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Analyzers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent & Skills
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sources
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Authentication
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ & Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#auth-strategy-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Auth strategy overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-auth-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The auth chain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#token-storage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token storage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supported-services" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported services
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported services">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#google" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Google
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dropbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dropbox
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#zoom" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Zoom
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Notion
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#github" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        GitHub
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#microsoft" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microsoft
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CLI usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#planopticon-auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        planopticon auth
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#companion-repl-auth" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Companion REPL /auth
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#environment-variables-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Environment variables reference
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Python API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#authconfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        AuthConfig
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oauthmanager" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OAuthManager
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-built-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pre-built configs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#building-custom-connectors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building custom connectors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Troubleshooting
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-auth-method-available-for-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "No auth method available for {service}"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#token-refresh-fails" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Token refresh fails
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#oauth-pkce-flow-does-not-open-a-browser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OAuth PKCE flow does not open a browser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#requests-not-installed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        "requests not installed"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#permission-denied-on-token-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Permission denied on token file
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#microsoft-authentication-uses-the-common-tenant" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Microsoft authentication uses the /common tenant
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="authentication">Authentication<a class="headerlink" href="#authentication" title="Permanent link">&para;</a></h1>
+<p>PlanOpticon uses a unified authentication system to connect with cloud services for fetching recordings, documents, and other content. The system is <strong>OAuth-first</strong>: it prefers OAuth 2.0 flows for security and token management, but falls back to API keys when OAuth is not configured.</p>
+<h2 id="auth-strategy-overview">Auth strategy overview<a class="headerlink" href="#auth-strategy-overview" title="Permanent link">&para;</a></h2>
+<p>PlanOpticon supports six cloud services out of the box: Google, Dropbox, Zoom, Notion, GitHub, and Microsoft. Each service uses the same authentication chain, implemented through the <code>OAuthManager</code> class. You configure credentials once (via environment variables or directly), and PlanOpticon handles token acquisition, storage, refresh, and fallback automatically.</p>
+<p>All authentication state is managed through the <code>planopticon auth</code> CLI command, the <code>/auth</code> companion REPL command, or programmatically via the Python API.</p>
+<h2 id="the-auth-chain">The auth chain<a class="headerlink" href="#the-auth-chain" title="Permanent link">&para;</a></h2>
+<p>When you authenticate with a service, PlanOpticon tries the following methods in order. It stops at the first one that succeeds:</p>
+<ol>
+<li>
+<p><strong>Saved token</strong> -- Checks <code>~/.planopticon/{service}_token.json</code> for a previously saved token. If the token has not expired, it is used immediately. If it has expired but a refresh token is available, PlanOpticon attempts an automatic token refresh.</p>
+</li>
+<li>
+<p><strong>Client Credentials grant</strong> (Server-to-Server) -- If an <code>account_id</code> is configured (e.g., <code>ZOOM_ACCOUNT_ID</code>), PlanOpticon attempts a client credentials grant. This is a non-interactive flow suitable for automated pipelines and server-side integrations. No browser is required.</p>
+</li>
+<li>
+<p><strong>OAuth 2.0 Authorization Code with PKCE</strong> (interactive) -- If a client ID is configured and OAuth endpoints are available, PlanOpticon initiates an interactive OAuth PKCE flow. It opens a browser to the service's authorization page, waits for you to paste the authorization code, and exchanges it for tokens. The tokens are saved for future use.</p>
+</li>
+<li>
+<p><strong>API key fallback</strong> -- If no OAuth method succeeds, PlanOpticon checks for a service-specific API key environment variable (e.g., <code>GITHUB_TOKEN</code>, <code>NOTION_API_KEY</code>). This is the simplest setup but may have reduced capabilities compared to OAuth.</p>
+</li>
+</ol>
+<p>If none of the four methods succeed, PlanOpticon returns an error with hints about which environment variables to set.</p>
+<h2 id="token-storage">Token storage<a class="headerlink" href="#token-storage" title="Permanent link">&para;</a></h2>
+<p>Tokens are persisted as JSON files in <code>~/.planopticon/</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>~/.planopticon/
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>  google_token.json
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>  dropbox_token.json
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>  zoom_token.json
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>  notion_token.json
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>  github_token.json
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>  microsoft_token.json
+</code></pre></div>
+<p>Each token file contains:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>access_token</code></td>
+<td>The current access token</td>
+</tr>
+<tr>
+<td><code>refresh_token</code></td>
+<td>Refresh token for automatic renewal (if provided by the service)</td>
+</tr>
+<tr>
+<td><code>expires_at</code></td>
+<td>Unix timestamp when the token expires (with a 60-second safety margin)</td>
+</tr>
+<tr>
+<td><code>client_id</code></td>
+<td>The client ID used for this token (for refresh)</td>
+</tr>
+<tr>
+<td><code>client_secret</code></td>
+<td>The client secret used (for refresh)</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>~/.planopticon/</code> directory is created automatically on first use. Token files are overwritten on each successful authentication or refresh.</p>
+<p>To remove a saved token, use <code>planopticon auth &lt;service&gt; --logout</code> or delete the file directly.</p>
+<h2 id="supported-services">Supported services<a class="headerlink" href="#supported-services" title="Permanent link">&para;</a></h2>
+<h3 id="google">Google<a class="headerlink" href="#google" title="Permanent link">&para;</a></h3>
+<p>Google authentication provides access to Google Drive and Google Docs for fetching documents, recordings, and other content.</p>
+<p><strong>Scopes requested:</strong></p>
+<ul>
+<li><code>https://www.googleapis.com/auth/drive.readonly</code></li>
+<li><code>https://www.googleapis.com/auth/documents.readonly</code></li>
+</ul>
+<p><strong>Environment variables:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GOOGLE_CLIENT_ID</code></td>
+<td>For OAuth</td>
+<td>OAuth 2.0 Client ID from Google Cloud Console</td>
+</tr>
+<tr>
+<td><code>GOOGLE_CLIENT_SECRET</code></td>
+<td>For OAuth</td>
+<td>OAuth 2.0 Client Secret</td>
+</tr>
+<tr>
+<td><code>GOOGLE_API_KEY</code></td>
+<td>Fallback</td>
+<td>API key (limited access, no user-specific data)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>OAuth app setup:</strong></p>
+<ol>
+<li>Go to the <a href="https://console.cloud.google.com/">Google Cloud Console</a>.</li>
+<li>Create a project (or select an existing one).</li>
+<li>Navigate to <strong>APIs &amp; Services &gt; Credentials</strong>.</li>
+<li>Click <strong>Create Credentials &gt; OAuth client ID</strong>.</li>
+<li>Choose <strong>Desktop app</strong> as the application type.</li>
+<li>Copy the Client ID and Client Secret.</li>
+<li>Under <strong>APIs &amp; Services &gt; Library</strong>, enable the <strong>Google Drive API</strong> and <strong>Google Docs API</strong>.</li>
+<li>Set the environment variables:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">GOOGLE_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your-client-id.apps.googleusercontent.com&quot;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">GOOGLE_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your-client-secret&quot;</span>
+</code></pre></div>
+<p><strong>Service account fallback:</strong> For automated pipelines, you can use a Google service account instead of OAuth. Generate a service account key JSON file from the Google Cloud Console and set <code>GOOGLE_APPLICATION_CREDENTIALS</code> to point to it. The PlanOpticon Google Workspace connector (<code>planopticon gws</code>) uses the <code>gws</code> CLI which has its own auth flow via <code>gws auth login</code>.</p>
+<h3 id="dropbox">Dropbox<a class="headerlink" href="#dropbox" title="Permanent link">&para;</a></h3>
+<p>Dropbox authentication provides access to files stored in Dropbox.</p>
+<p><strong>Environment variables:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DROPBOX_APP_KEY</code></td>
+<td>For OAuth</td>
+<td>App key from the Dropbox App Console</td>
+</tr>
+<tr>
+<td><code>DROPBOX_APP_SECRET</code></td>
+<td>For OAuth</td>
+<td>App secret</td>
+</tr>
+<tr>
+<td><code>DROPBOX_ACCESS_TOKEN</code></td>
+<td>Fallback</td>
+<td>Long-lived access token (for quick setup)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>OAuth app setup:</strong></p>
+<ol>
+<li>Go to the <a href="https://www.dropbox.com/developers/apps">Dropbox App Console</a>.</li>
+<li>Click <strong>Create App</strong>.</li>
+<li>Choose <strong>Scoped access</strong> and <strong>Full Dropbox</strong> (or <strong>App folder</strong> for restricted access).</li>
+<li>Copy the App key and App secret from the <strong>Settings</strong> tab.</li>
+<li>Set the environment variables:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DROPBOX_APP_KEY</span><span class="o">=</span><span class="s2">&quot;your-app-key&quot;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">DROPBOX_APP_SECRET</span><span class="o">=</span><span class="s2">&quot;your-app-secret&quot;</span>
+</code></pre></div>
+<p><strong>Access token shortcut:</strong> For quick testing, you can generate an access token directly from the app's Settings page in the Dropbox App Console and set it as <code>DROPBOX_ACCESS_TOKEN</code>. This bypasses OAuth entirely but the token may have a limited lifetime.</p>
+<h3 id="zoom">Zoom<a class="headerlink" href="#zoom" title="Permanent link">&para;</a></h3>
+<p>Zoom authentication provides access to cloud recordings, meeting metadata, and transcripts.</p>
+<p><strong>Environment variables:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ZOOM_CLIENT_ID</code></td>
+<td>For OAuth</td>
+<td>OAuth client ID from the Zoom Marketplace</td>
+</tr>
+<tr>
+<td><code>ZOOM_CLIENT_SECRET</code></td>
+<td>For OAuth</td>
+<td>OAuth client secret</td>
+</tr>
+<tr>
+<td><code>ZOOM_ACCOUNT_ID</code></td>
+<td>For S2S</td>
+<td>Account ID for Server-to-Server OAuth</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Server-to-Server (recommended for automation):</strong></p>
+<p>When <code>ZOOM_ACCOUNT_ID</code> is set alongside <code>ZOOM_CLIENT_ID</code> and <code>ZOOM_CLIENT_SECRET</code>, PlanOpticon uses the client credentials grant (Server-to-Server OAuth). This is non-interactive and ideal for CI/CD pipelines and scheduled jobs.</p>
+<ol>
+<li>Go to the <a href="https://marketplace.zoom.us/">Zoom Marketplace</a>.</li>
+<li>Click <strong>Develop &gt; Build App</strong>.</li>
+<li>Choose <strong>Server-to-Server OAuth</strong>.</li>
+<li>Copy the Account ID, Client ID, and Client Secret.</li>
+<li>Add the required scopes: <code>recording:read:admin</code> (or <code>recording:read</code>).</li>
+<li>Set the environment variables:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ZOOM_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your-client-id&quot;</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ZOOM_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your-client-secret&quot;</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">ZOOM_ACCOUNT_ID</span><span class="o">=</span><span class="s2">&quot;your-account-id&quot;</span>
+</code></pre></div>
+<p><strong>User-level OAuth PKCE:</strong></p>
+<p>If <code>ZOOM_ACCOUNT_ID</code> is not set, PlanOpticon falls back to the interactive OAuth PKCE flow. This opens a browser window for the user to authorize access.</p>
+<ol>
+<li>In the Zoom Marketplace, create a <strong>General App</strong> (or <strong>OAuth</strong> app).</li>
+<li>Set the redirect URI to <code>urn:ietf:wg:oauth:2.0:oob</code> (out-of-band).</li>
+<li>Copy the Client ID and Client Secret.</li>
+</ol>
+<h3 id="notion">Notion<a class="headerlink" href="#notion" title="Permanent link">&para;</a></h3>
+<p>Notion authentication provides access to pages, databases, and content in your Notion workspace.</p>
+<p><strong>Environment variables:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>NOTION_CLIENT_ID</code></td>
+<td>For OAuth</td>
+<td>OAuth client ID from the Notion Integrations page</td>
+</tr>
+<tr>
+<td><code>NOTION_CLIENT_SECRET</code></td>
+<td>For OAuth</td>
+<td>OAuth client secret</td>
+</tr>
+<tr>
+<td><code>NOTION_API_KEY</code></td>
+<td>Fallback</td>
+<td>Internal integration token</td>
+</tr>
+</tbody>
+</table>
+<p><strong>OAuth app setup:</strong></p>
+<ol>
+<li>Go to <a href="https://www.notion.so/my-integrations">My Integrations</a> in Notion.</li>
+<li>Click <strong>New integration</strong>.</li>
+<li>Select <strong>Public integration</strong> (required for OAuth).</li>
+<li>Copy the OAuth Client ID and Client Secret.</li>
+<li>Set the redirect URI.</li>
+<li>Set the environment variables:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NOTION_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your-client-id&quot;</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NOTION_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your-client-secret&quot;</span>
+</code></pre></div>
+<p><strong>Internal integration (API key fallback):</strong></p>
+<p>For simpler setups, create an <strong>Internal integration</strong> from the Notion Integrations page. Copy the integration token and set it as <code>NOTION_API_KEY</code>. You must also share the relevant Notion pages/databases with the integration.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">NOTION_API_KEY</span><span class="o">=</span><span class="s2">&quot;ntn_your-integration-token&quot;</span>
+</code></pre></div>
+<h3 id="github">GitHub<a class="headerlink" href="#github" title="Permanent link">&para;</a></h3>
+<p>GitHub authentication provides access to repositories, issues, and organization data.</p>
+<p><strong>Scopes requested:</strong></p>
+<ul>
+<li><code>repo</code></li>
+<li><code>read:org</code></li>
+</ul>
+<p><strong>Environment variables:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GITHUB_CLIENT_ID</code></td>
+<td>For OAuth</td>
+<td>OAuth App client ID</td>
+</tr>
+<tr>
+<td><code>GITHUB_CLIENT_SECRET</code></td>
+<td>For OAuth</td>
+<td>OAuth App client secret</td>
+</tr>
+<tr>
+<td><code>GITHUB_TOKEN</code></td>
+<td>Fallback</td>
+<td>Personal access token (classic or fine-grained)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>OAuth app setup:</strong></p>
+<ol>
+<li>Go to <strong>GitHub &gt; Settings &gt; Developer Settings &gt; OAuth Apps</strong>.</li>
+<li>Click <strong>New OAuth App</strong>.</li>
+<li>Set the Authorization callback URL to <code>urn:ietf:wg:oauth:2.0:oob</code>.</li>
+<li>Copy the Client ID and generate a Client Secret.</li>
+<li>Set the environment variables:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">GITHUB_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your-client-id&quot;</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">GITHUB_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your-client-secret&quot;</span>
+</code></pre></div>
+<p><strong>Personal access token (recommended for most users):</strong></p>
+<p>The simplest approach is to create a Personal Access Token:</p>
+<ol>
+<li>Go to <strong>GitHub &gt; Settings &gt; Developer Settings &gt; Personal Access Tokens</strong>.</li>
+<li>Generate a token with <code>repo</code> and <code>read:org</code> scopes.</li>
+<li>Set it as <code>GITHUB_TOKEN</code>:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">GITHUB_TOKEN</span><span class="o">=</span><span class="s2">&quot;ghp_your-token&quot;</span>
+</code></pre></div>
+<h3 id="microsoft">Microsoft<a class="headerlink" href="#microsoft" title="Permanent link">&para;</a></h3>
+<p>Microsoft authentication provides access to Microsoft 365 resources via the Microsoft Graph API, including OneDrive, SharePoint, and Teams recordings.</p>
+<p><strong>Scopes requested:</strong></p>
+<ul>
+<li><code>https://graph.microsoft.com/OnlineMeetings.Read</code></li>
+<li><code>https://graph.microsoft.com/Files.Read</code></li>
+</ul>
+<p><strong>Environment variables:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>MICROSOFT_CLIENT_ID</code></td>
+<td>For OAuth</td>
+<td>Application (client) ID from Azure AD</td>
+</tr>
+<tr>
+<td><code>MICROSOFT_CLIENT_SECRET</code></td>
+<td>For OAuth</td>
+<td>Client secret from Azure AD</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Azure AD app registration:</strong></p>
+<ol>
+<li>Go to the <a href="https://portal.azure.com/">Azure Portal</a>.</li>
+<li>Navigate to <strong>Azure Active Directory &gt; App registrations</strong>.</li>
+<li>Click <strong>New registration</strong>.</li>
+<li>Name the application (e.g., "PlanOpticon").</li>
+<li>Under <strong>Supported account types</strong>, select the appropriate option for your organization.</li>
+<li>Set the redirect URI to <code>urn:ietf:wg:oauth:2.0:oob</code> with platform <strong>Mobile and desktop applications</strong>.</li>
+<li>After registration, go to <strong>Certificates &amp; secrets</strong> and create a new client secret.</li>
+<li>Under <strong>API permissions</strong>, add:<ul>
+<li><code>OnlineMeetings.Read</code></li>
+<li><code>Files.Read</code></li>
+</ul>
+</li>
+<li>Grant admin consent if required by your organization.</li>
+<li>Set the environment variables:</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MICROSOFT_CLIENT_ID</span><span class="o">=</span><span class="s2">&quot;your-application-id&quot;</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MICROSOFT_CLIENT_SECRET</span><span class="o">=</span><span class="s2">&quot;your-client-secret&quot;</span>
+</code></pre></div>
+<p><strong>Microsoft 365 CLI:</strong> The <code>planopticon m365</code> commands use the <code>@pnp/cli-microsoft365</code> npm package, which has its own authentication flow via <code>m365 login</code>. This is separate from the OAuth flow described above.</p>
+<h2 id="cli-usage">CLI usage<a class="headerlink" href="#cli-usage" title="Permanent link">&para;</a></h2>
+<h3 id="planopticon-auth"><code>planopticon auth</code><a class="headerlink" href="#planopticon-auth" title="Permanent link">&para;</a></h3>
+<p>Authenticate with a cloud service or manage saved tokens.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>planopticon auth SERVICE [--logout]
+</code></pre></div>
+<p><strong>Arguments:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SERVICE</code></td>
+<td>One of: <code>google</code>, <code>dropbox</code>, <code>zoom</code>, <code>notion</code>, <code>github</code>, <code>microsoft</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Option</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--logout</code></td>
+<td>Clear the saved token for the specified service</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Authenticate with Google (triggers OAuth flow or uses saved token)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>google
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Authenticate with Zoom</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>zoom
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Clear saved GitHub token</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>github<span class="w"> </span>--logout
+</code></pre></div>
+<p>On success, the command prints the authentication method used:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>Google authentication successful (oauth_pkce).
+</code></pre></div>
+<p>or</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Github authentication successful (api_key).
+</code></pre></div>
+<h3 id="companion-repl-auth">Companion REPL <code>/auth</code><a class="headerlink" href="#companion-repl-auth" title="Permanent link">&para;</a></h3>
+<p>Inside the interactive companion REPL (<code>planopticon -C</code> or <code>planopticon -I</code>), you can authenticate with services using the <code>/auth</code> command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>/auth SERVICE
+</code></pre></div>
+<p>Without arguments, <code>/auth</code> lists all available services:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>&gt; /auth
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>Usage: /auth SERVICE
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>Available: dropbox, github, google, microsoft, notion, zoom
+</code></pre></div>
+<p>With a service name, it runs the same auth chain as the CLI command:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>&gt; /auth github
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>Github authentication successful (api_key).
+</code></pre></div>
+<h2 id="environment-variables-reference">Environment variables reference<a class="headerlink" href="#environment-variables-reference" title="Permanent link">&para;</a></h2>
+<p>The following table summarizes all environment variables used by the authentication system:</p>
+<table>
+<thead>
+<tr>
+<th>Service</th>
+<th>OAuth Client ID</th>
+<th>OAuth Client Secret</th>
+<th>API Key / Token</th>
+<th>Account ID</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Google</td>
+<td><code>GOOGLE_CLIENT_ID</code></td>
+<td><code>GOOGLE_CLIENT_SECRET</code></td>
+<td><code>GOOGLE_API_KEY</code></td>
+<td>--</td>
+</tr>
+<tr>
+<td>Dropbox</td>
+<td><code>DROPBOX_APP_KEY</code></td>
+<td><code>DROPBOX_APP_SECRET</code></td>
+<td><code>DROPBOX_ACCESS_TOKEN</code></td>
+<td>--</td>
+</tr>
+<tr>
+<td>Zoom</td>
+<td><code>ZOOM_CLIENT_ID</code></td>
+<td><code>ZOOM_CLIENT_SECRET</code></td>
+<td>--</td>
+<td><code>ZOOM_ACCOUNT_ID</code></td>
+</tr>
+<tr>
+<td>Notion</td>
+<td><code>NOTION_CLIENT_ID</code></td>
+<td><code>NOTION_CLIENT_SECRET</code></td>
+<td><code>NOTION_API_KEY</code></td>
+<td>--</td>
+</tr>
+<tr>
+<td>GitHub</td>
+<td><code>GITHUB_CLIENT_ID</code></td>
+<td><code>GITHUB_CLIENT_SECRET</code></td>
+<td><code>GITHUB_TOKEN</code></td>
+<td>--</td>
+</tr>
+<tr>
+<td>Microsoft</td>
+<td><code>MICROSOFT_CLIENT_ID</code></td>
+<td><code>MICROSOFT_CLIENT_SECRET</code></td>
+<td>--</td>
+<td>--</td>
+</tr>
+</tbody>
+</table>
+<h2 id="python-api">Python API<a class="headerlink" href="#python-api" title="Permanent link">&para;</a></h2>
+<h3 id="authconfig">AuthConfig<a class="headerlink" href="#authconfig" title="Permanent link">&para;</a></h3>
+<p>The <code>AuthConfig</code> dataclass defines the authentication configuration for a service. It holds OAuth endpoints, credential references, scopes, and token storage paths.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">video_processor.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthConfig</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">AuthConfig</span><span class="p">(</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="n">service</span><span class="o">=</span><span class="s2">&quot;myservice&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    <span class="n">oauth_authorize_url</span><span class="o">=</span><span class="s2">&quot;https://example.com/oauth/authorize&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="n">oauth_token_url</span><span class="o">=</span><span class="s2">&quot;https://example.com/oauth/token&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>    <span class="n">client_id_env</span><span class="o">=</span><span class="s2">&quot;MYSERVICE_CLIENT_ID&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    <span class="n">client_secret_env</span><span class="o">=</span><span class="s2">&quot;MYSERVICE_CLIENT_SECRET&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    <span class="n">api_key_env</span><span class="o">=</span><span class="s2">&quot;MYSERVICE_API_KEY&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>    <span class="n">scopes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;read&quot;</span><span class="p">,</span> <span class="s2">&quot;write&quot;</span><span class="p">],</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="p">)</span>
+</code></pre></div>
+<p><strong>Key fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>service</code></td>
+<td><code>str</code></td>
+<td>Service identifier (used for token filename)</td>
+</tr>
+<tr>
+<td><code>oauth_authorize_url</code></td>
+<td><code>Optional[str]</code></td>
+<td>OAuth authorization endpoint</td>
+</tr>
+<tr>
+<td><code>oauth_token_url</code></td>
+<td><code>Optional[str]</code></td>
+<td>OAuth token endpoint</td>
+</tr>
+<tr>
+<td><code>client_id</code> / <code>client_id_env</code></td>
+<td><code>Optional[str]</code></td>
+<td>Client ID value or env var name</td>
+</tr>
+<tr>
+<td><code>client_secret</code> / <code>client_secret_env</code></td>
+<td><code>Optional[str]</code></td>
+<td>Client secret value or env var name</td>
+</tr>
+<tr>
+<td><code>api_key_env</code></td>
+<td><code>Optional[str]</code></td>
+<td>Environment variable for API key fallback</td>
+</tr>
+<tr>
+<td><code>scopes</code></td>
+<td><code>List[str]</code></td>
+<td>OAuth scopes to request</td>
+</tr>
+<tr>
+<td><code>redirect_uri</code></td>
+<td><code>str</code></td>
+<td>Redirect URI (default: <code>urn:ietf:wg:oauth:2.0:oob</code>)</td>
+</tr>
+<tr>
+<td><code>account_id</code> / <code>account_id_env</code></td>
+<td><code>Optional[str]</code></td>
+<td>Account ID for client credentials grant</td>
+</tr>
+<tr>
+<td><code>token_path</code></td>
+<td><code>Optional[Path]</code></td>
+<td>Override token storage path</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Resolved properties:</strong></p>
+<ul>
+<li><code>resolved_client_id</code> -- Returns the client ID from the direct value or environment variable.</li>
+<li><code>resolved_client_secret</code> -- Returns the client secret from the direct value or environment variable.</li>
+<li><code>resolved_api_key</code> -- Returns the API key from the environment variable.</li>
+<li><code>resolved_account_id</code> -- Returns the account ID from the direct value or environment variable.</li>
+<li><code>resolved_token_path</code> -- Returns the token file path (default: <code>~/.planopticon/{service}_token.json</code>).</li>
+<li><code>supports_oauth</code> -- Returns <code>True</code> if both OAuth endpoints are configured.</li>
+</ul>
+<h3 id="oauthmanager">OAuthManager<a class="headerlink" href="#oauthmanager" title="Permanent link">&para;</a></h3>
+<p>The <code>OAuthManager</code> class manages the full authentication lifecycle for a service.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">video_processor.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">OAuthManager</span><span class="p">,</span> <span class="n">AuthConfig</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">AuthConfig</span><span class="p">(</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="n">service</span><span class="o">=</span><span class="s2">&quot;notion&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="n">oauth_authorize_url</span><span class="o">=</span><span class="s2">&quot;https://api.notion.com/v1/oauth/authorize&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="n">oauth_token_url</span><span class="o">=</span><span class="s2">&quot;https://api.notion.com/v1/oauth/token&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>    <span class="n">client_id_env</span><span class="o">=</span><span class="s2">&quot;NOTION_CLIENT_ID&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="n">client_secret_env</span><span class="o">=</span><span class="s2">&quot;NOTION_CLIENT_SECRET&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>    <span class="n">api_key_env</span><span class="o">=</span><span class="s2">&quot;NOTION_API_KEY&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="n">scopes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;read_content&quot;</span><span class="p">],</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="p">)</span>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="n">manager</span> <span class="o">=</span> <span class="n">OAuthManager</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="c1"># Full auth chain -- returns AuthResult</span>
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="n">result</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">authenticate</span><span class="p">()</span>
+<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">success</span><span class="p">:</span>
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Authenticated via </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Token: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">access_token</span><span class="p">[:</span><span class="mi">20</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>
+<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a><span class="c1"># Convenience method -- returns just the token string or None</span>
+<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a><span class="n">token</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">get_token</span><span class="p">()</span>
+<a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>
+<a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a><span class="c1"># Clear saved token (logout)</span>
+<a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a><span class="n">manager</span><span class="o">.</span><span class="n">clear_token</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>AuthResult fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>success</code></td>
+<td><code>bool</code></td>
+<td>Whether authentication succeeded</td>
+</tr>
+<tr>
+<td><code>access_token</code></td>
+<td><code>Optional[str]</code></td>
+<td>The access token (if successful)</td>
+</tr>
+<tr>
+<td><code>method</code></td>
+<td><code>Optional[str]</code></td>
+<td>One of: <code>saved_token</code>, <code>oauth_pkce</code>, <code>client_credentials</code>, <code>api_key</code></td>
+</tr>
+<tr>
+<td><code>expires_at</code></td>
+<td><code>Optional[float]</code></td>
+<td>Token expiry as a Unix timestamp</td>
+</tr>
+<tr>
+<td><code>refresh_token</code></td>
+<td><code>Optional[str]</code></td>
+<td>Refresh token (if provided)</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td><code>Optional[str]</code></td>
+<td>Error message (if unsuccessful)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="pre-built-configs">Pre-built configs<a class="headerlink" href="#pre-built-configs" title="Permanent link">&para;</a></h3>
+<p>PlanOpticon ships with pre-built <code>AuthConfig</code> instances for all six supported services. Access them via convenience functions:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">video_processor.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_auth_config</span><span class="p">,</span> <span class="n">get_auth_manager</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="c1"># Get just the config</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">get_auth_config</span><span class="p">(</span><span class="s2">&quot;zoom&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="c1"># Get a ready-to-use manager</span>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="n">manager</span> <span class="o">=</span> <span class="n">get_auth_manager</span><span class="p">(</span><span class="s2">&quot;github&quot;</span><span class="p">)</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="n">token</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">get_token</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="building-custom-connectors">Building custom connectors<a class="headerlink" href="#building-custom-connectors" title="Permanent link">&para;</a></h3>
+<p>To add authentication for a new service, create an <code>AuthConfig</code> with the service's OAuth endpoints and credential environment variables:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">video_processor.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">AuthConfig</span><span class="p">,</span> <span class="n">OAuthManager</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">AuthConfig</span><span class="p">(</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">service</span><span class="o">=</span><span class="s2">&quot;slack&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="n">oauth_authorize_url</span><span class="o">=</span><span class="s2">&quot;https://slack.com/oauth/v2/authorize&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>    <span class="n">oauth_token_url</span><span class="o">=</span><span class="s2">&quot;https://slack.com/api/oauth.v2.access&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>    <span class="n">client_id_env</span><span class="o">=</span><span class="s2">&quot;SLACK_CLIENT_ID&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>    <span class="n">client_secret_env</span><span class="o">=</span><span class="s2">&quot;SLACK_CLIENT_SECRET&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>    <span class="n">api_key_env</span><span class="o">=</span><span class="s2">&quot;SLACK_BOT_TOKEN&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>    <span class="n">scopes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;channels:read&quot;</span><span class="p">,</span> <span class="s2">&quot;channels:history&quot;</span><span class="p">],</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="p">)</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="n">manager</span> <span class="o">=</span> <span class="n">OAuthManager</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a><span class="n">result</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">authenticate</span><span class="p">()</span>
+</code></pre></div>
+<p>The token will be saved to <code>~/.planopticon/slack_token.json</code> and automatically refreshed on subsequent calls.</p>
+<h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
+<h3 id="no-auth-method-available-for-service">"No auth method available for {service}"<a class="headerlink" href="#no-auth-method-available-for-service" title="Permanent link">&para;</a></h3>
+<p>This means none of the four auth methods succeeded. Check that:</p>
+<ul>
+<li>The required environment variables are set and non-empty.</li>
+<li>For OAuth: both the client ID and client secret (or app key/secret) are set.</li>
+<li>For API key fallback: the correct environment variable is set.</li>
+</ul>
+<p>The error message includes hints about which variables to set.</p>
+<h3 id="token-refresh-fails">Token refresh fails<a class="headerlink" href="#token-refresh-fails" title="Permanent link">&para;</a></h3>
+<p>If automatic token refresh fails, PlanOpticon falls back to the next auth method in the chain. Common causes:</p>
+<ul>
+<li>The refresh token has been revoked (e.g., you changed your password or revoked app access).</li>
+<li>The OAuth app's client secret has changed.</li>
+<li>The service requires re-authorization after a certain period.</li>
+</ul>
+<p>To resolve, clear the token and re-authenticate:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>google<span class="w"> </span>--logout
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>planopticon<span class="w"> </span>auth<span class="w"> </span>google
+</code></pre></div>
+<h3 id="oauth-pkce-flow-does-not-open-a-browser">OAuth PKCE flow does not open a browser<a class="headerlink" href="#oauth-pkce-flow-does-not-open-a-browser" title="Permanent link">&para;</a></h3>
+<p>If the browser does not open automatically, PlanOpticon prints the authorization URL to the terminal. Copy and paste it into your browser manually. After authorizing, paste the authorization code back into the terminal prompt.</p>
+<h3 id="requests-not-installed">"requests not installed"<a class="headerlink" href="#requests-not-installed" title="Permanent link">&para;</a></h3>
+<p>The OAuth flows require the <code>requests</code> library. It is included as a dependency of PlanOpticon, but if you installed PlanOpticon in a minimal environment, install it manually:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>pip<span class="w"> </span>install<span class="w"> </span>requests
+</code></pre></div>
+<h3 id="permission-denied-on-token-file">Permission denied on token file<a class="headerlink" href="#permission-denied-on-token-file" title="Permanent link">&para;</a></h3>
+<p>PlanOpticon needs write access to <code>~/.planopticon/</code>. If the directory or token files have restrictive permissions, adjust them:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>chmod<span class="w"> </span><span class="m">700</span><span class="w"> </span>~/.planopticon
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>chmod<span class="w"> </span><span class="m">600</span><span class="w"> </span>~/.planopticon/*_token.json
+</code></pre></div>
+<h3 id="microsoft-authentication-uses-the-common-tenant">Microsoft authentication uses the <code>/common</code> tenant<a class="headerlink" href="#microsoft-authentication-uses-the-common-tenant" title="Permanent link">&para;</a></h3>
+<p>The default Microsoft OAuth configuration uses the <code>common</code> tenant endpoint (<code>login.microsoftonline.com/common/...</code>), which supports both personal Microsoft accounts and Azure AD organizational accounts. If your organization requires a specific tenant, you can create a custom <code>AuthConfig</code> with the tenant-specific URLs.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2026 CONFLICT LLC
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/ConflictHQ/PlanOpticon" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "search.suggest", "search.highlight", "content.code.copy", "content.tabs.link", "header.autohide"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
