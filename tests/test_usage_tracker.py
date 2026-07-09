@@ -196,3 +196,40 @@ class TestFmtDuration:
 
     def test_just_under_minute(self):
         assert _fmt_duration(59.9) == "59.9s"
+
+
+class TestToDict:
+    def test_to_dict_totals_and_breakdown(self):
+        tracker = UsageTracker()
+        tracker.record("openai", "gpt-4o", input_tokens=100, output_tokens=50)
+        tracker.record("openai", "gpt-4o", input_tokens=10, output_tokens=5)
+        tracker.record("openai", "whisper-1", audio_minutes=2.5)
+        tracker.start_step("Transcription")
+        tracker.end_step()
+
+        data = tracker.to_dict()
+        assert data["input_tokens"] == 110
+        assert data["output_tokens"] == 55
+        assert data["audio_minutes"] == 2.5
+        assert data["api_calls"] == 3
+        assert data["estimated_cost"] > 0
+        assert data["duration_seconds"] >= 0
+
+        models = {m["model"]: m for m in data["models"]}
+        assert models["gpt-4o"]["calls"] == 2
+        assert models["whisper-1"]["audio_minutes"] == 2.5
+        assert data["steps"][0]["name"] == "Transcription"
+
+    def test_to_dict_empty_tracker_and_json_serializable(self):
+        import json
+
+        data = UsageTracker().to_dict()
+        assert data["input_tokens"] == 0
+        assert data["models"] == []
+        assert json.loads(json.dumps(data)) == data
+
+    def test_to_dict_includes_open_step(self):
+        tracker = UsageTracker()
+        tracker.start_step("Frames")
+        data = tracker.to_dict()
+        assert [s["name"] for s in data["steps"]] == ["Frames"]

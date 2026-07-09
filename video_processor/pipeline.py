@@ -405,6 +405,10 @@ def process_single_video(
     # Write manifest
     write_video_manifest(manifest, output_dir)
 
+    # Persist machine-readable usage for cost tracking (platform billing reads this)
+    usage_path = Path(output_dir) / "usage.json"
+    usage_path.write_text(json.dumps(pm.usage.to_dict(), indent=2))
+
     logger.info(
         f"Processing complete in {elapsed:.1f}s: {len(diagrams)} diagrams, "
         f"{len(screen_captures)} captures, {len(key_points)} key points, "
