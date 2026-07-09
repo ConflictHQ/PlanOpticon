@@ -5,6 +5,29 @@ All notable changes to PlanOpticon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-07-08
+
+First stable release. The CLI surface, provider registry, output layout, and
+interchange contracts (`conflict-kg/v1`, PlanOpticonExchange, `usage.json`)
+are now stable interfaces consumed by external tools — breaking changes from
+here follow semver.
+
+### Added
+
+- **conflict-kg/v1 canonical graph export** (`planopticon export conflict-kg DB_PATH [--sqlite]`): one interchange contract for every Conflict tool — JSON encoding for small/medium graphs and a Cloudflare D1-compatible SQLite encoding for large ones. Node ids are stable case-insensitive identity keys; edges reference ids for O(1) loading.
+- **Speaker diarization backends**: Deepgram (nova-3) and ElevenLabs (scribe_v1) transcribers with `--diarize`, producing per-segment speaker labels.
+- **Machine-readable usage artifact**: every pipeline run now writes `usage.json` (tokens, audio minutes, per-model cost estimates, step timings) alongside the manifest — the cost-tracking contract for the hosted platform.
+
+### Fixed
+
+- `--speakers` no longer crashes providers that don't accept speaker hints (Gemini and others); hints are passed only where supported, mapped into the OpenAI Whisper prompt (which previously never received them), and woven into Gemini's transcription prompt.
+- Pinned `opencv-python < 5` — OpenCV 5.0 removed `cv2.CascadeClassifier` and broke frame extraction.
+
+### Documentation
+
+- `bootstrap.md` conventions document plus agent shims (`CLAUDE.md`, `AGENTS.md`, `CALLIOPE.md`).
+- Knowledge Graphs guide documents the SQLite→Navegador ingest handoff as the supported default topology.
+
 ## [0.6.0] - 2026-04-13
 
 ### Fixed
