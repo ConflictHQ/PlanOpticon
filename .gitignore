@@ -43,7 +43,6 @@ ENV/
 .aider/
 .continue/
 .copilot/
-AGENTS.md
 GEMINI.md
 
 # Cloud CLI config (project-level)

@@ -1,5 +1,7 @@
 # PlanOpticon
 
+Primary conventions doc: [`bootstrap.md`](bootstrap.md) — read it before writing any code. Full development process: `/primer`.
+
 Video analysis and knowledge extraction CLI. Processes recordings into structured knowledge graphs with entities, relationships, and insights.
 
 ## Knowledge Graph Query Skill
