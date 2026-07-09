@@ -131,6 +131,42 @@ class TestAgentAnalyzeHelp:
         assert "--provider" in result.output
 
 
+class TestAgentAnalyzeRun:
+    def test_completes_and_writes_manifest(self, tmp_path):
+        """Regression for #151: agent-analyze must complete and write manifest.json.
+
+        Previously ``process()`` called the undefined ``_reflect_and_enrich()`` and
+        the command's try/except exited 1 with no output. The provider is mocked so
+        the real orchestration runs against a dummy (non-video) input whose
+        extraction steps degrade gracefully, and the run reaches the manifest.
+        """
+        from unittest.mock import MagicMock, patch
+
+        video = tmp_path / "clip.mp4"
+        video.write_bytes(b"not really a video")  # must exist for click.Path(exists=True)
+        out = tmp_path / "out"
+
+        pm = MagicMock()
+        pm.chat.return_value = "A concise summary."
+        pm.transcribe_audio.return_value = {"text": "", "segments": []}
+        pm.get_models_used.return_value = {"chat": "mock-chat"}
+
+        runner = CliRunner()
+        with patch("video_processor.providers.manager.ProviderManager", return_value=pm):
+            result = runner.invoke(
+                cli,
+                ["agent-analyze", "-i", str(video), "-o", str(out), "--depth", "basic"],
+            )
+
+        assert result.exit_code == 0, result.output
+        assert (out / "manifest.json").exists()
+        # The written manifest round-trips as a VideoManifest.
+        from video_processor.output_structure import read_video_manifest
+
+        manifest = read_video_manifest(out)
+        assert manifest.video.source_path == str(video)
+
+
 class TestListModelsHelp:
     def test_help(self):
         runner = CliRunner()
