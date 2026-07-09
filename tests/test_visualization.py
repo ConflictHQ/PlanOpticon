@@ -337,3 +337,18 @@ class TestGraphToDot:
         G.add_node('He said "hello"', type="person")
         dot = graph_to_dot(G)
         assert 'He said \\"hello\\"' in dot
+
+
+class TestRequireNetworkx:
+    """The module degrades gracefully when networkx is absent.
+
+    The rest of this file is skipped when networkx is missing, so this guard
+    path is exercised by temporarily forcing the module-level ``nx`` to None.
+    """
+
+    def test_graph_to_networkx_raises_without_networkx(self, monkeypatch):
+        import video_processor.utils.visualization as viz
+
+        monkeypatch.setattr(viz, "nx", None)
+        with pytest.raises(ImportError, match="networkx is required"):
+            viz.graph_to_networkx({"nodes": [{"name": "A", "type": "concept"}]})
