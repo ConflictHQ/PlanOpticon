@@ -48,6 +48,28 @@ store = create_store("/path/to/knowledge_graph.db")
 store = create_store()
 ```
 
+### Ecosystem Integration (Navegador)
+
+PlanOpticon is the extraction layer in a two-layer knowledge topology: it emits
+self-contained graph artifacts, and [Navegador](https://github.com/ConflictHQ/navegador)
+maintains the shared, queryable super-graph.
+
+The supported default is **file handoff**:
+
+1. PlanOpticon writes `knowledge_graph.db` (SQLite) and `knowledge_graph.json`
+   as part of its normal output — no extra configuration.
+2. Navegador ingests those artifacts into its FalkorDB graph:
+
+```bash
+navegador planopticon ingest path/to/knowledge_graph.db
+```
+
+This keeps PlanOpticon dependency-free (the SQLite backend is stdlib only) and
+works offline; the shared graph is Navegador's concern. A native FalkorDB/Redis
+storage backend for PlanOpticon — writing straight to the super-graph instead of
+handing off files — is an optional, lower-priority enhancement tracked in
+[#134](https://github.com/ConflictHQ/PlanOpticon/issues/134).
+
 ---
 
 ## Entity Types
