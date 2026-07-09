@@ -20,7 +20,7 @@ import pytest
 
 from video_processor.agent.orchestrator import AgentOrchestrator
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
-from video_processor.models import DiagramResult, KeyPoint
+from video_processor.models import ActionItem, DiagramResult, KeyPoint, VideoManifest
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -334,27 +334,144 @@ class TestGenerateReports:
 
 
 # ---------------------------------------------------------------------------
-# process — end-to-end drive
+# _reflect_and_enrich — Phase 3 consolidation pass
 #
-# NOTE: process() references self._reflect_and_enrich(), which is not defined
-# anywhere in AgentOrchestrator. The method therefore raises AttributeError
-# after the execute loop finishes. This test pins that current (buggy) behavior
-# while still asserting the real work that happens first: the plan is built,
-# every step's result is recorded (with graceful error entries for the steps
-# that need a real video file), and report generation succeeds. If/when
-# _reflect_and_enrich is implemented, the pytest.raises below should be updated.
+# Reflection runs one LLM pass over a compact summary of the executed steps and
+# merges consolidated insight strings into self._insights (deduped). It is
+# best-effort: any LLM/parse failure is swallowed so process() can still build
+# the manifest with the insights already accumulated during execution.
 # ---------------------------------------------------------------------------
 
 
+class TestReflectAndEnrich:
+    def test_merges_and_dedupes_new_insights(self, tmp_path):
+        # The reflection response mixes a duplicate of an existing insight, an
+        # empty string and a non-string entry among two genuinely new insights.
+        pm = _make_pm(
+            chat=json.dumps(
+                [
+                    "Theme: the team keeps circling back to onboarding",
+                    "",  # empty → skipped
+                    42,  # non-string → skipped
+                    "Existing insight",  # duplicate → deduped
+                    "Risk: the Q3 deadline has no owner",
+                ]
+            )
+        )
+        agent = AgentOrchestrator(provider_manager=pm)
+        agent._insights = ["Existing insight"]
+        agent._results["transcribe"] = {"text": "a transcript worth reflecting on"}
+        agent._results["extract_key_points"] = {"key_points": [KeyPoint(point="Adopt SSO")]}
+        agent._results["extract_action_items"] = {
+            "action_items": [ActionItem(action="Assign a deadline owner")]
+        }
+
+        agent._reflect_and_enrich(tmp_path)
+
+        pm.chat.assert_called_once()
+        # Duplicate/empty/non-string dropped; the two new insights appended in order.
+        assert agent.insights == [
+            "Existing insight",
+            "Theme: the team keeps circling back to onboarding",
+            "Risk: the Q3 deadline has no owner",
+        ]
+
+    def test_summary_covers_key_points_and_action_items(self, tmp_path):
+        # The compact summary the LLM reflects over includes the extracted point
+        # and action text, so reflection reasons over real step output.
+        pm = _make_pm(chat="[]")
+        agent = AgentOrchestrator(provider_manager=pm)
+        agent._results["transcribe"] = {"text": "transcript body"}
+        agent._results["extract_key_points"] = {"key_points": [KeyPoint(point="Adopt SSO")]}
+        agent._results["extract_action_items"] = {
+            "action_items": [ActionItem(action="Email the runbook")]
+        }
+
+        agent._reflect_and_enrich(tmp_path)
+
+        prompt = pm.chat.call_args.args[0][0]["content"]
+        assert "Adopt SSO" in prompt
+        assert "Email the runbook" in prompt
+        assert "transcript body" in prompt
+
+    def test_chat_error_preserves_insights(self, tmp_path):
+        # An LLM failure during reflection must not raise or lose prior insights.
+        pm = _make_pm()
+        pm.chat.side_effect = RuntimeError("provider exploded")
+        agent = AgentOrchestrator(provider_manager=pm)
+        agent._insights = ["Pre-reflection insight"]
+        agent._results["transcribe"] = {"text": "a transcript worth reflecting on"}
+
+        agent._reflect_and_enrich(tmp_path)  # no exception propagates
+
+        assert agent.insights == ["Pre-reflection insight"]
+
+    def test_malformed_json_preserves_insights(self, tmp_path):
+        # A response that is not JSON parses to None → nothing merged, no crash.
+        pm = _make_pm(chat="Sorry, I could not produce structured output.")
+        agent = AgentOrchestrator(provider_manager=pm)
+        agent._insights = ["Pre-reflection insight"]
+        agent._results["transcribe"] = {"text": "a transcript worth reflecting on"}
+
+        agent._reflect_and_enrich(tmp_path)
+
+        assert agent.insights == ["Pre-reflection insight"]
+
+    def test_skips_llm_when_nothing_extracted(self, tmp_path):
+        # No transcript / points / items / prior insights → no reason to reflect,
+        # so the LLM is not called at all.
+        pm = _make_pm()
+        agent = AgentOrchestrator(provider_manager=pm)
+
+        agent._reflect_and_enrich(tmp_path)
+
+        pm.chat.assert_not_called()
+        assert agent.insights == []
+
+
+# ---------------------------------------------------------------------------
+# process — end-to-end drive
+#
+# process() runs plan → execute → reflect → manifest and returns a
+# VideoManifest. With a missing video the extraction steps degrade gracefully
+# (their errors are recorded), the downstream steps run against empty input, and
+# reflection is skipped (nothing was extracted). The dedicated reflection cases
+# below seed insights so Phase 3 actually runs inside a full process() call.
+# ---------------------------------------------------------------------------
+
+
+def _reflection_chat(reflection_response):
+    """side_effect that answers the reflection prompt distinctly from the rest.
+
+    Every other chat call (e.g. report-summary generation) returns a short
+    string; the reflection call is matched on its stable prompt preamble.
+    ``reflection_response`` may be a value to return or an exception to raise.
+    """
+
+    def _chat(messages, *args, **kwargs):
+        content = messages[0]["content"] if messages else ""
+        if "reflecting on the results" in content:
+            if isinstance(reflection_response, Exception):
+                raise reflection_response
+            return reflection_response
+        return "A concise summary."
+
+    return _chat
+
+
 class TestProcess:
-    def test_plan_and_results_recorded_before_missing_reflect_step(self, tmp_path):
+    def test_returns_manifest_with_basic_plan(self, tmp_path):
         pm = _make_pm(chat="A concise summary.")
         agent = AgentOrchestrator(provider_manager=pm, max_retries=1)
         video = tmp_path / "missing.mp4"  # does not exist → extraction steps fail
         out = tmp_path / "out"
 
-        with pytest.raises(AttributeError, match="_reflect_and_enrich"):
-            agent.process(video, out, initial_depth="basic")
+        manifest = agent.process(video, out, initial_depth="basic")
+
+        # Phase 4: process() now completes and returns a manifest.
+        assert isinstance(manifest, VideoManifest)
+        assert manifest.video.source_path == str(video)
+        assert manifest.stats.duration_seconds >= 0
 
         # Phase 1: the basic plan was created in the expected order.
         assert [s["step"] for s in agent._plan] == [
@@ -382,15 +499,15 @@ class TestProcess:
         # Comprehensive depth adds detect_diagrams, build_knowledge_graph,
         # deep_analysis and cross_reference to the plan. With no real video these
         # run against empty upstream results, exercising each step's empty-input
-        # branch before process() hits the same missing _reflect_and_enrich step.
+        # branch before process() reflects (a no-op here) and builds the manifest.
         pm = _make_pm(chat="A summary.")
         agent = AgentOrchestrator(provider_manager=pm, max_retries=1)
         video = tmp_path / "missing.mp4"
         out = tmp_path / "out"
 
-        with pytest.raises(AttributeError, match="_reflect_and_enrich"):
-            agent.process(video, out, initial_depth="comprehensive")
+        manifest = agent.process(video, out, initial_depth="comprehensive")
 
+        assert isinstance(manifest, VideoManifest)
         assert [s["step"] for s in agent._plan] == [
             "extract_frames",
             "extract_audio",
@@ -411,3 +528,34 @@ class TestProcess:
         # deep_analysis on empty text returns nothing; cross_reference still runs.
         assert agent._results["deep_analysis"] == {}
         assert agent._results["cross_reference"] == {"enriched": True}
+
+    def test_process_surfaces_reflection_insights(self, tmp_path):
+        # A seeded insight makes Phase 3 run inside process(); the reflection
+        # response's insights are surfaced through agent.insights on the returned run.
+        pm = _make_pm()
+        pm.chat.side_effect = _reflection_chat(
+            json.dumps(["Reflected: the timeline needs an owner"])
+        )
+        agent = AgentOrchestrator(provider_manager=pm, max_retries=1)
+        agent._insights = ["Seed insight from execution"]
+        out = tmp_path / "out"
+
+        manifest = agent.process(tmp_path / "missing.mp4", out, initial_depth="basic")
+
+        assert isinstance(manifest, VideoManifest)
+        assert "Reflected: the timeline needs an owner" in agent.insights
+        assert "Seed insight from execution" in agent.insights
+
+    def test_process_completes_when_reflection_fails(self, tmp_path):
+        # Reflection raising must not break the run: process() still returns a
+        # manifest and the pre-reflection insights are left intact.
+        pm = _make_pm()
+        pm.chat.side_effect = _reflection_chat(RuntimeError("reflection provider down"))
+        agent = AgentOrchestrator(provider_manager=pm, max_retries=1)
+        agent._insights = ["Seed insight from execution"]
+        out = tmp_path / "out"
+
+        manifest = agent.process(tmp_path / "missing.mp4", out, initial_depth="basic")
+
+        assert isinstance(manifest, VideoManifest)
+        assert agent.insights == ["Seed insight from execution"]

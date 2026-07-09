@@ -375,6 +375,79 @@ class AgentOrchestrator:
 
         return {"report_path": str(md_path)}
 
+    def _reflect_and_enrich(self, output_dir: Path) -> None:
+        """Phase 3: reflect over the executed steps and consolidate insights.
+
+        Runs a single LLM pass over a compact summary of what the pipeline
+        produced — a transcript excerpt, the extracted key points and action
+        items, the diagram count, and the insights gathered so far — asking for
+        consolidated, cross-cutting takeaways. Parsed insight strings are merged
+        into ``self._insights``, deduped against what is already there.
+
+        Reflection is best-effort: it enriches a run but must never break one.
+        Any failure (LLM error, unparseable response) is caught and logged, and
+        ``self._insights`` keeps whatever it accumulated during execution so
+        ``process`` can still build the manifest. ``output_dir`` is accepted for
+        phase-signature symmetry; like ``_deep_analysis`` this phase surfaces its
+        results through ``self._insights`` rather than writing its own artifact.
+        """
+        transcript = self._results.get("transcribe", {})
+        text = transcript.get("text", "") if isinstance(transcript, dict) else ""
+
+        kp_result = self._results.get("extract_key_points", {})
+        key_points = kp_result.get("key_points", []) if isinstance(kp_result, dict) else []
+        ai_result = self._results.get("extract_action_items", {})
+        action_items = ai_result.get("action_items", []) if isinstance(ai_result, dict) else []
+        diagram_result = self._results.get("detect_diagrams", {})
+        diagrams = diagram_result.get("diagrams", []) if isinstance(diagram_result, dict) else []
+
+        # Nothing was extracted — skip the round-trip rather than reflect on nothing.
+        if not any([text, key_points, action_items, diagrams, self._insights]):
+            return
+
+        kp_lines = "\n".join(f"- {kp.point}" for kp in key_points) or "(none)"
+        ai_lines = "\n".join(f"- {item.action}" for item in action_items) or "(none)"
+        prior = "\n".join(f"- {insight}" for insight in self._insights) or "(none)"
+
+        summary = (
+            f"TRANSCRIPT (excerpt):\n{text[:8000]}\n\n"
+            f"KEY POINTS:\n{kp_lines}\n\n"
+            f"ACTION ITEMS:\n{ai_lines}\n\n"
+            f"DIAGRAMS DETECTED: {len(diagrams)}\n\n"
+            f"OBSERVATIONS SO FAR:\n{prior}"
+        )
+
+        prompt = (
+            "You are reflecting on the results of an automated video analysis. "
+            "Consolidate the most important cross-cutting insights a reader should "
+            "take away: recurring themes, notable gaps, risks, or follow-ups that "
+            "span the extracted points and action items. Be specific and do not "
+            "restate the observations already listed.\n\n"
+            f"{summary}\n\n"
+            'Return a JSON array of concise insight strings: ["insight one", ...]\n'
+            "Return ONLY the JSON array."
+        )
+
+        try:
+            from video_processor.utils.json_parsing import parse_json_from_response
+
+            raw = self.pm.chat([{"role": "user", "content": prompt}], temperature=0.4)
+            parsed = parse_json_from_response(raw)
+            if isinstance(parsed, list):
+                seen = set(self._insights)
+                added = 0
+                for item in parsed:
+                    if not isinstance(item, str):
+                        continue
+                    insight = item.strip()
+                    if insight and insight not in seen:
+                        self._insights.append(insight)
+                        seen.add(insight)
+                        added += 1
+                logger.info(f"Agent reflection: +{added} insights ({len(self._insights)} total)")
+        except Exception as e:
+            logger.warning(f"Reflection failed: {e}")
+
     def _build_manifest(
         self,
         input_path: Path,
