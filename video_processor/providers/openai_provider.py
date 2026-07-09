@@ -104,26 +104,31 @@ class OpenAIProvider(BaseProvider):
         audio_path: str | Path,
         language: Optional[str] = None,
         model: Optional[str] = None,
+        prompt: Optional[str] = None,
     ) -> dict:
         model = model or "whisper-1"
         audio_path = Path(audio_path)
         file_size = audio_path.stat().st_size
 
         if file_size <= self._MAX_FILE_SIZE:
-            return self._transcribe_single(audio_path, language, model)
+            return self._transcribe_single(audio_path, language, model, prompt)
 
         # File too large — split into chunks and transcribe each
         logger.info(
             f"Audio file {file_size / 1024 / 1024:.1f}MB exceeds Whisper 25MB limit, chunking..."
         )
-        return self._transcribe_chunked(audio_path, language, model)
+        return self._transcribe_chunked(audio_path, language, model, prompt)
 
-    def _transcribe_single(self, audio_path: Path, language: Optional[str], model: str) -> dict:
+    def _transcribe_single(
+        self, audio_path: Path, language: Optional[str], model: str, prompt: Optional[str] = None
+    ) -> dict:
         """Transcribe a single audio file."""
         with open(audio_path, "rb") as f:
             kwargs = {"model": model, "file": f}
             if language:
                 kwargs["language"] = language
+            if prompt:
+                kwargs["prompt"] = prompt
             response = self.client.audio.transcriptions.create(
                 **kwargs, response_format="verbose_json"
             )
@@ -143,7 +148,9 @@ class OpenAIProvider(BaseProvider):
             "model": model,
         }
 
-    def _transcribe_chunked(self, audio_path: Path, language: Optional[str], model: str) -> dict:
+    def _transcribe_chunked(
+        self, audio_path: Path, language: Optional[str], model: str, prompt: Optional[str] = None
+    ) -> dict:
         """Split audio into chunks under 25MB and transcribe each."""
         import tempfile
 
@@ -174,7 +181,7 @@ class OpenAIProvider(BaseProvider):
                 extractor.save_segment(chunk, chunk_path, sr)
 
                 logger.info(f"Transcribing chunk {i + 1}/{len(segments_data)}...")
-                result = self._transcribe_single(chunk_path, language, model)
+                result = self._transcribe_single(chunk_path, language, model, prompt)
 
                 all_text.append(result["text"])
                 for seg in result.get("segments", []):

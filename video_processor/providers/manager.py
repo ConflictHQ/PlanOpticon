@@ -1,5 +1,6 @@
 """ProviderManager - unified interface for routing API calls to the best available provider."""
 
+import inspect
 import logging
 from pathlib import Path
 from typing import Optional
@@ -40,6 +41,17 @@ def _ensure_providers_registered() -> None:
     import video_processor.providers.openai_provider  # noqa: F401
     import video_processor.providers.together_provider  # noqa: F401
     import video_processor.providers.xai_provider  # noqa: F401
+
+
+def _accepts_speaker_hints(provider: BaseProvider) -> bool:
+    """Check whether a provider's transcribe_audio() accepts a speaker_hints kwarg."""
+    try:
+        params = inspect.signature(provider.transcribe_audio).parameters
+    except (TypeError, ValueError):
+        return False
+    return "speaker_hints" in params or any(
+        p.kind is inspect.Parameter.VAR_KEYWORD for p in params.values()
+    )
 
 
 # Default model preference rankings (tried in order)
@@ -313,8 +325,12 @@ class ProviderManager:
             if prov_name == "openai":
                 # OpenAI Whisper supports a 'prompt' parameter for hints
                 transcribe_kwargs["prompt"] = "Speakers: " + ", ".join(speaker_hints) + "."
-            else:
+            elif _accepts_speaker_hints(provider):
                 transcribe_kwargs["speaker_hints"] = speaker_hints
+            else:
+                logger.warning(
+                    f"Transcriber '{prov_name}' does not support speaker hints; ignoring."
+                )
         result = provider.transcribe_audio(audio_path, **transcribe_kwargs)
         duration = result.get("duration") or 0
         self.usage.record(

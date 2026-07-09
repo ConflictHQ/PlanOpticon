@@ -127,6 +127,7 @@ class GeminiProvider(BaseProvider):
         audio_path: str | Path,
         language: Optional[str] = None,
         model: Optional[str] = None,
+        speaker_hints: Optional[list[str]] = None,
     ) -> dict:
         from google.genai import types
 
@@ -149,8 +150,9 @@ class GeminiProvider(BaseProvider):
         audio_bytes = audio_path.read_bytes()
 
         lang_hint = f" The audio is in {language}." if language else ""
+        speaker_hint = f" Speakers: {', '.join(speaker_hints)}." if speaker_hints else ""
         prompt = (
-            f"Transcribe this audio accurately.{lang_hint} "
+            f"Transcribe this audio accurately.{lang_hint}{speaker_hint} "
             "Return only the verbatim transcript text — no JSON, no markdown, "
             "no preamble, no labels, no commentary."
         )
