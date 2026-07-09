@@ -138,6 +138,35 @@ class UsageTracker:
     def total_duration(self) -> float:
         return time.time() - self._start_time
 
+    def to_dict(self) -> dict:
+        """Machine-readable usage summary — persisted as usage.json per run.
+
+        Top-level key names are a contract with the planopticon.io platform's
+        cost extraction (input_tokens, output_tokens, audio_minutes).
+        """
+        steps = self._steps + ([self._current_step] if self._current_step else [])
+        return {
+            "input_tokens": self.total_input_tokens,
+            "output_tokens": self.total_output_tokens,
+            "audio_minutes": sum(u.audio_minutes for u in self._models.values()),
+            "api_calls": self.total_api_calls,
+            "estimated_cost": self.total_cost,
+            "duration_seconds": self.total_duration,
+            "models": [
+                {
+                    "provider": u.provider,
+                    "model": u.model,
+                    "calls": u.calls,
+                    "input_tokens": u.input_tokens,
+                    "output_tokens": u.output_tokens,
+                    "audio_minutes": u.audio_minutes,
+                    "estimated_cost": u.estimated_cost,
+                }
+                for u in self._models.values()
+            ],
+            "steps": [{"name": s.name, "duration_seconds": s.duration} for s in steps],
+        }
+
     def format_summary(self) -> str:
         """Format a human-readable summary for CLI output."""
         lines = []

@@ -118,12 +118,12 @@ class TestExtractActionItems:
 
 def _make_mock_pm():
     """Build a mock ProviderManager with usage tracker and predictable responses."""
+    from video_processor.utils.usage_tracker import UsageTracker
+
     pm = MagicMock()
 
-    # Usage tracker stub
-    pm.usage = MagicMock()
-    pm.usage.start_step = MagicMock()
-    pm.usage.end_step = MagicMock()
+    # Real usage tracker — the pipeline serializes it to usage.json
+    pm.usage = UsageTracker()
 
     # transcribe_audio returns a simple transcript
     pm.transcribe_audio.return_value = {
@@ -266,6 +266,10 @@ class TestProcessSingleVideo:
         assert manifest.stats.frames_extracted == 2
         assert manifest.transcript_json == "transcript/transcript.json"
         assert manifest.knowledge_graph_json == "results/knowledge_graph.json"
+
+        usage = json.loads((output_dir / "usage.json").read_text())
+        for key in ("input_tokens", "output_tokens", "audio_minutes", "models", "steps"):
+            assert key in usage
 
     @patch("video_processor.pipeline.export_all_formats")
     @patch("video_processor.pipeline.PlanGenerator")
