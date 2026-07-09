@@ -59,6 +59,7 @@ def process_single_video(
     title: Optional[str] = None,
     progress_callback: Optional[ProgressCallback] = None,
     speaker_hints: Optional[list[str]] = None,
+    diarize: bool = False,
 ) -> VideoManifest:
     """
     Full pipeline: frames -> audio -> transcription -> diagrams -> KG -> report -> export.
@@ -149,7 +150,9 @@ def process_single_video(
         segments = transcript_data.get("segments", [])
     else:
         logger.info("Transcribing audio...")
-        transcription = pm.transcribe_audio(audio_path, speaker_hints=speaker_hints)
+        transcription = pm.transcribe_audio(
+            audio_path, speaker_hints=speaker_hints, diarize=diarize
+        )
         transcript_text = transcription.get("text", "")
         segments = transcription.get("segments", [])
 
@@ -206,18 +209,36 @@ def process_single_video(
         }
         transcript_json.write_text(json.dumps(transcript_data, indent=2))
 
+        # transcript.txt — when segments carry speakers, render as grouped
+        # "Speaker N: ..." turns; otherwise the plain transcript text.
         transcript_txt = dirs["transcript"] / "transcript.txt"
-        transcript_txt.write_text(transcript_text)
+        has_speakers = any(seg.get("speaker") for seg in segments)
+        if has_speakers:
+            turns, last_spk, buf = [], None, []
+            for seg in segments:
+                spk = seg.get("speaker") or "Speaker ?"
+                if spk != last_spk and buf:
+                    turns.append(f"{last_spk}: " + " ".join(buf))
+                    buf = []
+                last_spk = spk
+                buf.append(seg.get("text", "").strip())
+            if buf:
+                turns.append(f"{last_spk}: " + " ".join(buf))
+            transcript_txt.write_text("\n\n".join(turns))
+        else:
+            transcript_txt.write_text(transcript_text)
 
-        # SRT
+        # SRT — prefix each cue with its speaker label when present.
         transcript_srt = dirs["transcript"] / "transcript.srt"
         srt_lines = []
         for i, seg in enumerate(segments):
             start = seg.get("start", 0)
             end = seg.get("end", 0)
+            text = seg.get("text", "").strip()
+            spk = seg.get("speaker")
             srt_lines.append(str(i + 1))
             srt_lines.append(f"{_format_srt_time(start)} --> {_format_srt_time(end)}")
-            srt_lines.append(seg.get("text", "").strip())
+            srt_lines.append(f"[{spk}] {text}" if spk else text)
             srt_lines.append("")
         transcript_srt.write_text("\n".join(srt_lines))
     pipeline_bar.update(1)

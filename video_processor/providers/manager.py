@@ -14,14 +14,26 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
+_BUILTINS_REGISTERED = False
+
+
 def _ensure_providers_registered() -> None:
-    """Import all built-in provider modules so they register themselves."""
-    if ProviderRegistry.all_registered():
+    """Import all built-in provider modules so they register themselves.
+
+    Guarded by a module flag rather than the registry contents: a single
+    provider module imported elsewhere first would otherwise make this
+    short-circuit and skip the rest. Imports are cached, so this is cheap.
+    """
+    global _BUILTINS_REGISTERED
+    if _BUILTINS_REGISTERED:
         return
+    _BUILTINS_REGISTERED = True
     # Each module registers itself on import via ProviderRegistry.register()
     import video_processor.providers.anthropic_provider  # noqa: F401
     import video_processor.providers.azure_provider  # noqa: F401
     import video_processor.providers.cerebras_provider  # noqa: F401
+    import video_processor.providers.deepgram_provider  # noqa: F401
+    import video_processor.providers.elevenlabs_provider  # noqa: F401
     import video_processor.providers.fireworks_provider  # noqa: F401
     import video_processor.providers.gemini_provider  # noqa: F401
     import video_processor.providers.ollama_provider  # noqa: F401
@@ -47,6 +59,14 @@ _TRANSCRIPTION_PREFERENCES = [
     ("openai", "whisper-1"),
     ("gemini", "gemini-2.5-flash"),
 ]
+
+# Diarization-capable transcribers, tried in order when --diarize is requested
+# without an explicit transcriber. Deepgram first (fastest/cheapest).
+_DIARIZATION_PREFERENCES = [
+    ("deepgram", "nova-3"),
+    ("elevenlabs", "scribe_v1"),
+]
+_DIARIZE_CAPABLE = {"deepgram", "elevenlabs"}
 
 
 class ProviderManager:
@@ -223,8 +243,34 @@ class ProviderManager:
         audio_path: str | Path,
         language: Optional[str] = None,
         speaker_hints: Optional[list[str]] = None,
+        diarize: bool = False,
     ) -> dict:
-        """Transcribe audio using local Whisper if available, otherwise API."""
+        """Transcribe audio. With diarize=True, route to a speaker-labeling
+        provider (Deepgram/ElevenLabs); otherwise prefer local Whisper, then API."""
+        # Diarization path: only Deepgram/ElevenLabs populate segment speakers.
+        if diarize:
+            prov_name, model = self._resolve_model(
+                self.transcription_model, "audio", _DIARIZATION_PREFERENCES
+            )
+            if prov_name in _DIARIZE_CAPABLE:
+                logger.info(f"Transcription (diarized): using {prov_name}/{model}")
+                provider = self._get_provider(prov_name)
+                kwargs: dict = {"language": language, "model": model, "diarize": True}
+                if speaker_hints:
+                    kwargs["speaker_hints"] = speaker_hints
+                result = provider.transcribe_audio(audio_path, **kwargs)
+                duration = result.get("duration") or 0
+                self.usage.record(
+                    provider=prov_name,
+                    model=model,
+                    audio_minutes=duration / 60 if duration else 0,
+                )
+                return result
+            logger.warning(
+                f"Transcriber '{prov_name}' does not support diarization; "
+                "transcribing without speaker labels."
+            )
+
         # Prefer local Whisper — no file size limits, no API costs
         if not self.transcription_model or self.transcription_model.startswith("whisper-local"):
             try:
