@@ -226,6 +226,66 @@ class TestProviderManager:
         assert result["text"] == "hello world"
         mock_prov.transcribe_audio.assert_called_once()
 
+    @patch.dict("os.environ", {"GEMINI_API_KEY": "test-key"})
+    def test_transcribe_drops_speaker_hints_for_unsupporting_provider(self, caplog):
+        """Regression for #127: --speakers with a provider whose transcribe_audio
+        doesn't accept speaker_hints must warn and drop the kwarg, not crash."""
+
+        class _NoHintsTranscriber:
+            def __init__(self):
+                self.calls = []
+
+            def transcribe_audio(self, audio_path, language=None, model=None):
+                self.calls.append({"language": language, "model": model})
+                return {"text": "hi", "segments": [], "provider": "gemini", "model": model}
+
+        stub = _NoHintsTranscriber()
+        mgr = ProviderManager(transcription_model="gemini-2.5-flash")
+        mgr._providers["gemini"] = stub
+
+        with caplog.at_level("WARNING"):
+            result = mgr.transcribe_audio("/tmp/test.wav", speaker_hints=["Alice", "Bob"])
+
+        assert result["text"] == "hi"
+        assert len(stub.calls) == 1
+        assert "speaker hints" in caplog.text
+        assert "speaker_hints" not in stub.calls[0]
+
+    @patch.dict("os.environ", {"DEEPGRAM_API_KEY": "test-key"})
+    def test_transcribe_passes_speaker_hints_when_supported(self):
+        class _HintsTranscriber:
+            def __init__(self):
+                self.calls = []
+
+            def transcribe_audio(self, audio_path, language=None, model=None, speaker_hints=None):
+                self.calls.append({"speaker_hints": speaker_hints})
+                return {"text": "hi", "segments": [], "provider": "deepgram", "model": model}
+
+        stub = _HintsTranscriber()
+        mgr = ProviderManager(transcription_model="nova-3")
+        mgr._providers["deepgram"] = stub
+
+        result = mgr.transcribe_audio("/tmp/test.wav", speaker_hints=["Alice", "Bob"])
+        assert result["text"] == "hi"
+        assert stub.calls[0]["speaker_hints"] == ["Alice", "Bob"]
+
+    @patch.dict("os.environ", {"OPENAI_API_KEY": "test-key"})
+    def test_transcribe_maps_speaker_hints_to_openai_prompt(self):
+        class _PromptTranscriber:
+            def __init__(self):
+                self.calls = []
+
+            def transcribe_audio(self, audio_path, language=None, model=None, prompt=None):
+                self.calls.append({"prompt": prompt})
+                return {"text": "hi", "segments": [], "provider": "openai", "model": model}
+
+        stub = _PromptTranscriber()
+        mgr = ProviderManager(transcription_model="whisper-1")
+        mgr._providers["openai"] = stub
+
+        mgr.transcribe_audio("/tmp/test.wav", speaker_hints=["Alice", "Bob"])
+        assert stub.calls[0]["prompt"] == "Speakers: Alice, Bob."
+
     def test_get_models_used(self):
         mgr = ProviderManager(
             vision_model="gpt-4o",
@@ -448,6 +508,32 @@ class TestOllamaProvider:
         llama = [m for m in models if "llama" in m.id][0]
         assert "chat" in llama.capabilities
         assert "vision" not in llama.capabilities
+
+
+# ---------------------------------------------------------------------------
+# GeminiProvider
+# ---------------------------------------------------------------------------
+
+
+class TestGeminiProvider:
+    def test_transcribe_prompt_includes_speaker_hints(self, tmp_path):
+        from video_processor.providers.gemini_provider import GeminiProvider
+
+        provider = GeminiProvider(api_key="test-key")
+        provider.client = MagicMock()
+        response = MagicMock()
+        response.text = "hello world"
+        provider.client.models.generate_content.return_value = response
+
+        audio = tmp_path / "test.wav"
+        audio.write_bytes(b"\x00\x01")
+
+        result = provider.transcribe_audio(audio, speaker_hints=["Alice", "Bob"])
+
+        contents = provider.client.models.generate_content.call_args.kwargs["contents"]
+        prompt = contents[1]
+        assert "Speakers: Alice, Bob." in prompt
+        assert result["text"] == "hello world"
 
 
 # ---------------------------------------------------------------------------
