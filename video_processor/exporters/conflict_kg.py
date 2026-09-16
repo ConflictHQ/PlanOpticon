@@ -26,6 +26,52 @@ logger = logging.getLogger(__name__)
 
 FORMAT_ID = "conflict-kg/v1"
 
+# Supergraph interop contract (ConflictHQ/project-brain#60, producer
+# conformance #153). PlanOpticon is a producer for the BRAIN realm: extracted
+# entities land in a brain as kg-entity nodes. Conformance is additive at this
+# output boundary — node ids stay the store's identity key (lowercased name,
+# which the brain's build-kg/enrich-kg consumers merge on), and the contract
+# rides beside them: an envelope naming the version/realm/producer, a per-node
+# `props.address` in the global grammar, and per-edge attestation
+# (`asserted_by`, `confidence`) so every assertion carries who said it.
+CONTRACT_VERSION = "1.0"
+REALM = "brain"
+PRODUCER = "planopticon"
+ADDRESS_KIND = "kg-entity"
+
+
+def _slug(text: str) -> str:
+    """Stable id fragment from free text — the brain's `slug` id convention
+    (kebab-case, alnum runs joined by '-'), so `props.address` resolves to the
+    same node the brain would mint for this entity."""
+    out = []
+    for ch in str(text).strip().lower():
+        if ch.isalnum():
+            out.append(ch)
+        elif out and out[-1] != "-":
+            out.append("-")
+    return "".join(out).strip("-") or "item"
+
+
+def address_for(name: str, repo: str = "") -> str:
+    """Global address for an extracted entity: `[<repo>/]kg-entity:<slug>`."""
+    addr = f"{ADDRESS_KIND}:{_slug(name)}"
+    return f"{repo}/{addr}" if repo else addr
+
+
+def contract_envelope(repo: str = "") -> Dict:
+    """The producer declaration a brain gates on before reading anything else."""
+    env = {
+        "version": CONTRACT_VERSION,
+        "realm": REALM,
+        "producer": PRODUCER,
+        "address_kind": ADDRESS_KIND,
+    }
+    if repo:
+        env["repo"] = repo
+    return env
+
+
 _SQLITE_SCHEMA = """
 CREATE TABLE nodes (id TEXT PRIMARY KEY, name TEXT, type TEXT, props JSON);
 CREATE TABLE edges (source TEXT, target TEXT, type TEXT, props JSON);
@@ -34,17 +80,21 @@ CREATE INDEX idx_edges_target ON edges(target);
 """
 
 
-def to_conflict_kg(kg_dict: Dict) -> Dict:
+def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
     """Project a KnowledgeGraph.to_dict() payload onto the conflict-kg/v1 shape.
 
     Node ids are the lowercased entity names — the store's real identity key —
     and edge endpoints are normalized the same way so they always reference
     node ids regardless of the casing stored on the relationship rows.
+
+    Contract v1.0 conformance rides beside that, additively: a `contract`
+    envelope, `props.address` per node, `asserted_by` + `confidence` per edge.
+    `repo` (optional) is the federation namespace to prefix addresses with.
     """
     nodes = []
     for node in kg_dict.get("nodes", []):
         name = node.get("name", "")
-        props = {}
+        props = {"address": address_for(name, repo)}
         if node.get("descriptions"):
             props["descriptions"] = node["descriptions"]
         if node.get("occurrences"):
@@ -60,7 +110,9 @@ def to_conflict_kg(kg_dict: Dict) -> Dict:
 
     edges = []
     for rel in kg_dict.get("relationships", []):
-        props = {}
+        # Attestation: every assertion names its asserter. Confidence is the
+        # extractor's when it recorded one, else 1.0 (a stated relationship).
+        props = {"asserted_by": PRODUCER, "confidence": float(rel.get("confidence", 1.0))}
         if rel.get("content_source") is not None:
             props["content_source"] = rel["content_source"]
         if rel.get("timestamp") is not None:
@@ -74,7 +126,12 @@ def to_conflict_kg(kg_dict: Dict) -> Dict:
             }
         )
 
-    return {"format": FORMAT_ID, "nodes": nodes, "edges": edges}
+    return {
+        "format": FORMAT_ID,
+        "contract": contract_envelope(repo),
+        "nodes": nodes,
+        "edges": edges,
+    }
 
 
 def write_conflict_kg_json(kg_dict: Dict, output_path: Path) -> Path:
