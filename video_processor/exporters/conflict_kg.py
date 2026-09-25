@@ -34,10 +34,65 @@ FORMAT_ID = "conflict-kg/v1"
 # rides beside them: an envelope naming the version/realm/producer, a per-node
 # `props.address` in the global grammar, and per-edge attestation
 # (`asserted_by`, `confidence`) so every assertion carries who said it.
+# Edge `type` is the one rewritten value: it is emitted in the brain's declared
+# edge vocabulary (EDGE_VERBS), and `props.raw_types` keeps the extracted verbs
+# unless they are exactly that type. Attestation is multi-valued: there is one
+# edge per (source, target, type), and `props.sources` lists every content
+# source stating it (the wiki frontmatter's `sources` convention).
 CONTRACT_VERSION = "1.0"
 REALM = "brain"
 PRODUCER = "planopticon"
 ADDRESS_KIND = "kg-entity"
+
+# Extracted verbs -> declared edge ids, mirroring project-brain's
+# template/brain-schema.json `edges` (contract 1.0): the brain's relation
+# canonicalization (project-brain#57), done at emission instead of by the
+# consumer. Keys are verbs PlanOpticon's extraction really emits, lowercased,
+# `_` read as a space. Targets are the extraction-facing ids only; ids that
+# assert record, work-graph, federation or code-realm structure (decided_in,
+# depends_on, same_as, implemented_in, ...) are never targets, even when an
+# extracted verb spells one. Matching is exact ("no integration" is not
+# integrates_with); an unlisted verb is `other`, the schema's unclassified
+# extraction relation. Each target maps to itself, so re-export is a no-op.
+OTHER_EDGE = "other"
+EDGE_VERBS = {
+    verb: edge
+    for edge, verbs in {
+        "uses": ("uses", "use", "utilizes", "operates", "accesses"),
+        "provides": ("provides", "provides data to", "feeds into", "feeds data to"),
+        "integrates_with": (
+            "integrates with",
+            "integrated with",
+            "integrated into",
+            "integrates",
+            "plugs into",
+        ),
+        "relates_to": (
+            "relates to",
+            "related to",
+            "is related to",
+            "associated with",
+            "is associated with",
+            "tied to",
+            "linked to",
+        ),
+        "about": ("about", "pertains to"),
+        "contains": (
+            "contains",
+            "includes",
+            "include",
+            "comprises",
+            "contains section",
+            "contains feature",
+            "includes feature",
+            "has feature",
+            "includes item",
+        ),
+        "broader": ("broader", "is a type of", "is an example of"),
+        OTHER_EDGE: (OTHER_EDGE,),
+    }.items()
+    for verb in verbs
+}
 
 
 def _slug(text: str) -> str:
@@ -57,6 +112,12 @@ def address_for(name: str, repo: str = "") -> str:
     """Global address for an extracted entity: `[<repo>/]kg-entity:<slug>`."""
     addr = f"{ADDRESS_KIND}:{_slug(name)}"
     return f"{repo}/{addr}" if repo else addr
+
+
+def canonical_edge_type(verb: str) -> str:
+    """Declared edge id an extracted verb is emitted as: its EDGE_VERBS entry,
+    else `other`."""
+    return EDGE_VERBS.get(" ".join(verb.lower().replace("_", " ").split()), OTHER_EDGE)
 
 
 def contract_envelope(repo: str = "") -> Dict:
@@ -87,8 +148,11 @@ def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
     and edge endpoints are normalized the same way so they always reference
     node ids regardless of the casing stored on the relationship rows.
 
-    Contract v1.0 conformance rides beside that, additively: a `contract`
-    envelope, `props.address` per node, `asserted_by` + `confidence` per edge.
+    Contract v1.0 conformance rides beside that: a `contract` envelope,
+    `props.address` per node, and per edge a declared-vocabulary `type` (the
+    extracted verbs in `props.raw_types` when rewritten), `asserted_by` +
+    `confidence`, and `props.sources` — relationships repeating one (source,
+    target, type) merge into one edge attested by all their content sources.
     `repo` (optional) is the federation namespace to prefix addresses with.
     """
     nodes = []
@@ -108,29 +172,46 @@ def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
             }
         )
 
-    edges = []
+    # The store appends a relationship row per transcript batch / diagram /
+    # screenshot that states it, so one edge arrives as several rows. Merge on
+    # the emitted (source, target, type) — the signature brain consumers dedupe
+    # on — keeping the first row's scalar props and every row's verb and source.
+    edges: Dict[tuple, Dict] = {}
+    observed: Dict[tuple, tuple] = {}
     for rel in kg_dict.get("relationships", []):
-        # Attestation: every assertion names its asserter. Confidence is the
-        # extractor's when it recorded one, else 1.0 (a stated relationship).
-        props = {"asserted_by": PRODUCER, "confidence": float(rel.get("confidence", 1.0))}
-        if rel.get("content_source") is not None:
-            props["content_source"] = rel["content_source"]
-        if rel.get("timestamp") is not None:
-            props["timestamp"] = rel["timestamp"]
-        edges.append(
-            {
-                "source": rel.get("source", "").lower(),
-                "target": rel.get("target", "").lower(),
-                "type": rel.get("type", "related_to"),
-                "props": props,
-            }
+        verb = rel.get("type") or "related_to"
+        key = (
+            rel.get("source", "").lower(),
+            rel.get("target", "").lower(),
+            canonical_edge_type(verb),
         )
+        if key not in edges:
+            # Attestation: every assertion names its asserter. Confidence is the
+            # extractor's when it recorded one, else 1.0 (a stated relationship).
+            props = {"asserted_by": PRODUCER, "confidence": float(rel.get("confidence", 1.0))}
+            if rel.get("content_source") is not None:
+                props["content_source"] = rel["content_source"]
+            if rel.get("timestamp") is not None:
+                props["timestamp"] = rel["timestamp"]
+            edges[key] = {"source": key[0], "target": key[1], "type": key[2], "props": props}
+            observed[key] = (set(), set())
+        verbs, sources = observed[key]
+        verbs.add(verb)
+        if rel.get("content_source") is not None:
+            sources.add(rel["content_source"])
+
+    for key, edge in edges.items():
+        verbs, sources = observed[key]
+        if sources:
+            edge["props"]["sources"] = sorted(sources)
+        if verbs != {edge["type"]}:
+            edge["props"]["raw_types"] = sorted(verbs)
 
     return {
         "format": FORMAT_ID,
         "contract": contract_envelope(repo),
         "nodes": nodes,
-        "edges": edges,
+        "edges": list(edges.values()),
     }
 
 

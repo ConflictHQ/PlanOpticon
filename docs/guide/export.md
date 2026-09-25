@@ -597,11 +597,17 @@ planopticon export conflict-kg knowledge_graph.db --sqlite -o graph.db
 ```json
 {
   "format": "conflict-kg/v1",
+  "contract": { "version": "1.0", "realm": "brain", "producer": "planopticon", "address_kind": "kg-entity" },
   "nodes": [
-    { "id": "python", "name": "Python", "type": "technology", "props": {} }
+    { "id": "python", "name": "Python", "type": "technology",
+      "props": { "address": "kg-entity:python" } }
   ],
   "edges": [
-    { "source": "alice", "target": "python", "type": "uses", "props": {} }
+    { "source": "alice", "target": "python", "type": "uses",
+      "props": { "asserted_by": "planopticon", "confidence": 1.0,
+                 "content_source": "transcript_batch_0",
+                 "sources": ["transcript_batch_0", "transcript_batch_10"],
+                 "raw_types": ["uses", "utilizes"] } }
   ]
 }
 ```
@@ -609,8 +615,19 @@ planopticon export conflict-kg knowledge_graph.db --sqlite -o graph.db
 - `id` is stable and unique — the entity's case-insensitive name, matching the
   store's identity key.
 - Edges reference node `id`s (not names or prop dicts), so loaders are O(1).
-- Everything beyond the core fields lives under `props` (descriptions and
-  occurrences for nodes; `content_source` and `timestamp` for edges).
+- Everything beyond the core fields lives under `props` (`address`,
+  descriptions and occurrences for nodes; `asserted_by`, `confidence`,
+  `content_source`, `timestamp`, `sources` and `raw_types` for edges).
+- `contract` declares the interop contract version the output conforms to, so
+  consumers can gate on version skew; `address` is the node's global address.
+- Edge `type` is always one of `uses`, `provides`, `integrates_with`,
+  `relates_to`, `about`, `contains`, `broader` or `other`. Extracted verbs are
+  mapped onto these (`integrated into` becomes `integrates_with`), a verb with
+  no equivalent becomes `other`, and `raw_types` keeps the extracted verbs
+  whenever they are not exactly `type`.
+- There is one edge per (source, target, type): repeated observations merge,
+  `sources` lists every content source that states the edge, and the other
+  edge props come from the first observation.
 
 The SQLite encoding is the same contract as two tables:
 
