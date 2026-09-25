@@ -2,9 +2,9 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, List, Literal, Optional, Protocol, runtime_checkable
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 @runtime_checkable
@@ -140,6 +140,55 @@ class SourceRecord(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional source metadata")
 
 
+class EvidenceLocator(BaseModel):
+    """Available coordinates of extraction input; absent precision stays absent."""
+
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+    timestamp: Optional[float] = Field(default=None, ge=0)
+    end_timestamp: Optional[float] = Field(default=None, ge=0)
+    frame_index: Optional[int] = Field(default=None, ge=0)
+    frame_index_basis: Optional[Literal["analysis_input"]] = None
+    image_path: Optional[str] = Field(default=None, min_length=1)
+    page: Optional[int] = Field(default=None, ge=1)
+    section: Optional[str] = Field(default=None, min_length=1)
+    line_start: Optional[int] = Field(default=None, ge=1)
+    line_end: Optional[int] = Field(default=None, ge=1)
+    chunk_index: Optional[int] = Field(default=None, ge=0)
+    segment_start: Optional[int] = Field(default=None, ge=0)
+    segment_end: Optional[int] = Field(default=None, ge=0)
+
+    @model_validator(mode="after")
+    def ordered_ranges(self):
+        for start, end in [
+            (self.timestamp, self.end_timestamp),
+            (self.line_start, self.line_end),
+            (self.segment_start, self.segment_end),
+        ]:
+            if start is not None and end is not None and end < start:
+                raise ValueError("evidence range ends before it starts")
+        return self
+
+
+class EvidenceObservation(BaseModel):
+    """Snapshot of source context for an extraction, not proof of a grounded claim."""
+
+    model_config = ConfigDict(extra="forbid", strict=True, allow_inf_nan=False)
+    source_record: SourceRecord
+    source_revision: Optional[str] = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    modality: Literal["transcript", "diagram", "screenshot", "document"]
+    basis: Literal["extraction_context"] = "extraction_context"
+    locator: EvidenceLocator
+    detector_confidence: Optional[float] = Field(default=None, ge=0, le=1)
+
+    @model_validator(mode="after")
+    def matching_revision(self):
+        if not self.source_record.source_id.strip():
+            raise ValueError("evidence requires a nonempty source identity")
+        if self.source_record.metadata.get("sha256") != self.source_revision:
+            raise ValueError("evidence revision differs from the recorded source revision")
+        return self
+
+
 class Entity(BaseModel):
     """An entity in the knowledge graph."""
 
@@ -162,6 +211,8 @@ class Relationship(BaseModel):
     type: str = Field(default="related_to", description="Relationship type")
     content_source: Optional[str] = Field(default=None, description="Content source identifier")
     timestamp: Optional[float] = Field(default=None, description="Timestamp in seconds")
+    evidence: Optional[EvidenceObservation] = None
+    confidence: Optional[float] = Field(default=None, ge=0, le=1, allow_inf_nan=False, strict=True)
 
 
 class KnowledgeGraphData(BaseModel):
