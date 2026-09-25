@@ -96,13 +96,19 @@ class TestGoogleDriveAuthenticateDispatch:
 
 class TestGoogleDriveAuthServiceAccount:
     def test_success_builds_service(self, tmp_path):
+        from google.oauth2 import service_account
+
         creds_file = tmp_path / "sa.json"
         creds_file.write_text(json.dumps({"type": "service_account"}))
         source = GoogleDriveSource(credentials_path=str(creds_file))
         build_obj = MagicMock()
         fake_creds = MagicMock()
-        with patch(
-            "google.oauth2.service_account.Credentials.from_service_account_file",
+        # Resolve the SDK with the same lazy import as the source. Tests that
+        # restore sys.modules can leave a different module on the parent package;
+        # a dotted patch can then target a class the source never calls.
+        with patch.object(
+            service_account.Credentials,
+            "from_service_account_file",
             return_value=fake_creds,
         ) as from_file:
             assert source._auth_service_account(build_obj) is True
@@ -117,11 +123,14 @@ class TestGoogleDriveAuthServiceAccount:
         assert source._auth_service_account(MagicMock()) is False
 
     def test_exception_returns_false(self, tmp_path):
+        from google.oauth2 import service_account
+
         creds_file = tmp_path / "sa.json"
         creds_file.write_text("{}")
         source = GoogleDriveSource(credentials_path=str(creds_file))
-        with patch(
-            "google.oauth2.service_account.Credentials.from_service_account_file",
+        with patch.object(
+            service_account.Credentials,
+            "from_service_account_file",
             side_effect=ValueError("bad service account key"),
         ):
             assert source._auth_service_account(MagicMock()) is False

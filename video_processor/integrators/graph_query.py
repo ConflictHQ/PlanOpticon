@@ -141,6 +141,8 @@ class GraphQueryEngine:
         """Load a .json knowledge graph file and create a query engine."""
         data = json.loads(Path(path).read_text())
         store = InMemoryStore()
+        for source in data.get("sources", []):
+            store.register_source(source)
         for node in data.get("nodes", []):
             store.merge_entity(
                 node.get("name", ""),
@@ -153,6 +155,7 @@ class GraphQueryEngine:
                     occ.get("source", ""),
                     occ.get("timestamp"),
                     occ.get("text"),
+                    evidence=occ.get("evidence"),
                 )
         for rel in data.get("relationships", []):
             store.add_relationship(
@@ -161,6 +164,8 @@ class GraphQueryEngine:
                 rel.get("type", "related_to"),
                 content_source=rel.get("content_source"),
                 timestamp=rel.get("timestamp"),
+                evidence=rel.get("evidence"),
+                confidence=rel.get("confidence"),
             )
         return cls(store, provider_manager)
 

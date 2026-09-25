@@ -1,12 +1,12 @@
 """Document ingestion — process files and add content to a knowledge graph."""
 
-import hashlib
 import logging
 import mimetypes
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from video_processor.evidence import file_revision, file_source_id, observation
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
 from video_processor.processors.base import get_processor, list_supported_extensions
 
@@ -28,31 +28,47 @@ def ingest_file(
             f"No processor for {path.suffix}. Supported: {', '.join(list_supported_extensions())}"
         )
 
+    revision = file_revision(path)
     chunks = processor.process(path)
-
+    if file_revision(path) != revision:
+        raise ValueError("source changed during document processing")
     if source_id is None:
-        source_id = hashlib.sha256(str(path.resolve()).encode()).hexdigest()[:12]
+        source_id = file_source_id(path, revision)
 
     mime = mimetypes.guess_type(str(path))[0] or "application/octet-stream"
-    knowledge_graph.register_source(
-        {
-            "source_id": source_id,
-            "source_type": "document",
-            "title": path.stem,
-            "path": str(path),
-            "mime_type": mime,
-            "ingested_at": datetime.now().isoformat(),
-            "metadata": {"chunks": len(chunks), "extension": path.suffix},
-        }
-    )
+    source_record = {
+        "source_id": source_id,
+        "source_type": "document",
+        "title": path.stem,
+        "path": str(path),
+        "mime_type": mime,
+        "ingested_at": datetime.now().isoformat(),
+        "metadata": {"chunks": len(chunks), "extension": path.suffix, "sha256": revision},
+    }
+    contexts = [
+        observation(
+            source_record,
+            "document",
+            {
+                "page": chunk.page,
+                "section": chunk.section,
+                "chunk_index": chunk.chunk_index,
+                "line_start": chunk.metadata.get("line_start"),
+                "line_end": chunk.metadata.get("line_end"),
+            },
+        )
+        for chunk in chunks
+    ]
+    knowledge_graph.register_source(source_record)
 
-    for chunk in chunks:
-        content_source = f"document:{path.name}"
+    for chunk, context in zip(chunks, contexts):
+        content_source = f"{source_id}/document:{path.name}"
         if chunk.page is not None:
             content_source += f":page:{chunk.page}"
         elif chunk.section:
             content_source += f":section:{chunk.section}"
-        knowledge_graph.add_content(chunk.text, content_source)
+        content_source += f":chunk:{chunk.chunk_index}"
+        knowledge_graph.add_content(chunk.text, content_source, evidence=context)
 
     return len(chunks)
 

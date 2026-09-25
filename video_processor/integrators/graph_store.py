@@ -7,6 +7,8 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+from video_processor.evidence import check_source_revision, normalized_observation
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +33,7 @@ class GraphStore(ABC):
         source: str,
         timestamp: Optional[float] = None,
         text: Optional[str] = None,
+        evidence: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Add an occurrence record to an existing entity."""
         ...
@@ -43,6 +46,8 @@ class GraphStore(ABC):
         rel_type: str,
         content_source: Optional[str] = None,
         timestamp: Optional[float] = None,
+        evidence: Optional[Dict[str, Any]] = None,
+        confidence: Optional[float] = None,
     ) -> None:
         """Add a relationship between two entities (both must already exist)."""
         ...
@@ -139,6 +144,27 @@ class GraphStore(ABC):
         """Get all source locations for an entity."""
         return []
 
+    def _prepare_evidence(self, evidence):
+        evidence = normalized_observation(evidence)
+        if evidence is not None:
+            source = evidence["source_record"]
+            existing = self.get_source(source["source_id"])
+            check_source_revision(existing, source)
+            if existing is None:
+                self.register_source(source)
+        return evidence
+
+    def _record_evidence(self, evidence, entity_name_lower=None, relationship_id=None, text=None):
+        if evidence is not None:
+            self.add_source_location(
+                evidence["source_record"]["source_id"],
+                entity_name_lower=entity_name_lower,
+                relationship_id=relationship_id,
+                **evidence["locator"],
+                text_snippet=text,
+                evidence=evidence,
+            )
+
     def raw_query(self, query_string: str) -> Any:
         """Execute a raw query against the backend (e.g. SQL for SQLite).
 
@@ -208,12 +234,18 @@ class InMemoryStore(GraphStore):
         source: str,
         timestamp: Optional[float] = None,
         text: Optional[str] = None,
+        evidence: Optional[Dict[str, Any]] = None,
     ) -> None:
         key = entity_name.lower()
         if key in self._nodes:
-            self._nodes[key]["occurrences"].append(
-                {"source": source, "timestamp": timestamp, "text": text}
-            )
+            evidence = self._prepare_evidence(evidence)
+            row = {"source": source, "timestamp": timestamp, "text": text}
+            if evidence is not None:
+                row["evidence"] = evidence
+                if row in self._nodes[key]["occurrences"]:
+                    return
+            self._nodes[key]["occurrences"].append(row)
+            self._record_evidence(evidence, entity_name_lower=key, text=text)
 
     def add_relationship(
         self,
@@ -222,16 +254,25 @@ class InMemoryStore(GraphStore):
         rel_type: str,
         content_source: Optional[str] = None,
         timestamp: Optional[float] = None,
+        evidence: Optional[Dict[str, Any]] = None,
+        confidence: Optional[float] = None,
     ) -> None:
-        self._relationships.append(
-            {
-                "source": source,
-                "target": target,
-                "type": rel_type,
-                "content_source": content_source,
-                "timestamp": timestamp,
-            }
-        )
+        evidence = self._prepare_evidence(evidence)
+        row = {
+            "source": source,
+            "target": target,
+            "type": rel_type,
+            "content_source": content_source,
+            "timestamp": timestamp,
+        }
+        if evidence is not None:
+            row["evidence"] = evidence
+        if confidence is not None:
+            row["confidence"] = confidence
+        if evidence is not None and row in self._relationships:
+            return
+        self._relationships.append(row)
+        self._record_evidence(evidence, relationship_id=len(self._relationships))
 
     def get_entity(self, name: str) -> Optional[Dict[str, Any]]:
         return self._nodes.get(name.lower())
@@ -280,6 +321,7 @@ class InMemoryStore(GraphStore):
 
     def register_source(self, source: Dict[str, Any]) -> None:
         source_id = source.get("source_id", "")
+        check_source_revision(self.get_source(source_id), source)
         self._sources[source_id] = dict(source)
 
     def get_sources(self) -> List[Dict[str, Any]]:
@@ -396,6 +438,15 @@ class SQLiteStore(GraphStore):
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA foreign_keys=ON")
         self._conn.executescript(self._SCHEMA)
+        for table, columns in {
+            "occurrences": {"evidence": "TEXT"},
+            "relationships": {"evidence": "TEXT", "confidence": "REAL"},
+            "source_locations": {"evidence": "TEXT"},
+        }.items():
+            existing = {row[1] for row in self._conn.execute(f"PRAGMA table_info({table})")}
+            for column, kind in columns.items():
+                if column not in existing:
+                    self._conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {kind}")
         self._conn.commit()
 
     def merge_entity(
@@ -432,6 +483,7 @@ class SQLiteStore(GraphStore):
         source: str,
         timestamp: Optional[float] = None,
         text: Optional[str] = None,
+        evidence: Optional[Dict[str, Any]] = None,
     ) -> None:
         name_lower = entity_name.lower()
         exists = self._conn.execute(
@@ -439,11 +491,23 @@ class SQLiteStore(GraphStore):
         ).fetchone()
         if not exists:
             return
+        evidence = self._prepare_evidence(evidence)
+        encoded = json.dumps(evidence, sort_keys=True, allow_nan=False) if evidence else None
+        if (
+            encoded
+            and self._conn.execute(
+                "SELECT 1 FROM occurrences WHERE entity_name_lower=? AND source=? "
+                "AND timestamp IS ? AND text IS ? AND evidence=?",
+                (name_lower, source, timestamp, text, encoded),
+            ).fetchone()
+        ):
+            return
         self._conn.execute(
-            "INSERT INTO occurrences (entity_name_lower, source, timestamp, text) "
-            "VALUES (?, ?, ?, ?)",
-            (name_lower, source, timestamp, text),
+            "INSERT INTO occurrences (entity_name_lower, source, timestamp, text, evidence) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (name_lower, source, timestamp, text, encoded),
         )
+        self._record_evidence(evidence, entity_name_lower=name_lower, text=text)
         self._conn.commit()
 
     def add_relationship(
@@ -453,12 +517,27 @@ class SQLiteStore(GraphStore):
         rel_type: str,
         content_source: Optional[str] = None,
         timestamp: Optional[float] = None,
+        evidence: Optional[Dict[str, Any]] = None,
+        confidence: Optional[float] = None,
     ) -> None:
-        self._conn.execute(
-            "INSERT INTO relationships (source, target, type, content_source, timestamp) "
-            "VALUES (?, ?, ?, ?, ?)",
-            (source, target, rel_type, content_source, timestamp),
+        evidence = self._prepare_evidence(evidence)
+        encoded = json.dumps(evidence, sort_keys=True, allow_nan=False) if evidence else None
+        if (
+            encoded
+            and self._conn.execute(
+                "SELECT 1 FROM relationships WHERE source=? AND target=? AND type=? "
+                "AND content_source IS ? AND timestamp IS ? AND evidence=? AND confidence IS ?",
+                (source, target, rel_type, content_source, timestamp, encoded, confidence),
+            ).fetchone()
+        ):
+            return
+        row = self._conn.execute(
+            "INSERT INTO relationships (source, target, type, content_source, "
+            "timestamp, evidence, confidence) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (source, target, rel_type, content_source, timestamp, encoded, confidence),
         )
+        self._record_evidence(evidence, relationship_id=row.lastrowid)
         self._conn.commit()
 
     def get_entity(self, name: str) -> Optional[Dict[str, Any]]:
@@ -471,10 +550,18 @@ class SQLiteStore(GraphStore):
 
         entity_name = row[0]
         occ_rows = self._conn.execute(
-            "SELECT source, timestamp, text FROM occurrences WHERE entity_name_lower = ?",
+            "SELECT source, timestamp, text, evidence FROM occurrences WHERE entity_name_lower = ?",
             (name.lower(),),
         ).fetchall()
-        occurrences = [{"source": o[0], "timestamp": o[1], "text": o[2]} for o in occ_rows]
+        occurrences = [
+            {
+                "source": o[0],
+                "timestamp": o[1],
+                "text": o[2],
+                **({"evidence": json.loads(o[3])} if o[3] else {}),
+            }
+            for o in occ_rows
+        ]
 
         return {
             "id": entity_name,
@@ -493,10 +580,19 @@ class SQLiteStore(GraphStore):
         for row in rows:
             name_lower = row[1]
             occ_rows = self._conn.execute(
-                "SELECT source, timestamp, text FROM occurrences WHERE entity_name_lower = ?",
+                "SELECT source, timestamp, text, evidence FROM occurrences "
+                "WHERE entity_name_lower = ?",
                 (name_lower,),
             ).fetchall()
-            occurrences = [{"source": o[0], "timestamp": o[1], "text": o[2]} for o in occ_rows]
+            occurrences = [
+                {
+                    "source": o[0],
+                    "timestamp": o[1],
+                    "text": o[2],
+                    **({"evidence": json.loads(o[3])} if o[3] else {}),
+                }
+                for o in occ_rows
+            ]
             entities.append(
                 {
                     "id": row[0],
@@ -511,7 +607,8 @@ class SQLiteStore(GraphStore):
 
     def get_all_relationships(self) -> List[Dict[str, Any]]:
         rows = self._conn.execute(
-            "SELECT source, target, type, content_source, timestamp FROM relationships"
+            "SELECT source, target, type, content_source, timestamp, evidence, confidence "
+            "FROM relationships"
         ).fetchall()
         return [
             {
@@ -520,6 +617,8 @@ class SQLiteStore(GraphStore):
                 "type": row[2] or "related_to",
                 "content_source": row[3],
                 "timestamp": row[4],
+                **({"evidence": json.loads(row[5])} if row[5] else {}),
+                **({"confidence": row[6]} if row[6] is not None else {}),
             }
             for row in rows
         ]
@@ -599,6 +698,7 @@ class SQLiteStore(GraphStore):
 
     def register_source(self, source: Dict[str, Any]) -> None:
         source_id = source.get("source_id", "")
+        check_source_revision(self.get_source(source_id), source)
         existing = self._conn.execute(
             "SELECT 1 FROM sources WHERE source_id = ?", (source_id,)
         ).fetchone()
@@ -681,8 +781,8 @@ class SQLiteStore(GraphStore):
     ) -> None:
         self._conn.execute(
             "INSERT INTO source_locations (source_id, entity_name_lower, relationship_id, "
-            "timestamp, page, section, line_start, line_end, text_snippet) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "timestamp, page, section, line_start, line_end, text_snippet, evidence) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 source_id,
                 entity_name_lower,
@@ -693,6 +793,7 @@ class SQLiteStore(GraphStore):
                 kwargs.get("line_start"),
                 kwargs.get("line_end"),
                 kwargs.get("text_snippet"),
+                json.dumps(kwargs["evidence"], sort_keys=True) if kwargs.get("evidence") else None,
             ),
         )
         self._conn.commit()
@@ -703,7 +804,7 @@ class SQLiteStore(GraphStore):
             "SELECT sl.source_id, sl.entity_name_lower, sl.relationship_id, "
             "sl.timestamp, sl.page, sl.section, sl.line_start, sl.line_end, "
             "sl.text_snippet, s.source_type, s.title, s.path, s.url, s.mime_type, "
-            "s.ingested_at, s.metadata "
+            "s.ingested_at, s.metadata, sl.evidence "
             "FROM source_locations sl "
             "JOIN sources s ON sl.source_id = s.source_id "
             "WHERE sl.entity_name_lower = ?",
@@ -722,6 +823,7 @@ class SQLiteStore(GraphStore):
                     "line_start": r[6],
                     "line_end": r[7],
                     "text_snippet": r[8],
+                    **({"evidence": json.loads(r[16])} if r[16] else {}),
                     "source": {
                         "source_id": r[0],
                         "source_type": r[9],

@@ -506,7 +506,10 @@ The exchange format has the following top-level structure:
 The exchange format supports merging, with automatic deduplication:
 
 - Entities are deduplicated by name
-- Relationships are deduplicated by the tuple `(source, target, type)`
+- Qualified relationships retain distinct source observations; identical observations deduplicate.
+  Legacy relationships without evidence retain tuple `(source, target, type)` deduplication.
+- Entity occurrences and descriptions merge without discarding later sources.
+- Reusing an explicit source ID for another revision is rejected before mutation.
 - Artifacts are deduplicated by name
 - Sources are deduplicated by `source_id`
 
@@ -597,11 +600,17 @@ planopticon export conflict-kg knowledge_graph.db --sqlite -o graph.db
 ```json
 {
   "format": "conflict-kg/v1",
+  "contract": { "version": "1.0", "realm": "brain", "producer": "planopticon", "address_kind": "kg-entity" },
   "nodes": [
-    { "id": "python", "name": "Python", "type": "technology", "props": {} }
+    { "id": "python", "name": "Python", "type": "technology",
+      "props": { "address": "kg-entity:python" } }
   ],
   "edges": [
-    { "source": "alice", "target": "python", "type": "uses", "props": {} }
+    { "source": "alice", "target": "python", "type": "uses",
+      "props": { "asserted_by": "planopticon", "confidence": null,
+                 "content_source": "transcript_batch_0",
+                 "sources": ["transcript_batch_0", "transcript_batch_10"],
+                 "raw_types": ["uses", "utilizes"] } }
   ]
 }
 ```
@@ -609,8 +618,24 @@ planopticon export conflict-kg knowledge_graph.db --sqlite -o graph.db
 - `id` is stable and unique — the entity's case-insensitive name, matching the
   store's identity key.
 - Edges reference node `id`s (not names or prop dicts), so loaders are O(1).
-- Everything beyond the core fields lives under `props` (descriptions and
-  occurrences for nodes; `content_source` and `timestamp` for edges).
+- Everything beyond the core fields lives under `props` (`address`,
+  descriptions and occurrences for nodes; `asserted_by`, `confidence`,
+  `content_source`, `timestamp`, `sources` and `raw_types` for edges).
+- `contract` declares the interop contract version the output conforms to, so
+  consumers can gate on version skew; `address` is the node's global address.
+- Edge `type` is always one of `uses`, `provides`, `integrates_with`,
+  `relates_to`, `about`, `contains`, `broader` or `other`. Extracted verbs are
+  mapped onto these (`integrated into` becomes `integrates_with`), a verb with
+  no equivalent becomes `other`, and `raw_types` keeps the extracted verbs
+  whenever they are not exactly `type`.
+- There is one edge per (source, target, type): repeated observations merge,
+  `sources` lists every content source that states the edge. `observations`
+  retains every distinct extracted verb, confidence, content source, timestamp,
+  and structured evidence snapshot. Compatibility scalars `content_source` and
+  `timestamp` come from the first observation; use `observations` for full evidence.
+- Missing confidence is `null`. A scalar edge confidence is supplied only when
+  every observation has the same known value. Visual detector confidence stays
+  separately in `evidence.detector_confidence`, never substituted for claim confidence.
 
 The SQLite encoding is the same contract as two tables:
 
@@ -624,6 +649,45 @@ CREATE INDEX idx_edges_target ON edges(target);
 The legacy `knowledge_graph.json` shape (`{nodes, relationships}`) is unchanged
 and remains supported for existing consumers; new integrations should read
 conflict-kg/v1.
+
+### Multimodal evidence and recovery
+
+New video and document ingestion binds each source to its file SHA-256 revision.
+Generated identities include the resolved input path and revision, so two recordings
+with the same local batch/frame labels remain distinct. Explicit source IDs cannot
+be reused for different revisions. Old graph files remain readable; SQLite adds
+nullable evidence columns without rewriting existing rows.
+
+Native occurrences and relationships carry an optional `evidence` object:
+
+| Field | Meaning |
+|-------|---------|
+| `source_record` | Snapshot of source identity, title, path/URL and metadata |
+| `source_revision` | File SHA-256, or unknown for unqualified imported data |
+| `modality` | `transcript`, `diagram`, `screenshot`, or `document` |
+| `basis` | `extraction_context`, the input provided to extraction |
+| `locator` | Available time/segment range, frame/image, page/section, chunk or line range |
+| `detector_confidence` | Optional visual detection score, separate from relationship confidence |
+
+Frame indices refer to the analyzer's sampled input (`frame_index_basis: analysis_input`),
+not original video frame numbers. Missing coordinates remain absent or null; estimated
+transcript timing is excluded from evidence. Timestamps are seconds; page/line numbers
+are one-based, frame/chunk/segment indices zero-based. Invalid, non-finite or reversed
+ranges are rejected. Documents retain only precision their processor actually reports.
+
+Exported nodes and edges report `evidence_status`: `source_qualified` when every
+observation has a source revision, `mixed` when only some do, or `legacy_unqualified`.
+Source qualification identifies extraction input; it does not prove an extracted claim,
+quotation, or entity name is supported by that input. Claim grounding remains separate
+work tracked in issue #155. Source snapshots can include local paths and metadata;
+review them before sharing an export.
+
+Video output directories carry `.source-revision.json`. Resume refuses changed inputs,
+unqualified old output directories, and incomplete graph extraction. Preserve those
+outputs for inspection and rerun into a new directory. A completed visual checkpoint
+contains both diagrams and screenshots; partial per-frame files do not count as a
+completed visual analysis. Memory/SQLite storage, native save/load, graph merge,
+PlanOpticonExchange, and both conflict-kg encodings preserve structured observations.
 
 ## Python API for all exporters
 

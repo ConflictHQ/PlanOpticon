@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Union
 
 from tqdm import tqdm
 
+from video_processor.evidence import check_source_revision, observation
 from video_processor.integrators.graph_store import GraphStore, create_store
 from video_processor.models import Entity, KnowledgeGraphData, Relationship, SourceRecord
 from video_processor.providers.manager import ProviderManager
@@ -101,6 +102,7 @@ class KnowledgeGraph:
                             source=item["source"],
                             target=item["target"],
                             type=item.get("type", "related_to"),
+                            confidence=item.get("confidence"),
                         )
                     )
         elif isinstance(parsed, list):
@@ -123,16 +125,18 @@ class KnowledgeGraph:
         source: str,
         timestamp: Optional[float] = None,
         source_id: Optional[str] = None,
+        evidence: Optional[Dict] = None,
     ) -> None:
         """Add content to knowledge graph by extracting entities and relationships."""
+        evidence = self._store._prepare_evidence(evidence)
         entities, relationships = self.extract_entities_and_relationships(text)
 
         snippet = text[:100] + "..." if len(text) > 100 else text
 
         for entity in entities:
             self._store.merge_entity(entity.name, entity.type, entity.descriptions, source=source)
-            self._store.add_occurrence(entity.name, source, timestamp, snippet)
-            if source_id:
+            self._store.add_occurrence(entity.name, source, timestamp, snippet, evidence=evidence)
+            if source_id and evidence is None:
                 self._store.add_source_location(
                     source_id,
                     entity_name_lower=entity.name.lower(),
@@ -148,73 +152,137 @@ class KnowledgeGraph:
                     rel.type,
                     content_source=source,
                     timestamp=timestamp,
+                    evidence=evidence,
+                    confidence=rel.confidence,
                 )
 
-    def process_transcript(self, transcript: Dict, batch_size: int = 10) -> None:
-        """Process transcript segments into knowledge graph, batching for efficiency."""
+    def _observation(self, source_id, modality, locator, detector_confidence=None):
+        if source_id is None:
+            return None
+        source = self._store.get_source(source_id)
+        if source is None:
+            raise ValueError(f"source {source_id!r} must be registered before extraction")
+        if modality in ("diagram", "screenshot") and locator.get("frame_index") is not None:
+            locator = {**locator, "frame_index_basis": "analysis_input"}
+        return observation(source, modality, locator, detector_confidence)
+
+    def process_transcript(
+        self, transcript: Dict, batch_size: int = 10, source_id: Optional[str] = None
+    ) -> None:
+        """Extract batches with explicit source and available segment/time ranges."""
         if "segments" not in transcript:
             logger.warning("Transcript missing segments")
             return
-
-        segments = transcript["segments"]
-
-        # Register speakers first
-        for i, segment in enumerate(segments):
-            speaker = segment.get("speaker", None)
-            if speaker and not self._store.has_entity(speaker):
-                self._store.merge_entity(speaker, "person", ["Speaker in transcript"])
-
-        # Batch segments together for fewer API calls
+        if batch_size <= 0:
+            raise ValueError("batch_size must be positive")
+        segments = [
+            {**segment, "start": None, "end": None}
+            if segment.get("timing_basis") == "estimated"
+            else segment
+            for segment in transcript["segments"]
+        ]
+        contexts = [
+            self._observation(
+                source_id,
+                "transcript",
+                {
+                    "timestamp": segment.get("start"),
+                    "end_timestamp": segment.get("end"),
+                    "segment_start": index,
+                    "segment_end": index,
+                },
+            )
+            for index, segment in enumerate(segments)
+        ]
         batches = []
         for start in range(0, len(segments), batch_size):
-            batches.append(segments[start : start + batch_size])
-
-        for batch in tqdm(batches, desc="Building knowledge graph", unit="batch"):
-            # Combine batch text
+            batch = segments[start : start + batch_size]
+            context = self._observation(
+                source_id,
+                "transcript",
+                {
+                    "timestamp": batch[0].get("start"),
+                    "end_timestamp": batch[-1].get("end"),
+                    "segment_start": start,
+                    "segment_end": start + len(batch) - 1,
+                },
+            )
+            batches.append((start, batch, context))
+        # Validate every locator before mutating this modality's graph.
+        for index, segment in enumerate(segments):
+            speaker = segment.get("speaker")
+            if speaker:
+                if not self._store.has_entity(speaker):
+                    self._store.merge_entity(speaker, "person", ["Speaker in transcript"])
+                if contexts[index] is not None:
+                    self._store.add_occurrence(
+                        speaker,
+                        f"{source_id}/transcript_segment_{index}",
+                        segment.get("start"),
+                        "Speaker annotation in extraction input",
+                        evidence=contexts[index],
+                    )
+        for start, batch, context in tqdm(batches, desc="Building knowledge graph", unit="batch"):
             combined_text = " ".join(seg["text"] for seg in batch if "text" in seg)
             if not combined_text.strip():
                 continue
+            source = f"transcript_batch_{start}"
+            if source_id is not None:
+                source = f"{source_id}/{source}"
+            self.add_content(combined_text, source, batch[0].get("start"), evidence=context)
 
-            # Use first segment's timestamp as batch timestamp
-            batch_start_idx = segments.index(batch[0])
-            timestamp = batch[0].get("start", None)
-            source = f"transcript_batch_{batch_start_idx}"
-
-            self.add_content(combined_text, source, timestamp)
-
-    def process_diagrams(self, diagrams: List[Dict]) -> None:
-        """Process diagram results into knowledge graph."""
-        for i, diagram in enumerate(tqdm(diagrams, desc="Processing diagrams for KG", unit="diag")):
-            text_content = diagram.get("text_content", "")
-            source = f"diagram_{i}"
-            if text_content:
-                self.add_content(text_content, source)
-
-            diagram_id = f"diagram_{i}"
-            if not self._store.has_entity(diagram_id):
+    def process_diagrams(self, diagrams: List[Dict], source_id: Optional[str] = None) -> None:
+        """Retain a diagram's frame/time/image context with its extracted claims."""
+        contexts = [
+            self._observation(
+                source_id,
+                "diagram",
+                {key: diagram.get(key) for key in ("timestamp", "frame_index", "image_path")},
+                diagram.get("confidence"),
+            )
+            for diagram in diagrams
+        ]
+        for index, diagram in enumerate(
+            tqdm(diagrams, desc="Processing diagrams for KG", unit="diag")
+        ):
+            label = f"diagram_{index}"
+            source = f"{source_id}/{label}" if source_id is not None else label
+            text = diagram.get("text_content", "")
+            context = contexts[index]
+            if text:
+                self.add_content(text, source, diagram.get("timestamp"), evidence=context)
+            diagram_id = f"diagram_{source_id}_{index}" if source_id is not None else label
+            new = not self._store.has_entity(diagram_id)
+            if new:
                 self._store.merge_entity(diagram_id, "diagram", ["Visual diagram from video"])
+            if new or context is not None:
                 self._store.add_occurrence(
                     diagram_id,
-                    source if text_content else diagram_id,
+                    source,
+                    diagram.get("timestamp"),
                     text=f"frame_index={diagram.get('frame_index')}",
+                    evidence=context,
                 )
 
-    def process_screenshots(self, screenshots: List[Dict]) -> None:
-        """Process screenshot captures into knowledge graph.
-
-        Extracts entities from text_content and adds screenshot-specific
-        entities from the entities list.
-        """
-        for i, capture in enumerate(screenshots):
-            text_content = capture.get("text_content", "")
-            source = f"screenshot_{i}"
+    def process_screenshots(self, screenshots: List[Dict], source_id: Optional[str] = None) -> None:
+        """Retain screen capture locators and detector uncertainty independently."""
+        contexts = [
+            self._observation(
+                source_id,
+                "screenshot",
+                {key: capture.get(key) for key in ("timestamp", "frame_index", "image_path")},
+                capture.get("confidence"),
+            )
+            for capture in screenshots
+        ]
+        for index, capture in enumerate(screenshots):
+            label = f"screenshot_{index}"
+            source = f"{source_id}/{label}" if source_id is not None else label
+            text = capture.get("text_content", "")
             content_type = capture.get("content_type", "screenshot")
-
-            # Extract entities from visible text via LLM
-            if text_content:
-                self.add_content(text_content, source)
-
-            # Add explicitly identified entities from vision extraction
+            context = contexts[index]
+            if text:
+                self.add_content(text, source, capture.get("timestamp"), evidence=context)
             for entity_name in capture.get("entities", []):
                 if not entity_name or len(entity_name) < 2:
                     continue
@@ -228,7 +296,9 @@ class KnowledgeGraph:
                 self._store.add_occurrence(
                     entity_name,
                     source,
+                    capture.get("timestamp"),
                     text=f"Visible in {content_type} (frame {capture.get('frame_index', '?')})",
+                    evidence=context,
                 )
 
     def to_data(self) -> KnowledgeGraphData:
@@ -254,6 +324,8 @@ class KnowledgeGraph:
                 type=r.get("type", "related_to"),
                 content_source=r.get("content_source"),
                 timestamp=r.get("timestamp"),
+                evidence=r.get("evidence"),
+                confidence=r.get("confidence"),
             )
             for r in self._store.get_all_relationships()
         ]
@@ -301,6 +373,7 @@ class KnowledgeGraph:
                             occ.get("source", ""),
                             occ.get("timestamp"),
                             occ.get("text"),
+                            evidence=occ.get("evidence"),
                         )
                 for rel in self._store.get_all_relationships():
                     target.add_relationship(
@@ -309,6 +382,8 @@ class KnowledgeGraph:
                         rel.get("type", "related_to"),
                         content_source=rel.get("content_source"),
                         timestamp=rel.get("timestamp"),
+                        evidence=rel.get("evidence"),
+                        confidence=rel.get("confidence"),
                     )
                 target.close()
         else:
@@ -342,6 +417,7 @@ class KnowledgeGraph:
                     occ.get("source", ""),
                     occ.get("timestamp"),
                     occ.get("text"),
+                    evidence=occ.get("evidence"),
                 )
         for rel in data.get("relationships", []):
             kg._store.add_relationship(
@@ -350,6 +426,8 @@ class KnowledgeGraph:
                 rel.get("type", "related_to"),
                 content_source=rel.get("content_source"),
                 timestamp=rel.get("timestamp"),
+                evidence=rel.get("evidence"),
+                confidence=rel.get("confidence"),
             )
         return kg
 
@@ -386,6 +464,8 @@ class KnowledgeGraph:
         - Provenance: merged entities get a ``merged_from`` description entry
         """
         for source in other._store.get_sources():
+            check_source_revision(self._store.get_source(source["source_id"]), source)
+        for source in other._store.get_sources():
             self._store.register_source(source)
 
         # Build a lookup of existing entity names for fuzzy matching
@@ -394,6 +474,7 @@ class KnowledgeGraph:
         # Cache lowercase -> canonical name for fast lookup
         name_index: dict[str, str] = {n.lower(): n for n in existing_names}
 
+        resolved_names = {}
         for entity in other._store.get_all_entities():
             incoming_name = entity["name"]
             descs = entity.get("descriptions", [])
@@ -405,7 +486,7 @@ class KnowledgeGraph:
             matched_name: Optional[str] = None
             if incoming_name.lower() in name_index:
                 matched_name = name_index[incoming_name.lower()]
-            else:
+            elif incoming_type != "diagram":
                 for existing_name in existing_names:
                     if self._fuzzy_match(incoming_name, existing_name):
                         matched_name = existing_name
@@ -433,21 +514,25 @@ class KnowledgeGraph:
                 name_index[incoming_name.lower()] = incoming_name
                 target_name = incoming_name
 
+            resolved_names[incoming_name.lower()] = target_name
             for occ in entity.get("occurrences", []):
                 self._store.add_occurrence(
                     target_name,
                     occ.get("source", ""),
                     occ.get("timestamp"),
                     occ.get("text"),
+                    evidence=occ.get("evidence"),
                 )
 
         for rel in other._store.get_all_relationships():
             self._store.add_relationship(
-                rel.get("source", ""),
-                rel.get("target", ""),
+                resolved_names.get(rel.get("source", "").lower(), rel.get("source", "")),
+                resolved_names.get(rel.get("target", "").lower(), rel.get("target", "")),
                 rel.get("type", "related_to"),
                 content_source=rel.get("content_source"),
                 timestamp=rel.get("timestamp"),
+                evidence=rel.get("evidence"),
+                confidence=rel.get("confidence"),
             )
 
     def classify_for_planning(self):

@@ -195,8 +195,24 @@ class TestConflictKGExport:
             ],
         }
         data = to_conflict_kg(kg)
-        assert data["edges"][0]["props"] == {"timestamp": 5.0}
-        assert data["edges"][1]["props"] == {}
+        # Contract v1.0 attestation (#153) always rides on an edge; absent
+        # optional props (content_source, so sources) stay absent. `related_to`
+        # is emitted as the declared `relates_to`, the extracted verb in raw_types.
+        assert data["edges"][0]["props"] == {
+            "asserted_by": "planopticon",
+            "confidence": None,
+            "evidence_status": "legacy_unqualified",
+            "observations": [{"raw_type": "related_to", "confidence": None, "timestamp": 5.0}],
+            "timestamp": 5.0,
+            "raw_types": ["related_to"],
+        }
+        assert data["edges"][1]["props"] == {
+            "asserted_by": "planopticon",
+            "confidence": None,
+            "evidence_status": "legacy_unqualified",
+            "observations": [{"raw_type": "related_to", "confidence": None}],
+            "raw_types": ["related_to"],
+        }
 
     def test_json_writer(self, tmp_path):
         import json
@@ -297,7 +313,12 @@ class TestConflictKGExport:
             "source": "alice",
             "target": "python",
             "type": "uses",
-            "props": {},
+            "props": {
+                "asserted_by": "planopticon",
+                "confidence": None,
+                "evidence_status": "legacy_unqualified",
+                "observations": [{"raw_type": "uses", "confidence": None}],
+            },
         }
 
         out_db = tmp_path / "out.db"
