@@ -154,3 +154,8 @@
   font-weight: 700;
   letter-spacing: -0.02em;
 }
+
+/* Light scheme: the header logo has white letters, so swap in the dark-letter logo. */
+[data-md-color-scheme="default"] .md-header .md-logo img {
+  content: url("../images/conflict-logo-black.svg");
+}
