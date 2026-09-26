@@ -193,6 +193,19 @@ class TestProcessSingleVideo:
         """Create fake video, output dir, and mock PM."""
         video_path = _create_fake_video(tmp_path / "input" / "meeting.mp4")
         output_dir = tmp_path / "output"
+        # These tests create cached audio/frames directly; bind those fixtures
+        # to the actual fake input before exercising a valid resume.
+        from video_processor.evidence import file_revision
+
+        output_dir.mkdir()
+        (output_dir / ".source-revision.json").write_text(
+            json.dumps(
+                {
+                    "path": str(video_path.resolve()),
+                    "sha256": file_revision(video_path),
+                }
+            )
+        )
         pm = _make_mock_pm()
         return video_path, output_dir, pm
 

@@ -1,6 +1,5 @@
 """Core video processing pipeline — the reusable function both CLI commands call."""
 
-import hashlib
 import json
 import logging
 import mimetypes
@@ -13,6 +12,7 @@ from typing import Optional
 from tqdm import tqdm
 
 from video_processor.analyzers.diagram_analyzer import DiagramAnalyzer
+from video_processor.evidence import file_revision, file_source_id
 from video_processor.extractors.audio_extractor import AudioExtractor
 from video_processor.extractors.frame_extractor import (
     extract_frames,
@@ -78,6 +78,20 @@ def process_single_video(
 
     # Create standardized directory structure
     dirs = create_video_output_dirs(output_dir, video_name)
+    revision = file_revision(input_path)
+    source_id = file_source_id(input_path, revision)
+    source_pin = {"path": str(input_path.resolve()), "sha256": revision}
+    pin_path = dirs["root"] / ".source-revision.json"
+    if pin_path.exists():
+        if json.loads(pin_path.read_text()) != source_pin:
+            raise ValueError(
+                "cached video outputs belong to another input revision; use a new output directory"
+            )
+    elif any(path.is_file() for path in dirs["root"].rglob("*")):
+        raise ValueError("cached video outputs have no source revision; use a new output directory")
+    else:
+        with pin_path.open("x", encoding="utf-8") as stream:
+            json.dump(source_pin, stream, sort_keys=True)
 
     logger.info(f"Processing: {input_path}")
     logger.info(f"Depth: {depth}, Focus: {focus_areas or 'all'}")
@@ -189,6 +203,7 @@ def process_single_video(
                 {
                     "start": i * chunk_duration,
                     "end": (i + 1) * chunk_duration,
+                    "timing_basis": "estimated",
                     "text": chunk,
                 }
                 for i, chunk in enumerate(chunks)
@@ -250,18 +265,13 @@ def process_single_video(
     pipeline_bar.set_description("Pipeline: analyzing visuals")
     diagrams = []
     screen_captures = []
-    existing_diagrams = (
-        sorted(dirs["diagrams"].glob("diagram_*.json")) if dirs["diagrams"].exists() else []
-    )
-    if existing_diagrams:
-        logger.info(f"Resuming: found {len(existing_diagrams)} diagrams on disk, skipping analysis")
-        from video_processor.models import DiagramResult
+    visual_checkpoint = dirs["results"] / "visual-analysis.json"
+    if visual_checkpoint.exists():
+        from video_processor.models import DiagramResult, ScreenCapture
 
-        for dj in existing_diagrams:
-            try:
-                diagrams.append(DiagramResult.model_validate_json(dj.read_text()))
-            except Exception as e:
-                logger.warning(f"Failed to load diagram {dj}: {e}")
+        saved_visuals = json.loads(visual_checkpoint.read_text())
+        diagrams = [DiagramResult.model_validate(d) for d in saved_visuals["diagrams"]]
+        screen_captures = [ScreenCapture.model_validate(c) for c in saved_visuals["captures"]]
     elif depth != "basic" and (not focus_areas or "diagrams" in focus_areas):
         logger.info("Analyzing visual elements...")
         analyzer = DiagramAnalyzer(provider_manager=pm)
@@ -275,6 +285,19 @@ def process_single_video(
         diagrams, screen_captures = analyzer.process_frames(
             subset, diagrams_dir=dirs["diagrams"], captures_dir=dirs["captures"]
         )
+    if not visual_checkpoint.exists():
+        # A completed checkpoint includes both modalities, including empty lists.
+        # Partial per-frame files alone do not prove the analysis finished.
+        pending = visual_checkpoint.with_suffix(".tmp")
+        pending.write_text(
+            json.dumps(
+                {
+                    "diagrams": [d.model_dump(exclude_unset=True) for d in diagrams],
+                    "captures": [c.model_dump(exclude_unset=True) for c in screen_captures],
+                }
+            )
+        )
+        pending.replace(visual_checkpoint)
     pipeline_bar.update(1)
     _notify(progress_callback, "on_step_complete", steps[3], 4, total_steps)
 
@@ -284,34 +307,42 @@ def process_single_video(
     pipeline_bar.set_description("Pipeline: building knowledge graph")
     kg_db_path = dirs["results"] / "knowledge_graph.db"
     kg_json_path = dirs["results"] / "knowledge_graph.json"
-    # Generate a stable source ID from the input path
-    source_id = hashlib.sha256(str(input_path).encode()).hexdigest()[:12]
     mime_type = mimetypes.guess_type(str(input_path))[0] or "video/mp4"
 
     if kg_db_path.exists():
         logger.info("Resuming: found knowledge graph on disk, loading")
         kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
+        cached_source = kg._store.get_source(source_id)
+        if not cached_source or not cached_source.get("metadata", {}).get("graph_complete"):
+            kg._store.close()
+            raise ValueError(
+                "cached graph extraction is incomplete or unqualified; use a new output directory"
+            )
     else:
         logger.info("Building knowledge graph...")
         kg = KnowledgeGraph(provider_manager=pm, db_path=kg_db_path)
-        kg.register_source(
-            {
-                "source_id": source_id,
-                "source_type": "video",
-                "title": title,
-                "path": str(input_path),
-                "mime_type": mime_type,
-                "ingested_at": datetime.now().isoformat(),
-                "metadata": {"duration_seconds": audio_props.get("duration")},
-            }
-        )
-        kg.process_transcript(transcript_data)
+        source_record = {
+            "source_id": source_id,
+            "source_type": "video",
+            "title": title,
+            "path": str(input_path),
+            "mime_type": mime_type,
+            "ingested_at": datetime.now().isoformat(),
+            "metadata": {"duration_seconds": audio_props.get("duration"), "sha256": revision},
+        }
+        kg.register_source(source_record)
+        kg.process_transcript(transcript_data, source_id=source_id)
         if diagrams:
-            diagram_dicts = [d.model_dump() for d in diagrams]
-            kg.process_diagrams(diagram_dicts)
+            diagram_dicts = [d.model_dump(exclude_unset=True) for d in diagrams]
+            kg.process_diagrams(diagram_dicts, source_id=source_id)
         if screen_captures:
-            capture_dicts = [sc.model_dump() for sc in screen_captures]
-            kg.process_screenshots(capture_dicts)
+            capture_dicts = [sc.model_dump(exclude_unset=True) for sc in screen_captures]
+            kg.process_screenshots(capture_dicts, source_id=source_id)
+        if file_revision(input_path) != revision:
+            kg._store.close()
+            raise ValueError("video source changed during extraction; use a new output directory")
+        source_record["metadata"]["graph_complete"] = True
+        kg.register_source(source_record)
     # Export JSON copy alongside the SQLite db
     kg.save(kg_json_path)
     pipeline_bar.update(1)

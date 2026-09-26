@@ -110,9 +110,9 @@ def test_every_edge_is_attested():
     out = to_conflict_kg(_kg())
     for e in out["edges"]:
         assert e["props"]["asserted_by"] == "planopticon"
-        assert 0.0 <= e["props"]["confidence"] <= 1.0
+        assert e["props"]["evidence_status"] == "legacy_unqualified"
     by = {(e["source"], e["target"]): e for e in out["edges"]}
-    assert by[("acme corp", "data platform")]["props"]["confidence"] == 1.0
+    assert by[("acme corp", "data platform")]["props"]["confidence"] is None
     assert by[("acme corp", "data platform")]["props"]["content_source"] == "kickoff"
     assert by[("data platform", "acme corp")]["props"]["confidence"] == 0.7
 
@@ -238,13 +238,18 @@ def test_repeated_observations_merge_into_one_multiply_attested_edge():
         ("quickbooks", "alice", "uses"),  # direction is part of the edge
         ("alice", "quickbooks", "other"),  # a different relation between the same pair
     ]
-    assert edges[0]["props"] == {
+    assert {k: v for k, v in edges[0]["props"].items() if k != "observations"} == {
         "asserted_by": "planopticon",
-        "confidence": 1.0,
+        "confidence": None,
+        "evidence_status": "legacy_unqualified",
         "content_source": "transcript_batch_0",  # scalar props: the first observation's
         "timestamp": 12.0,
         "sources": ["diagram_2", "transcript_batch_0", "transcript_batch_10"],
         "raw_types": ["uses", "utilizes"],
     }
+    observations = edges[0]["props"]["observations"]
+    assert len(observations) == 4
+    assert {o.get("timestamp") for o in observations} == {None, 12.0, 340.0}
+    assert all(o["confidence"] is None for o in observations)
     assert edges[1]["props"]["sources"] == ["diagram_2"]
     assert "sources" not in edges[2]["props"]  # no content source recorded, none invented

@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
+from video_processor.evidence import check_source_revision
 from video_processor.models import Entity, Relationship, SourceRecord
 
 
@@ -154,17 +155,39 @@ class PlanOpticonExchange(BaseModel):
 
     def merge(self, other: "PlanOpticonExchange") -> None:
         """Merge *other* into this exchange, deduplicating entities by name."""
-        existing_names = {e.name for e in self.entities}
+        sources = {s.source_id: s.model_dump() for s in self.sources}
+        for source in other.sources:
+            check_source_revision(sources.get(source.source_id), source.model_dump())
+        entities = {e.name: e for e in self.entities}
         for entity in other.entities:
-            if entity.name not in existing_names:
-                self.entities.append(entity)
-                existing_names.add(entity.name)
+            existing = entities.get(entity.name)
+            if existing is None:
+                copied = entity.model_copy(deep=True)
+                self.entities.append(copied)
+                entities[entity.name] = copied
+            else:
+                for description in entity.descriptions:
+                    if description not in existing.descriptions:
+                        existing.descriptions.append(description)
+                for occurrence in entity.occurrences:
+                    if occurrence not in existing.occurrences:
+                        existing.occurrences.append(json.loads(json.dumps(occurrence)))
 
-        existing_rels = {(r.source, r.target, r.type) for r in self.relationships}
+        def relation_key(rel):
+            # Legacy rows retain their original triple deduplication. Qualified
+            # observations identify the actual source context, not just the edge.
+            return (
+                rel.source,
+                rel.target,
+                rel.type,
+                rel.model_dump_json() if rel.evidence is not None else None,
+            )
+
+        existing_rels = {relation_key(r) for r in self.relationships}
         for rel in other.relationships:
-            key = (rel.source, rel.target, rel.type)
+            key = relation_key(rel)
             if key not in existing_rels:
-                self.relationships.append(rel)
+                self.relationships.append(rel.model_copy(deep=True))
                 existing_rels.add(key)
 
         existing_artifact_names = {a.name for a in self.artifacts}
@@ -206,4 +229,6 @@ def _normalise_relationship(raw: Dict[str, Any]) -> Dict[str, Any]:
         "type": raw.get("type", "related_to"),
         "content_source": raw.get("content_source"),
         "timestamp": raw.get("timestamp"),
+        "evidence": raw.get("evidence"),
+        "confidence": raw.get("confidence"),
     }

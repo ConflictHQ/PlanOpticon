@@ -18,9 +18,12 @@ edge `source`/`target` reference node ids so loaders are O(1).
 
 import json
 import logging
+import math
 import sqlite3
 from pathlib import Path
 from typing import Dict
+
+from video_processor.evidence import normalized_observation
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +144,12 @@ CREATE INDEX idx_edges_target ON edges(target);
 """
 
 
+def _evidence_status(qualified: list[bool]) -> str:
+    if qualified and all(qualified):
+        return "source_qualified"
+    return "mixed" if any(qualified) else "legacy_unqualified"
+
+
 def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
     """Project a KnowledgeGraph.to_dict() payload onto the conflict-kg/v1 shape.
 
@@ -155,10 +164,20 @@ def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
     target, type) merge into one edge attested by all their content sources.
     `repo` (optional) is the federation namespace to prefix addresses with.
     """
+    # Export is a boundary: never emit non-JSON or non-finite provenance.
+    json.dumps(kg_dict, allow_nan=False)
     nodes = []
     for node in kg_dict.get("nodes", []):
         name = node.get("name", "")
-        props = {"address": address_for(name, repo)}
+        occurrences = node.get("occurrences", [])
+        qualified = [
+            bool(
+                normalized_observation(item.get("evidence"))
+                and item["evidence"].get("source_revision")
+            )
+            for item in occurrences
+        ]
+        props = {"address": address_for(name, repo), "evidence_status": _evidence_status(qualified)}
         if node.get("descriptions"):
             props["descriptions"] = node["descriptions"]
         if node.get("occurrences"):
@@ -175,9 +194,10 @@ def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
     # The store appends a relationship row per transcript batch / diagram /
     # screenshot that states it, so one edge arrives as several rows. Merge on
     # the emitted (source, target, type) — the signature brain consumers dedupe
-    # on — keeping the first row's scalar props and every row's verb and source.
+    # on — keeping compatibility scalars plus every distinct structured observation.
     edges: Dict[tuple, Dict] = {}
     observed: Dict[tuple, tuple] = {}
+    observations: Dict[tuple, dict] = {}
     for rel in kg_dict.get("relationships", []):
         verb = rel.get("type") or "related_to"
         key = (
@@ -185,16 +205,31 @@ def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
             rel.get("target", "").lower(),
             canonical_edge_type(verb),
         )
+        confidence = rel.get("confidence")
+        if confidence is not None and (
+            isinstance(confidence, bool)
+            or not isinstance(confidence, (int, float))
+            or not math.isfinite(confidence)
+            or not 0 <= confidence <= 1
+        ):
+            raise ValueError("relationship confidence must be finite and between zero and one")
+        evidence = normalized_observation(rel.get("evidence"))
+        item = {"raw_type": verb, "confidence": confidence}
+        for field in ("content_source", "timestamp"):
+            if rel.get(field) is not None:
+                item[field] = rel[field]
+        if evidence is not None:
+            item["evidence"] = evidence
         if key not in edges:
-            # Attestation: every assertion names its asserter. Confidence is the
-            # extractor's when it recorded one, else 1.0 (a stated relationship).
-            props = {"asserted_by": PRODUCER, "confidence": float(rel.get("confidence", 1.0))}
+            props = {"asserted_by": PRODUCER, "confidence": confidence}
             if rel.get("content_source") is not None:
                 props["content_source"] = rel["content_source"]
             if rel.get("timestamp") is not None:
                 props["timestamp"] = rel["timestamp"]
             edges[key] = {"source": key[0], "target": key[1], "type": key[2], "props": props}
             observed[key] = (set(), set())
+            observations[key] = {}
+        observations[key][json.dumps(item, sort_keys=True, allow_nan=False)] = item
         verbs, sources = observed[key]
         verbs.add(verb)
         if rel.get("content_source") is not None:
@@ -202,6 +237,13 @@ def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
 
     for key, edge in edges.items():
         verbs, sources = observed[key]
+        items = [observations[key][identity] for identity in sorted(observations[key])]
+        edge["props"]["observations"] = items
+        confidences = {item["confidence"] for item in items}
+        edge["props"]["confidence"] = next(iter(confidences)) if len(confidences) == 1 else None
+        edge["props"]["evidence_status"] = _evidence_status(
+            [bool(item.get("evidence", {}).get("source_revision")) for item in items]
+        )
         if sources:
             edge["props"]["sources"] = sorted(sources)
         if verbs != {edge["type"]}:
@@ -219,7 +261,7 @@ def write_conflict_kg_json(kg_dict: Dict, output_path: Path) -> Path:
     """Write the canonical JSON encoding. Returns the output path."""
     output_path = Path(output_path)
     data = to_conflict_kg(kg_dict)
-    output_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    output_path.write_text(json.dumps(data, indent=2, allow_nan=False), encoding="utf-8")
     logger.info(
         f"Exported {len(data['nodes'])} nodes / {len(data['edges'])} edges "
         f"to {output_path} ({FORMAT_ID} JSON)"

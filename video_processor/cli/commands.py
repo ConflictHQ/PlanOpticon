@@ -2018,6 +2018,8 @@ def convert(source_path, dest_path):
     elif source_path.suffix == ".json":
         data = json.loads(source_path.read_text())
         src_store = InMemoryStore()
+        for source in data.get("sources", []):
+            src_store.register_source(source)
         for node in data.get("nodes", []):
             descs = node.get("descriptions", [])
             if isinstance(descs, set):
@@ -2029,6 +2031,7 @@ def convert(source_path, dest_path):
                     occ.get("source", ""),
                     occ.get("timestamp"),
                     occ.get("text"),
+                    evidence=occ.get("evidence"),
                 )
         for rel in data.get("relationships", []):
             src_store.add_relationship(
@@ -2037,6 +2040,8 @@ def convert(source_path, dest_path):
                 rel.get("type", "related_to"),
                 content_source=rel.get("content_source"),
                 timestamp=rel.get("timestamp"),
+                evidence=rel.get("evidence"),
+                confidence=rel.get("confidence"),
             )
     else:
         click.echo(f"Unsupported source format: {source_path.suffix}", err=True)
