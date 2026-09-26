@@ -21,6 +21,40 @@ def _sanitize_filename(name: str) -> str:
     return name.replace("/", "-").replace("\\", "-").replace(" ", "-").replace(".", "-")
 
 
+def _slug(text: str) -> str:
+    """Stable id fragment (kebab-case) — the brain's `slug`/`path` id convention,
+    so a page's declared id matches what a consuming brain would mint."""
+    out = []
+    for ch in str(text).strip().lower():
+        if ch.isalnum():
+            out.append(ch)
+        elif out and out[-1] != "-":
+            out.append("-")
+    return "".join(out).strip("-") or "item"
+
+
+def _frontmatter(page_id: str, title: str, page_type: str, extra: Optional[Dict] = None) -> str:
+    """Producer conformance for the wiki output (project-brain buildout W4):
+    every generated page opens with frontmatter the brain's `wiki-page` kind
+    can index — a stable id, the kind discriminator (`type`), the title, who
+    generated it, and any extra keys (entity type, sources). Frontmatter is the
+    contract the brain's frontmatter-as-database adapter reads; free markdown
+    with no id was the reason wiki mirrors could not be addressed."""
+    lines = [
+        "---",
+        f"id: {page_id}",
+        f"type: {page_type}",
+        f"title: {json.dumps(title)}",
+        "generated_by: planopticon",
+    ]
+    for k, v in (extra or {}).items():
+        if v is None or v == [] or v == "":
+            continue
+        lines.append(f"{k}: {json.dumps(v)}")
+    lines.append("---")
+    return "\n".join(lines) + "\n"
+
+
 def _wiki_link(name: str) -> str:
     """Create a GitHub wiki-style markdown link."""
     safe = _sanitize_filename(name)
@@ -128,8 +162,22 @@ def generate_wiki(
         ntype = node.get("type", "concept")
         descs = node.get("descriptions", [])
         page_name = _sanitize_filename(name)
+        sources = sorted(
+            {
+                str(o.get("recording") or o.get("source"))
+                for o in node.get("occurrences", [])
+                if o.get("recording") or o.get("source")
+            }
+        )
 
         parts = [
+            _frontmatter(
+                f"wiki-page:{_slug(name)}",
+                name,
+                "wiki-page",
+                {"entity_type": ntype, "address": f"kg-entity:{_slug(name)}", "sources": sources},
+            ).rstrip("\n"),
+            "",
             f"# {name}",
             "",
             f"**Type:** {ntype}",

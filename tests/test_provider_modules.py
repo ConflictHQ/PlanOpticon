@@ -834,8 +834,9 @@ def _fake_whisper(model):
 
 class TestWhisperLocal:
     def test_is_available_false_without_deps(self):
-        # torch/whisper are genuinely not installed in the dev environment.
-        assert WhisperLocal.is_available() is False
+        # Exercise missing dependencies even on a developer's media-enabled venv.
+        with patch.dict(sys.modules, {"torch": None, "whisper": None}):
+            assert WhisperLocal.is_available() is False
 
     def test_is_available_true_with_deps(self):
         with patch.dict(

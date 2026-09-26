@@ -160,3 +160,30 @@ class TestWikiGeneratorSkill:
         # actual page bodies are returned in metadata for write_wiki()
         assert "Home" in result.metadata["pages"]
         assert result.metadata["pages"]["Home"].startswith("# My KB")
+
+
+class TestFrontmatterConformance:
+    """Producer conformance (project-brain W4): generated entity pages open with
+    frontmatter a consuming brain's `wiki-page` kind can index."""
+
+    def test_entity_page_opens_with_addressable_frontmatter(self):
+        from video_processor.agent.skills.wiki_generator import generate_wiki
+
+        pages = generate_wiki(_KG)
+        alice = pages["Alice"]
+        assert alice.startswith("---\n")
+        head = alice.split("---")[1]
+        assert "id: wiki-page:alice" in head
+        assert "type: wiki-page" in head
+        assert 'title: "Alice"' in head
+        assert "generated_by: planopticon" in head
+        assert 'entity_type: "person"' in head
+        assert 'address: "kg-entity:alice"' in head
+        assert '"transcript_0"' in head and '"notes"' in head  # sources from occurrences
+        assert "# Alice" in alice  # body untouched
+
+    def test_page_without_occurrences_omits_sources(self):
+        from video_processor.agent.skills.wiki_generator import generate_wiki
+
+        head = generate_wiki(_KG)["Python"].split("---")[1]
+        assert "sources:" not in head
