@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
 from click.testing import CliRunner
 
 from video_processor.cli.commands import _parse_filter_args, _print_result, cli
@@ -16,6 +17,8 @@ from video_processor.integrators.graph_query import QueryResult
 from video_processor.integrators.graph_store import InMemoryStore, SQLiteStore
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
 from video_processor.providers.base import ModelInfo
+
+pytestmark = pytest.mark.always
 
 
 def _populate(store):

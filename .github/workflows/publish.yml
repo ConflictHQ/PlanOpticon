@@ -8,7 +8,16 @@ permissions:
   id-token: write
 
 jobs:
+  # Release gate: every tier except debug (docs/contributing.md#test-tiers).
+  test:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/test-tier.yml
+    with:
+      target: test-release
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6

@@ -1,6 +1,10 @@
 """Tests for graph storage backends."""
 
+import pytest
+
 from video_processor.integrators.graph_store import InMemoryStore, SQLiteStore, create_store
+
+pytestmark = pytest.mark.always
 
 
 class TestInMemoryStore:

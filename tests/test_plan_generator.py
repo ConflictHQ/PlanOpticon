@@ -8,6 +8,8 @@ is written under ``tmp_path``.
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
 from video_processor.integrators.plan_generator import PlanGenerator
 from video_processor.models import (
@@ -17,6 +19,8 @@ from video_processor.models import (
     VideoManifest,
     VideoMetadata,
 )
+
+pytestmark = pytest.mark.always
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -6,6 +6,8 @@ import pytest
 
 from video_processor.cli.output_formatter import OutputFormatter
 
+pytestmark = pytest.mark.always
+
 
 @pytest.fixture()
 def tmp_dir(tmp_path):

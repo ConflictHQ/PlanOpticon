@@ -17,6 +17,8 @@ from video_processor.agent.skills.base import Artifact
 from video_processor.cli.companion import CompanionREPL
 from video_processor.integrators.graph_store import SQLiteStore
 
+pytestmark = pytest.mark.always
+
 
 def _make_graph_db(path: Path) -> Path:
     """Create a populated real SQLite knowledge graph at *path* and return it."""

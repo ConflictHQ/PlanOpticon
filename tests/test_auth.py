@@ -6,6 +6,8 @@ import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from video_processor.auth import (
     KNOWN_CONFIGS,
     AuthConfig,
@@ -14,6 +16,8 @@ from video_processor.auth import (
     get_auth_config,
     get_auth_manager,
 )
+
+pytestmark = pytest.mark.always
 
 # -----------------------------------------------------------------------
 # AuthConfig

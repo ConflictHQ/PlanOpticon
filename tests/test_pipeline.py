@@ -13,6 +13,8 @@ from video_processor.pipeline import (
     process_single_video,
 )
 
+pytestmark = pytest.mark.always
+
 
 class TestFormatSrtTime:
     def test_zero(self):

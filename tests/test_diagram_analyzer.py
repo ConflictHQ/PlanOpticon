@@ -11,6 +11,8 @@ from video_processor.analyzers.diagram_analyzer import (
 )
 from video_processor.models import DiagramType
 
+pytestmark = pytest.mark.always
+
 
 class TestParseJsonResponse:
     def test_plain_json(self):

@@ -7,6 +7,8 @@ import pytest
 
 from video_processor.utils.callbacks import WebhookCallback
 
+pytestmark = pytest.mark.always
+
 
 @pytest.fixture()
 def callback():

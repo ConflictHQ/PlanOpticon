@@ -2,12 +2,16 @@
 
 import json
 
+import pytest
+
 from video_processor.exchange import (
     ArtifactMeta,
     PlanOpticonExchange,
     ProjectMeta,
 )
 from video_processor.models import Entity, Relationship, SourceRecord
+
+pytestmark = pytest.mark.always
 
 # ------------------------------------------------------------------
 # Fixtures

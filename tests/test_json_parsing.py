@@ -1,6 +1,10 @@
 """Tests for robust JSON parsing from LLM responses."""
 
+import pytest
+
 from video_processor.utils.json_parsing import parse_json_from_response
+
+pytestmark = pytest.mark.always
 
 
 class TestParseJsonFromResponse:

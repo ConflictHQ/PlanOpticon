@@ -16,6 +16,8 @@ import requests
 from video_processor.sources.base import SourceFile
 from video_processor.sources.zoom_source import ZoomSource
 
+pytestmark = pytest.mark.always
+
 
 def _mock_response(*, json_data=None, text=None, chunks=None, raise_error=None):
     """Build a MagicMock that mimics the parts of requests.Response we use."""

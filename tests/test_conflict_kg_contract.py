@@ -5,6 +5,8 @@ contract rides beside it."""
 
 import json
 
+import pytest
+
 from video_processor.exporters.conflict_kg import (
     ADDRESS_KIND,
     CONTRACT_VERSION,
@@ -17,6 +19,8 @@ from video_processor.exporters.conflict_kg import (
     write_conflict_kg_json,
     write_conflict_kg_sqlite,
 )
+
+pytestmark = pytest.mark.always
 
 # The consuming brain's declared edge vocabulary (project-brain
 # template/brain-schema.json `edges`, contract 1.0): every emitted type is one.

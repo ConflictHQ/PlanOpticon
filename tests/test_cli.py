@@ -1,8 +1,11 @@
 """Tests for the CLI commands (help text, version, option presence)."""
 
+import pytest
 from click.testing import CliRunner
 
 from video_processor.cli.commands import cli
+
+pytestmark = pytest.mark.always
 
 
 class TestCLIRoot:

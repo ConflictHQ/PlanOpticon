@@ -13,6 +13,8 @@ import pytest
 
 from video_processor.sources.base import SourceFile
 
+pytestmark = pytest.mark.always
+
 
 class TestRunGws:
     @patch("video_processor.sources.google_keep_source.subprocess.run")

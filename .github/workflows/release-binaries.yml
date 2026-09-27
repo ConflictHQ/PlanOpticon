@@ -8,7 +8,14 @@ permissions:
   contents: write
 
 jobs:
+  # Release gate: every tier except debug (docs/contributing.md#test-tiers).
+  test:
+    uses: ./.github/workflows/test-tier.yml
+    with:
+      target: test-release
+
   build:
+    needs: test
     strategy:
       matrix:
         include:

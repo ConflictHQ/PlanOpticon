@@ -1,0 +1,35 @@
+name: Nightly tests
+
+# always + sometimes + rarely on main, every night. A failure opens (or updates)
+# one tracking issue instead of blocking anything.
+on:
+  schedule:
+    - cron: "17 7 * * *"
+  workflow_dispatch:
+
+jobs:
+  tests:
+    uses: ./.github/workflows/test-tier.yml
+    with:
+      target: test-nightly
+
+  report:
+    needs: tests
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the nightly failure issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Nightly tests failing"
+          existing=$(gh issue list --state open --search "\"$title\" in:title" --json number -q '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Still failing: $RUN_URL"
+          else
+            gh issue create --title "$title" --body "The nightly run (always + sometimes + rarely) failed: $RUN_URL. Fix it, or quarantine a flaky test to the debug tier with its own issue."
+          fi

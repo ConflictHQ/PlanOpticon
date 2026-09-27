@@ -17,6 +17,8 @@ import pytest
 from video_processor.sources.base import SourceFile
 from video_processor.sources.onenote_source import OneNoteSource, _html_to_text, _run_m365
 
+pytestmark = pytest.mark.always
+
 MODULE = "video_processor.sources.onenote_source"
 
 

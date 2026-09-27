@@ -20,6 +20,8 @@ from video_processor.processors.markdown_processor import (
 )
 from video_processor.processors.pdf_processor import PdfProcessor
 
+pytestmark = pytest.mark.always
+
 # --- Base / Registry ---
 
 

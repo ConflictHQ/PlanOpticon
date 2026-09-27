@@ -9,6 +9,8 @@ the empty-graph path.
 import csv
 import io
 
+import pytest
+
 from video_processor.exporters.markdown import (
     DOCUMENT_TYPES,
     generate_all,
@@ -21,6 +23,8 @@ from video_processor.exporters.markdown import (
     generate_relationship_map,
     generate_status_report,
 )
+
+pytestmark = pytest.mark.always
 
 
 def _sample_kg():

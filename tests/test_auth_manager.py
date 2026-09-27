@@ -13,7 +13,11 @@ import sys
 import time
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from video_processor.auth import AuthConfig, OAuthManager
+
+pytestmark = pytest.mark.always
 
 
 def _mock_resp(payload):

@@ -17,6 +17,8 @@ import pytest
 
 from video_processor.sources.base import SourceFile
 
+pytestmark = pytest.mark.always
+
 
 def _file_meta(name, file_id, size, path_display, modified=datetime(2025, 1, 1)):
     import dropbox

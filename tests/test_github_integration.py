@@ -3,12 +3,16 @@
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from video_processor.agent.skills.base import AgentContext, Artifact
 from video_processor.agent.skills.github_integration import (
     GitHubIssuesSkill,
     _task_to_issue,
     push_to_github,
 )
+
+pytestmark = pytest.mark.always
 
 
 class TestTaskToIssue:

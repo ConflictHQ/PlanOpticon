@@ -20,6 +20,8 @@ from video_processor.models import EvidenceLocator
 from video_processor.pipeline import process_single_video
 from video_processor.processors.ingest import ingest_file
 
+pytestmark = pytest.mark.always
+
 TEXT = "AlphaPlatform uses BetaStore."
 
 

@@ -12,24 +12,50 @@ pip install -e ".[dev]"
 
 ## Running tests
 
-PlanOpticon has 822+ tests covering providers, pipeline stages, document processors, knowledge graph operations, exporters, skills, and CLI commands.
+Tests are tiered by when they run. Use the `make` level that matches what you
+are doing; each one runs its tiers and fails if it goes over its time budget.
 
 ```bash
-# Run all tests
-pytest tests/ -v
-
-# Run with coverage
-pytest tests/ --cov=video_processor --cov-report=html
-
-# Run a specific test file
-pytest tests/test_models.py -v
-
-# Run tests matching a keyword
-pytest tests/ -k "test_knowledge_graph" -v
-
-# Run only fast tests (skip slow integration tests)
-pytest tests/ -m "not slow" -v
+make test          # always: while coding (budget 2 min)
+make test-pr       # always + sometimes: before pushing, and on every PR
+make test-nightly  # + rarely: the nightly run on main
+make test-release  # every tier except debug: the release gate
+make test-debug T=tests/test_x.py::test_y   # one named debug test
 ```
+
+Plain `pytest` still works. It runs everything except the `debug` tier, and
+`-m` picks tiers yourself (`pytest -m "always or sometimes"`).
+
+### Test tiers
+
+Every test carries exactly one tier marker; collection fails otherwise, so a
+new test has to choose. Set it per module with `pytestmark = pytest.mark.always`
+or per test with a decorator.
+
+| Tier | Runs on | Budget | What belongs |
+|------|---------|--------|--------------|
+| `always` | every local run and every CI run | under 2 min | Fast, deterministic, no network. Core paths, permission-denied paths, cheap edge cases, every regression test. |
+| `sometimes` | every PR and the merge queue | under 10 min | Integration tests, main end-to-end happy paths. |
+| `rarely` | nightly on main, and before a release | under 60 min | Real media through the pipeline, large inputs, slow external contract tests. |
+| `edge` | before a release, or on demand | no limit | Expensive or exotic runs. |
+| `debug` | only when named explicitly | never gates | Diagnostics and repros. |
+
+Tiers are about cost, not importance: a cheap edge case is `always`. Label what
+a test covers with the content tags `regression`, `security`, `edge_case` and
+`smoke`.
+
+CI follows the same tiers:
+
+| Event | Runs |
+|-------|------|
+| Pull request and merge queue | `make test-pr` on the full OS and Python matrix |
+| Push to main | `make test` (the PR already ran the rest) |
+| Nightly | `make test-nightly`; a failure opens or updates one issue |
+| Release | `make test-release` gates the PyPI publish and the binary builds |
+
+A flaky test is quarantined, not re-run until it passes: move it to `debug`,
+open an issue, and bring it back once it is fixed. When a slower tier catches a
+bug, its regression test moves to `always`.
 
 ### Test conventions
 

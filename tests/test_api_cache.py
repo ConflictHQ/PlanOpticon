@@ -2,7 +2,11 @@
 
 import time
 
+import pytest
+
 from video_processor.utils.api_cache import ApiCache
+
+pytestmark = pytest.mark.always
 
 
 class TestApiCache:

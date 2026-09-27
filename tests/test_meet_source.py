@@ -10,8 +10,12 @@ import json
 import subprocess
 from unittest.mock import patch
 
+import pytest
+
 from video_processor.sources.base import SourceFile
 from video_processor.sources.meet_recording_source import MeetRecordingSource
+
+pytestmark = pytest.mark.always
 
 _RUN_GWS = "video_processor.sources.meet_recording_source._run_gws"
 

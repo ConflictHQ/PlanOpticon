@@ -3,6 +3,7 @@
 import os
 from unittest.mock import MagicMock, patch
 
+import pytest
 from click.testing import CliRunner
 
 from video_processor.cli.commands import cli
@@ -16,6 +17,8 @@ from video_processor.cli.doctor import (
     format_results,
     run_all_checks,
 )
+
+pytestmark = pytest.mark.always
 
 
 class TestDoctor:

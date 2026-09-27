@@ -5,6 +5,8 @@ import pytest
 from video_processor.exporters.pdf_export import generate_pdf
 from video_processor.exporters.pptx_export import generate_pptx
 
+pytestmark = pytest.mark.always
+
 
 def _sample_kg():
     """Return a sample knowledge graph dict for testing."""

@@ -3,8 +3,12 @@
 import json
 from unittest.mock import MagicMock
 
+import pytest
+
 from video_processor.analyzers.action_detector import ActionDetector
 from video_processor.models import ActionItem, TranscriptSegment
+
+pytestmark = pytest.mark.always
 
 
 class TestPatternExtract:

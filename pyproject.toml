@@ -143,4 +143,18 @@ warn_unused_configs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
-addopts = "--cov=video_processor"
+addopts = "--cov=video_processor -m 'not debug'"
+# Test tiers (docs/contributing.md#test-tiers). Every test carries exactly one
+# tier; tests/conftest.py fails collection otherwise. The default run excludes
+# debug; a later -m on the command line replaces this default.
+markers = [
+    "always: every local run, pre-commit and CI run (whole tier under 2 minutes)",
+    "sometimes: every PR (under 10 minutes)",
+    "rarely: nightly on main and before a release (under 60 minutes)",
+    "edge: expensive or exotic runs, before a release or on demand",
+    "debug: diagnostics and repros, run only when named explicitly",
+    "regression: guards a previously fixed bug",
+    "security: covers a security or permission boundary",
+    "edge_case: covers an unusual input or state (not a tier)",
+    "smoke: safe to run against a deployed environment",
+]

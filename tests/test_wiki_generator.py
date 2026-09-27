@@ -5,12 +5,16 @@ import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from video_processor.agent.skills.base import AgentContext, Artifact
 from video_processor.agent.skills.wiki_generator import (
     WikiGeneratorSkill,
     generate_wiki,
     push_wiki,
 )
+
+pytestmark = pytest.mark.always
 
 _KG = {
     "nodes": [

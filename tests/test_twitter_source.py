@@ -16,6 +16,8 @@ import pytest
 
 from video_processor.sources.base import SourceFile
 
+pytestmark = pytest.mark.always
+
 
 class TestTwitterAuthenticate:
     @patch.dict(os.environ, {}, clear=True)

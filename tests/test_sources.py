@@ -9,6 +9,8 @@ import pytest
 
 from video_processor.sources.base import BaseSource, SourceFile
 
+pytestmark = pytest.mark.always
+
 # ---------------------------------------------------------------------------
 # SourceFile model
 # ---------------------------------------------------------------------------

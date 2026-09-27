@@ -6,6 +6,8 @@ Both are pure logic (no LLM). Only shutil.which / subprocess are mocked.
 import json
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from video_processor.agent.skills.artifact_export import (
     ArtifactExportSkill,
     _write_artifact,
@@ -19,6 +21,8 @@ from video_processor.agent.skills.cli_adapter import (
     _format_linear,
     run_commands,
 )
+
+pytestmark = pytest.mark.always
 
 
 def _artifact(name, content, artifact_type, fmt="markdown"):

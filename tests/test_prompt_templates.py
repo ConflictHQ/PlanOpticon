@@ -1,10 +1,14 @@
 """Tests for prompt template management."""
 
+import pytest
+
 from video_processor.utils.prompt_templates import (
     DEFAULT_TEMPLATES,
     PromptTemplate,
     default_prompt_manager,
 )
+
+pytestmark = pytest.mark.always
 
 
 class TestPromptTemplate:

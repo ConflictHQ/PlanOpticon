@@ -8,6 +8,8 @@ import pytest
 from video_processor.integrators.graph_query import GraphQueryEngine, QueryResult
 from video_processor.integrators.graph_store import InMemoryStore, SQLiteStore
 
+pytestmark = pytest.mark.always
+
 
 def _make_populated_store():
     """Create a store with test data."""

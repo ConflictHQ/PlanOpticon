@@ -13,6 +13,8 @@ from video_processor.providers.base import (
 )
 from video_processor.providers.manager import ProviderManager
 
+pytestmark = pytest.mark.always
+
 # ---------------------------------------------------------------------------
 # ModelInfo
 # ---------------------------------------------------------------------------

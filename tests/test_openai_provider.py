@@ -12,6 +12,8 @@ import pytest
 
 from video_processor.providers.openai_provider import OpenAIProvider
 
+pytestmark = pytest.mark.always
+
 
 def _make_client(mock_cls):
     client = MagicMock()
