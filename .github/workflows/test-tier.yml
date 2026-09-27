@@ -1,0 +1,56 @@
+name: Test tier
+
+# Reusable: runs one test-tier level (docs/contributing.md#test-tiers) across an
+# OS and Python matrix. Callers pick the level with the make target.
+on:
+  workflow_call:
+    inputs:
+      target:
+        description: "make target: test, test-pr, test-nightly or test-release"
+        required: true
+        type: string
+      os:
+        description: "JSON list of runners"
+        type: string
+        default: '["ubuntu-latest", "macos-latest"]'
+      python-versions:
+        description: "JSON list of Python versions"
+        type: string
+        default: '["3.10", "3.11", "3.12", "3.13"]'
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ fromJSON(inputs.os) }}
+        python-version: ${{ fromJSON(inputs.python-versions) }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg libsndfile1
+
+      - name: Install system dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ffmpeg libsndfile
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run make ${{ inputs.target }}
+        run: make ${{ inputs.target }} PYTEST="python -m pytest" ARGS="-v --tb=short"
