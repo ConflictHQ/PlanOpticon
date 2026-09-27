@@ -16,8 +16,12 @@ import sys
 import types
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from video_processor.sources.base import SourceFile
 from video_processor.sources.google_drive import SCOPES, GoogleDriveSource
+
+pytestmark = pytest.mark.always
 
 
 def _fake_discovery_module(build_obj):
@@ -95,7 +99,8 @@ class TestGoogleDriveAuthenticateDispatch:
 
 
 class TestGoogleDriveAuthServiceAccount:
-    def test_success_builds_service(self, tmp_path):
+    @pytest.mark.regression
+    def test_success_builds_service(self, tmp_path, caplog):
         from google.oauth2 import service_account
 
         creds_file = tmp_path / "sa.json"
@@ -111,7 +116,8 @@ class TestGoogleDriveAuthServiceAccount:
             "from_service_account_file",
             return_value=fake_creds,
         ) as from_file:
-            assert source._auth_service_account(build_obj) is True
+            # _auth_service_account swallows exceptions; surface the logged one (#164).
+            assert source._auth_service_account(build_obj) is True, caplog.text
         from_file.assert_called_once_with(str(creds_file), scopes=SCOPES)
         build_obj.assert_called_once_with("drive", "v3", credentials=fake_creds)
         assert source.service is build_obj.return_value
