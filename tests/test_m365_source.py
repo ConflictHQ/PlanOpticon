@@ -24,6 +24,8 @@ from video_processor.sources.m365_source import (
     _run_m365,
 )
 
+pytestmark = pytest.mark.always
+
 M365 = "video_processor.sources.m365_source"
 
 

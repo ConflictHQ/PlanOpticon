@@ -34,6 +34,8 @@ from video_processor.providers.replicate_provider import ReplicateProvider
 from video_processor.providers.vertex_provider import VertexProvider
 from video_processor.providers.whisper_local import WhisperLocal
 
+pytestmark = pytest.mark.always
+
 USER_MSG = [{"role": "user", "content": "hello"}]
 
 

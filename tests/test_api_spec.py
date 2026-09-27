@@ -1,6 +1,10 @@
 """Tests for video_processor.api.openapi_spec."""
 
+import pytest
+
 from video_processor.api.openapi_spec import get_openapi_spec
+
+pytestmark = pytest.mark.always
 
 
 def test_returns_dict():

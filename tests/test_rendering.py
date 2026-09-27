@@ -2,6 +2,8 @@
 
 from unittest.mock import patch
 
+import pytest
+
 from video_processor.models import (
     ActionItem,
     DiagramResult,
@@ -12,6 +14,8 @@ from video_processor.models import (
     VideoMetadata,
 )
 from video_processor.utils.rendering import render_mermaid, reproduce_chart
+
+pytestmark = pytest.mark.always
 
 
 class TestRenderMermaid:

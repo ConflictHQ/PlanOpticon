@@ -1,5 +1,7 @@
 """Tests for pydantic data models."""
 
+import pytest
+
 from video_processor.models import (
     ActionItem,
     BatchManifest,
@@ -17,6 +19,8 @@ from video_processor.models import (
     VideoManifest,
     VideoMetadata,
 )
+
+pytestmark = pytest.mark.always
 
 
 class TestEnums:

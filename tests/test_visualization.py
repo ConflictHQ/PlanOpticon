@@ -2,6 +2,8 @@
 
 import pytest
 
+pytestmark = pytest.mark.always
+
 nx = pytest.importorskip("networkx", reason="networkx not installed")
 
 from video_processor.utils.visualization import (  # noqa: E402

@@ -12,6 +12,8 @@ import pytest
 
 from video_processor.providers.gemini_provider import GeminiProvider
 
+pytestmark = pytest.mark.always
+
 
 def _provider():
     provider = GeminiProvider(api_key="test-key")

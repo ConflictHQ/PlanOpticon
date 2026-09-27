@@ -9,11 +9,15 @@ mocked boundary is ``_run_m365`` (imported into this module's namespace) and
 import subprocess
 from unittest.mock import patch
 
+import pytest
+
 from video_processor.sources.base import SourceFile
 from video_processor.sources.teams_recording_source import (
     TeamsRecordingSource,
     _vtt_to_text,
 )
+
+pytestmark = pytest.mark.always
 
 TEAMS = "video_processor.sources.teams_recording_source"
 

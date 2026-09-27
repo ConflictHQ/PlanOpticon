@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
 from video_processor.integrators.plan_generator import PlanGenerator
 from video_processor.models import (
@@ -18,6 +20,8 @@ from video_processor.output_structure import (
     read_batch_manifest,
     write_batch_manifest,
 )
+
+pytestmark = pytest.mark.always
 
 
 def _make_kg_with_entity(name, entity_type="concept", descriptions=None, occurrences=None):

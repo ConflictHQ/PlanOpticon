@@ -2,12 +2,16 @@
 
 from unittest.mock import MagicMock
 
+import pytest
+
 from video_processor.integrators.taxonomy import TaxonomyClassifier
 from video_processor.models import (
     PlanningEntity,
     PlanningEntityType,
     PlanningRelationshipType,
 )
+
+pytestmark = pytest.mark.always
 
 # ── Fixtures ──────────────────────────────────────────────────────────
 

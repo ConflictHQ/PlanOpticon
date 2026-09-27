@@ -3,10 +3,14 @@ ProviderManager diarization routing."""
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from video_processor.providers.base import BaseProvider
 from video_processor.providers.deepgram_provider import DeepgramProvider
 from video_processor.providers.elevenlabs_provider import ElevenLabsProvider
 from video_processor.providers.manager import ProviderManager
+
+pytestmark = pytest.mark.always
 
 
 def _mock_response(payload):

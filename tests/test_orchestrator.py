@@ -22,6 +22,8 @@ from video_processor.agent.orchestrator import AgentOrchestrator
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
 from video_processor.models import ActionItem, DiagramResult, KeyPoint, VideoManifest
 
+pytestmark = pytest.mark.always
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

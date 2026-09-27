@@ -2,7 +2,11 @@
 
 import time
 
+import pytest
+
 from video_processor.utils.usage_tracker import ModelUsage, StepTiming, UsageTracker, _fmt_duration
+
+pytestmark = pytest.mark.always
 
 
 class TestModelUsage:

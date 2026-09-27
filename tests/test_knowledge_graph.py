@@ -7,6 +7,8 @@ import pytest
 
 from video_processor.integrators.knowledge_graph import KnowledgeGraph
 
+pytestmark = pytest.mark.always
+
 
 @pytest.fixture
 def mock_pm():

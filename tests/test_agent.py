@@ -16,6 +16,8 @@ from video_processor.agent.skills.base import (
     register_skill,
 )
 
+pytestmark = pytest.mark.always
+
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

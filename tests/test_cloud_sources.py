@@ -8,6 +8,8 @@ import pytest
 
 from video_processor.sources.base import BaseSource, SourceFile
 
+pytestmark = pytest.mark.always
+
 
 class TestSourceFile:
     def test_basic(self):

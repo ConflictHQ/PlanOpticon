@@ -22,6 +22,8 @@ from video_processor.sources.notion_source import (
     _rich_text_to_str,
 )
 
+pytestmark = pytest.mark.always
+
 # ---------------------------------------------------------------------------
 # _rich_text_to_str
 # ---------------------------------------------------------------------------

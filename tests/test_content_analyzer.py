@@ -3,8 +3,12 @@
 import json
 from unittest.mock import MagicMock
 
+import pytest
+
 from video_processor.analyzers.content_analyzer import ContentAnalyzer
 from video_processor.models import Entity, KeyPoint
+
+pytestmark = pytest.mark.always
 
 
 class TestCrossReference:

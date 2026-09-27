@@ -14,6 +14,8 @@ import pytest
 
 from video_processor.sources.base import SourceFile
 
+pytestmark = pytest.mark.always
+
 _DARWIN = patch("video_processor.sources.apple_notes_source.sys.platform", "darwin")
 
 

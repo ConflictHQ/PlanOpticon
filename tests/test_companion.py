@@ -2,7 +2,11 @@
 
 from unittest.mock import patch
 
+import pytest
+
 from video_processor.cli.companion import CompanionREPL
+
+pytestmark = pytest.mark.always
 
 
 class TestImport:

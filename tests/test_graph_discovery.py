@@ -2,11 +2,15 @@
 
 import json
 
+import pytest
+
 from video_processor.integrators.graph_discovery import (
     describe_graph,
     find_knowledge_graphs,
     find_nearest_graph,
 )
+
+pytestmark = pytest.mark.always
 
 
 class TestFindKnowledgeGraphs:

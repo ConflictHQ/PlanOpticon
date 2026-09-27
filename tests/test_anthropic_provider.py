@@ -10,6 +10,8 @@ import pytest
 
 from video_processor.providers.anthropic_provider import AnthropicProvider
 
+pytestmark = pytest.mark.always
+
 
 def _provider():
     """Build a provider with a fake key and a mock client attached."""

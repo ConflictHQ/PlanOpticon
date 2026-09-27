@@ -5,8 +5,11 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from video_processor.extractors.audio_extractor import AudioExtractor
+
+pytestmark = pytest.mark.always
 
 
 class TestAudioExtractor:

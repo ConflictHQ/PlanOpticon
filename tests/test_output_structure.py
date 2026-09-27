@@ -2,6 +2,8 @@
 
 import json
 
+import pytest
+
 from video_processor.models import (
     ActionItem,
     BatchManifest,
@@ -20,6 +22,8 @@ from video_processor.output_structure import (
     write_batch_manifest,
     write_video_manifest,
 )
+
+pytestmark = pytest.mark.always
 
 
 class TestCreateVideoOutputDirs:

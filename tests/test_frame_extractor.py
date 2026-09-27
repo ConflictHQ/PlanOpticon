@@ -12,6 +12,8 @@ from video_processor.extractors.frame_extractor import (
     save_frames,
 )
 
+pytestmark = pytest.mark.always
+
 
 # Create dummy test frames
 @pytest.fixture
