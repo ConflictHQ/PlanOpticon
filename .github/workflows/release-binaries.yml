@@ -72,6 +72,6 @@ jobs:
             video_processor/cli/commands.py
 
       - name: Upload binary to release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/planopticon-${{ matrix.target }}${{ matrix.ext }}
