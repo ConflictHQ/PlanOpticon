@@ -23,7 +23,7 @@ google-cloud-vision>=3.4.0
 # Markdown & visualization
 markdown>=3.4.0
 pymdown-extensions>=10.0.0
-python-markdown-math>=0.8.0
+python-markdown-math>=0.9
 mermaid-py>=0.5.0
 plotly>=5.18.0
 kaleido>=0.2.1
