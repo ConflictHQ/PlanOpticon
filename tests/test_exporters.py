@@ -164,7 +164,7 @@ class TestConflictKGExport:
         from video_processor.exporters.conflict_kg import FORMAT_ID, to_conflict_kg
 
         data = to_conflict_kg(_sample_kg())
-        assert data["format"] == FORMAT_ID == "conflict-kg/v1"
+        assert data["format"] == FORMAT_ID == "mimwell-kg/v1"
         assert len(data["nodes"]) == 5
         assert len(data["edges"]) == 4
 
@@ -290,7 +290,7 @@ class TestConflictKGExport:
         assert nodes == canonical["nodes"]
         assert edges == canonical["edges"]
 
-    def test_cli_export_conflict_kg(self, tmp_path):
+    def test_cli_export_mimwell_kg(self, tmp_path):
         import json
 
         from click.testing import CliRunner
@@ -306,10 +306,11 @@ class TestConflictKGExport:
 
         runner = CliRunner()
         out_json = tmp_path / "out.json"
-        result = runner.invoke(cli, ["export", "conflict-kg", str(db), "-o", str(out_json)])
+        result = runner.invoke(cli, ["export", "mimwell-kg", str(db), "-o", str(out_json)])
         assert result.exit_code == 0, result.output
+        assert f"Exported mimwell-kg/v1 to {out_json}" in result.output
         data = json.loads(out_json.read_text())
-        assert data["format"] == "conflict-kg/v1"
+        assert data["format"] == "mimwell-kg/v1"
         assert {n["id"] for n in data["nodes"]} == {"alice", "python"}
         assert data["edges"][0] == {
             "source": "alice",
@@ -325,7 +326,53 @@ class TestConflictKGExport:
 
         out_db = tmp_path / "out.db"
         result = runner.invoke(
-            cli, ["export", "conflict-kg", str(db), "--sqlite", "-o", str(out_db)]
+            cli, ["export", "mimwell-kg", str(db), "--sqlite", "-o", str(out_db)]
         )
         assert result.exit_code == 0, result.output
         assert out_db.exists()
+
+    def test_cli_conflict_kg_alias_still_works(self, tmp_path, monkeypatch):
+        """The retired `export conflict-kg` name is a deprecated alias: it writes
+        what `export mimwell-kg` writes, warns with the replacement, and keeps its
+        old default file names."""
+        import json
+        import sqlite3
+        from contextlib import closing
+
+        from click.testing import CliRunner
+
+        from video_processor.cli.commands import cli
+        from video_processor.integrators.graph_store import SQLiteStore
+
+        db = tmp_path / "knowledge_graph.db"
+        store = SQLiteStore(db)
+        store.merge_entity("Alice", "person", ["Engineer"])
+        store.merge_entity("Python", "technology", [])
+        store.add_relationship("Alice", "Python", "uses")
+
+        monkeypatch.chdir(tmp_path)  # without -o, both commands write into the cwd
+        runner = CliRunner()
+        primary = runner.invoke(cli, ["export", "mimwell-kg", str(db)])
+        assert primary.exit_code == 0, primary.output
+        assert "deprecated" not in primary.output
+
+        alias = runner.invoke(cli, ["export", "conflict-kg", str(db)])
+        assert alias.exit_code == 0, alias.output
+        assert (
+            "Warning: 'planopticon export conflict-kg' is deprecated; "
+            "use 'planopticon export mimwell-kg'." in alias.output
+        )
+        assert "Exported mimwell-kg/v1 to" in alias.output
+        legacy = json.loads((tmp_path / "conflict_kg.json").read_text())
+        assert legacy["format"] == "mimwell-kg/v1"
+        assert legacy == json.loads((tmp_path / "mimwell_kg.json").read_text())
+
+        for command in ("mimwell-kg", "conflict-kg"):
+            result = runner.invoke(cli, ["export", command, str(db), "--sqlite"])
+            assert result.exit_code == 0, result.output
+
+        def dump(path):
+            with closing(sqlite3.connect(path)) as conn:
+                return list(conn.iterdump())
+
+        assert dump(tmp_path / "conflict_kg.db") == dump(tmp_path / "mimwell_kg.db")

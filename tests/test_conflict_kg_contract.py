@@ -1,4 +1,4 @@
-"""Producer conformance (#153) — the conflict-kg/v1 exporter emits the
+"""Producer conformance (#153) — the mimwell-kg/v1 exporter emits the
 supergraph contract v1.0 ADDITIVELY: the shape the brain's consumers already
 read (ids = lowercased names, occurrences for provenance) is unchanged, and the
 contract rides beside it."""
@@ -85,7 +85,7 @@ def _kg():
 
 def test_envelope_declares_version_realm_producer():
     out = to_conflict_kg(_kg())
-    assert out["format"] == "conflict-kg/v1"
+    assert out["format"] == "mimwell-kg/v1"
     assert out["contract"] == {
         "version": CONTRACT_VERSION,
         "realm": REALM,

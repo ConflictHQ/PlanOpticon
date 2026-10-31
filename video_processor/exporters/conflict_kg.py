@@ -1,13 +1,16 @@
-"""Export knowledge graphs in the canonical conflict-kg/v1 interchange format.
+"""Export knowledge graphs in the canonical mimwell-kg/v1 interchange format.
 
 One contract, two encodings: a JSON document for small/medium graphs and a
 two-table SQLite database (D1-compatible) for large ones. Every Conflict tool
 reads and writes this shape, so a graph from any tool loads anywhere without
 per-source adapters.
 
+The format was previously named conflict-kg/v1. Only the `format` value
+changed; the shape is the same, and the SQLite encoding carries no format value.
+
 Contract:
     {
-      "format": "conflict-kg/v1",
+      "format": "mimwell-kg/v1",
       "nodes": [{"id": str, "name": str, "type": str, "props": {}}],
       "edges": [{"source": node-id, "target": node-id, "type": str, "props": {}}]
     }
@@ -27,7 +30,7 @@ from video_processor.evidence import normalized_observation
 
 logger = logging.getLogger(__name__)
 
-FORMAT_ID = "conflict-kg/v1"
+FORMAT_ID = "mimwell-kg/v1"
 
 # Supergraph interop contract (ConflictHQ/project-brain#60, producer
 # conformance #153). PlanOpticon is a producer for the BRAIN realm: extracted
@@ -151,7 +154,7 @@ def _evidence_status(qualified: list[bool]) -> str:
 
 
 def to_conflict_kg(kg_dict: Dict, repo: str = "") -> Dict:
-    """Project a KnowledgeGraph.to_dict() payload onto the conflict-kg/v1 shape.
+    """Project a KnowledgeGraph.to_dict() payload onto the mimwell-kg/v1 shape.
 
     Node ids are the lowercased entity names — the store's real identity key —
     and edge endpoints are normalized the same way so they always reference
@@ -272,7 +275,7 @@ def write_conflict_kg_json(kg_dict: Dict, output_path: Path) -> Path:
 def write_conflict_kg_sqlite(kg_dict: Dict, output_path: Path) -> Path:
     """Write the canonical SQLite encoding (same field names, two tables).
 
-    The output is a fresh database in the exact conflict-kg/v1 schema —
+    The output is a fresh database in the exact mimwell-kg/v1 schema —
     suitable for committing to a consuming repo and loading into Cloudflare D1.
     """
     output_path = Path(output_path)
