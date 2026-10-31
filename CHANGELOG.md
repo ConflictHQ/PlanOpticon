@@ -5,6 +5,16 @@ All notable changes to PlanOpticon are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **Graph interchange format renamed to mimwell-kg/v1** (`planopticon export mimwell-kg DB_PATH [--sqlite]`): the JSON encoding's `format` value is now `mimwell-kg/v1`, the name Mimwell's readers expect as they retire `conflict-kg/v1`. Nodes, edges, props and the SQLite encoding are unchanged. Breaking for readers that accept only `conflict-kg/v1`.
+
+### Deprecated
+
+- `planopticon export conflict-kg` is now an alias of `export mimwell-kg`: it prints a deprecation warning, writes the same `mimwell-kg/v1` output, and keeps its old default file names (`conflict_kg.json`, `conflict_kg.db`).
+
 ## [1.0.0] - 2026-07-08
 
 First stable release. The CLI surface, provider registry, output layout, and

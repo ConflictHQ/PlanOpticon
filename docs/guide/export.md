@@ -10,7 +10,7 @@ PlanOpticon provides multiple ways to export knowledge graph data into formats s
 | Obsidian vault | `planopticon export obsidian` | No | YAML frontmatter, `[[wiki-links]]`, tag pages, Map of Content |
 | Notion-compatible | `planopticon export notion` | No | Callout blocks, CSV database for bulk import |
 | PlanOpticonExchange JSON | `planopticon export exchange` | No | Canonical interchange format for merging and sharing |
-| conflict-kg/v1 | `planopticon export conflict-kg` | No | Cross-tool graph interchange format (JSON or SQLite) |
+| mimwell-kg/v1 | `planopticon export mimwell-kg` | No | Cross-tool graph interchange format (JSON or SQLite) |
 | GitHub wiki | `planopticon wiki generate` | No | Home, Sidebar, entity pages, type indexes |
 | GitHub wiki push | `planopticon wiki push` | Git auth | Push generated wiki to a GitHub repo |
 
@@ -566,40 +566,49 @@ schema = PlanOpticonExchange.json_schema()
 
 This returns the full JSON Schema for validation and documentation purposes.
 
-## conflict-kg/v1 format
+## mimwell-kg/v1 format
 
-`conflict-kg/v1` is the canonical knowledge-graph interchange format shared by
+`mimwell-kg/v1` is the canonical knowledge-graph interchange format shared by
 all Conflict tools (PlanOpticon, Navegador, portal viewers) — a graph exported
 from any tool loads anywhere with no adapter. One schema, two encodings: JSON
 for small and medium graphs, SQLite for large ones (the SQLite file is
 Cloudflare D1-compatible for read-only portal queries).
 
+The format was previously named `conflict-kg/v1`. Only the `format` value
+changed; the shape is the same, and the SQLite encoding has no format value. A
+reader that accepts only `conflict-kg/v1` refuses the new JSON files until it is
+updated.
+
 ### CLI usage
 
 ```
-planopticon export conflict-kg DB_PATH [OPTIONS]
+planopticon export mimwell-kg DB_PATH [OPTIONS]
 ```
 
 | Option | Short | Default | Description |
 |--------|-------|---------|-------------|
-| `--output` | `-o` | `./conflict_kg.json` (or `.db`) | Output file path |
+| `--output` | `-o` | `./mimwell_kg.json` (or `.db`) | Output file path |
 | `--sqlite` | | off | Emit the SQLite encoding instead of JSON |
 
 **Examples:**
 
 ```bash
 # JSON encoding
-planopticon export conflict-kg knowledge_graph.db
+planopticon export mimwell-kg knowledge_graph.db
 
 # SQLite encoding for large graphs / D1
-planopticon export conflict-kg knowledge_graph.db --sqlite -o graph.db
+planopticon export mimwell-kg knowledge_graph.db --sqlite -o graph.db
 ```
+
+`planopticon export conflict-kg` still works as a deprecated alias. It prints a
+warning, writes the same mimwell-kg/v1 output, and keeps its old default file
+names (`./conflict_kg.json` or `.db`). Move scripts to `export mimwell-kg`.
 
 ### Schema
 
 ```json
 {
-  "format": "conflict-kg/v1",
+  "format": "mimwell-kg/v1",
   "contract": { "version": "1.0", "realm": "brain", "producer": "planopticon", "address_kind": "kg-entity" },
   "nodes": [
     { "id": "python", "name": "Python", "type": "technology",
@@ -648,7 +657,7 @@ CREATE INDEX idx_edges_target ON edges(target);
 
 The legacy `knowledge_graph.json` shape (`{nodes, relationships}`) is unchanged
 and remains supported for existing consumers; new integrations should read
-conflict-kg/v1.
+mimwell-kg/v1.
 
 ### Multimodal evidence and recovery
 
@@ -687,7 +696,7 @@ unqualified old output directories, and incomplete graph extraction. Preserve th
 outputs for inspection and rerun into a new directory. A completed visual checkpoint
 contains both diagrams and screenshots; partial per-frame files do not count as a
 completed visual analysis. Memory/SQLite storage, native save/load, graph merge,
-PlanOpticonExchange, and both conflict-kg encodings preserve structured observations.
+PlanOpticonExchange, and both mimwell-kg encodings preserve structured observations.
 
 ## Python API for all exporters
 
