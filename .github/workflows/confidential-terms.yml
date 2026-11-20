@@ -1,0 +1,18 @@
+# Fails a pull request or push that adds a confidential term.
+# See confidential-terms/README.md in calliopeai/.github.
+name: confidential-terms
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  push:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    uses: calliopeai/.github/.github/workflows/reusable-confidential-terms.yml@main
+    secrets:
+      CLIENT_DENYLIST: ${{ secrets.CLIENT_DENYLIST }}
